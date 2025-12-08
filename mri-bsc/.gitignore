@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env/
+.envrc
+
+# Data (never commit PHI)
+data/raw/**
+data/**/*.dcm
+data/**/*.nii
+data/**/*.nii.gz
+data/**/*.mgz
+data/**/*.mgh
+
+# Heavy outputs
+**/freesurfer/**
+**/*.ckpt
+**/wandb/**
+**/*.log
+
+# Misc
+.DS_Store

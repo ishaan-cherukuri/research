@@ -1,0 +1,19 @@
+raw:
+  adni:
+    zip: data/raw/adni/Imaging.zip
+    # nifti: data/raw/adni/nifti
+
+  oasis3:
+    zip: data/raw/oasis3/OASIS3_derivative_files.zip
+    # nifti: data/raw/oasis3/nifti
+    scan_csv: data/raw/oasis3/OASIS3_MR_scan_summary.csv
+    dataset_csv: data/raw/oasis3/OASIS3_MR_datasetdescription_aggregate.csv
+
+derivatives:
+  preprocess: data/derivatives/preprocess
+  seg: data/derivatives/seg
+  bsc: data/derivatives/bsc
+  qc: data/derivatives/qc
+
+manifests: data/manifests
+splits: data/splits

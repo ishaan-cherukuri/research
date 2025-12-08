@@ -1,0 +1,30 @@
+[project]
+name = "mri-bsc"
+version = "0.1.0"
+description = "Boundary Sharpness Coefficient (BSC) pipeline for T1 MRI (OASIS-3 + NACC)."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "numpy",
+  "pandas",
+  "nibabel",
+  "nilearn",
+  "scikit-image",
+  "scipy",
+  "matplotlib",
+  "tqdm",
+  "pydicom",
+  "monai>=1.3.0",
+  "scikit-learn",
+  "antspyx; platform_system == 'Linux' or platform_system == 'Darwin'",
+  "hd-bet; platform_system == 'Linux' or platform_system == 'Darwin'",
+  "notebook",        
+  "ipykernel" 
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

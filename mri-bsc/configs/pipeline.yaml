@@ -1,0 +1,8 @@
+preproc_engine: monai       # options: monai | ants
+skullstrip_engine: synthstrip   # options: synthstrip | hdbet | antsmask
+seg_engine: synthseg        # options: synthseg | freesurfer | atropos
+
+bsc:
+  band_eps: 0.05
+  sigma_mm: 1.0
+  units: "SD/mm"

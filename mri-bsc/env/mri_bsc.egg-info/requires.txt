@@ -1,0 +1,17 @@
+numpy
+pandas
+nibabel
+nilearn
+scikit-image
+scipy
+matplotlib
+tqdm
+pydicom
+monai>=1.3.0
+scikit-learn
+notebook
+ipykernel
+
+[:platform_system == "Linux" or platform_system == "Darwin"]
+antspyx
+hd-bet

@@ -1,0 +1,6 @@
+pyproject.toml
+mri_bsc.egg-info/PKG-INFO
+mri_bsc.egg-info/SOURCES.txt
+mri_bsc.egg-info/dependency_links.txt
+mri_bsc.egg-info/requires.txt
+mri_bsc.egg-info/top_level.txt
