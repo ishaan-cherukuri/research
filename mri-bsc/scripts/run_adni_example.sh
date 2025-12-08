@@ -8,9 +8,9 @@ echo "==== ADNI PIPELINE START ===="
 # -------------------------
 echo "Building ADNI manifest..."
 
-python -m code.ingest.build_manifest_adni \
+python3 -m code.ingest.build_manifest_adni \
   --zip_path data/raw/adni/Imaging.zip \
-#   --nifti_root data/raw/adni/nifti \
+  --nifti_root data/raw/adni/nifti \
   --out_csv data/manifests/adni_manifest.csv
 
 # -------------------------
@@ -18,7 +18,7 @@ python -m code.ingest.build_manifest_adni \
 # -------------------------
 echo "Running preprocessing..."
 
-python -m code.preprocess.monai_preproc \
+python3 -m code.preprocess.monai_preproc \
   --manifest data/manifests/adni_manifest.csv \
   --out_dir data/derivatives/preprocess/adni
 
@@ -27,7 +27,7 @@ python -m code.preprocess.monai_preproc \
 # -------------------------
 echo "Running BSC (Atropos)..."
 
-python -m code.pipeline.run_batch \
+python3 -m code.pipeline.run_batch \
   --manifest data/manifests/adni_manifest.csv \
   --engine atropos \
   --out_root data/derivatives/bsc/adni/atropos

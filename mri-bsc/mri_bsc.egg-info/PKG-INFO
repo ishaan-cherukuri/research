@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: mri-bsc
+Version: 0.1.0
+Summary: MRI Boundary Sharpness Coefficient Pipeline
+Requires-Python: >=3.9
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: nibabel
+Requires-Dist: nilearn
+Requires-Dist: scikit-image
+Requires-Dist: scipy
+Requires-Dist: matplotlib
+Requires-Dist: tqdm
+Requires-Dist: pydicom
+Requires-Dist: monai>=1.3.0
+Requires-Dist: scikit-learn
+Requires-Dist: antspyx; platform_system == "Linux" or platform_system == "Darwin"
+Requires-Dist: hd-bet; platform_system == "Linux" or platform_system == "Darwin"
+Requires-Dist: notebook
+Requires-Dist: ipykernel

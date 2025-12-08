@@ -1,9 +1,13 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "mri-bsc"
 version = "0.1.0"
-description = "Boundary Sharpness Coefficient (BSC) pipeline for T1 MRI (OASIS-3 + NACC)."
-readme = "README.md"
+description = "MRI Boundary Sharpness Coefficient Pipeline"
 requires-python = ">=3.9"
+
 dependencies = [
   "numpy",
   "pandas",
@@ -22,9 +26,7 @@ dependencies = [
   "ipykernel" 
 ]
 
-[tool.setuptools]
-include-package-data = true
-
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["code*"]
+exclude = ["data*", "configs*", "notebooks*"]

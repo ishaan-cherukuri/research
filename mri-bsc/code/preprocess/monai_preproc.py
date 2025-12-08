@@ -1,7 +1,14 @@
 import argparse, os
 from pathlib import Path
 import pandas as pd
-from monai.transforms import Compose, LoadImaged, EnsureChannelFirstd, Orientationd, Spacingd, N4BiasFieldCorrectiond, SaveImaged
+from monai.transforms import (Compose, LoadImaged, EnsureChannelFirstd, Orientationd, Spacingd, SaveImaged)
+
+try:
+    from monai.transforms import N4BiasFieldCorrectiond
+    USE_DICT_N4 = True
+except ImportError:
+    from monai.transforms import N4BiasFieldCorrection
+    USE_DICT_N4 = False
 from tqdm import tqdm
 
 def run_preproc(manifest_csv, out_dir, n=None):
@@ -10,15 +17,20 @@ def run_preproc(manifest_csv, out_dir, n=None):
         df = df.head(int(n))
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    
+    tx = [
+    LoadImaged(keys=["image"]),
+    EnsureChannelFirstd(keys=["image"]),
+    Orientationd(keys=["image"], axcodes="RAS"),
+    Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode=('bilinear',)),
+    ]
 
-    tx = Compose([
-        LoadImaged(keys=['image']),
-        EnsureChannelFirstd(keys=['image']),
-        Orientationd(keys=['image'], axcodes='RAS'),
-        Spacingd(keys=['image'], pixdim=(1.0,1.0,1.0), mode=('bilinear',)),
-        N4BiasFieldCorrectiond(keys=['image']),
-        SaveImaged(keys=['image'], output_dir=str(out_dir), output_postfix='preproc', separate_folder=False),
-    ])
+    if USE_DICT_N4:
+        tx.append(N4BiasFieldCorrectiond(keys=["image"]))
+    else:
+        tx.append(N4BiasFieldCorrection())
+
+    tx.append(SaveImaged(keys=["image"], output_dir=out_dir))
 
     for _, row in tqdm(df.iterrows(), total=len(df)):
         path = row['path']
