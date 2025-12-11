@@ -1,7 +1,7 @@
 \
 import os, json, argparse, numpy as np, ants, pandas as pd
 from nibabel import Nifti1Image, save as nib_save
-from bsc.bsc_core import load_img, wm_zscore, directional_bsc
+from code.bsc.bsc_core import load_img, wm_zscore, directional_bsc
 
 def run_atropos_bsc(t1_path, out_dir, eps=0.05, sigma_mm=1.0):
     os.makedirs(out_dir, exist_ok=True)

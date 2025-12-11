@@ -19,9 +19,10 @@ python3 -m code.ingest.build_manifest_oasis \
 # -------------------------
 echo "Running preprocessing..."
 
-python3 -m code.preprocess.monai_preproc \
-  --manifest data/manifests/oasis3_manifest.csv \
+python3 -m code.preprocess.simple_preproc \
+  --manifest data/manifests/oasis3_manifest_test.csv \
   --out_dir data/derivatives/preprocess/oasis3
+
 
 # -------------------------
 # 3. Run BSC Batch (Atropos)
@@ -29,8 +30,9 @@ python3 -m code.preprocess.monai_preproc \
 echo "Running BSC (Atropos)..."
 
 python3 -m code.pipeline.run_batch \
-  --manifest data/manifests/oasis3_manifest.csv \
+  --manifest data/manifests/oasis3_manifest_test.csv \
   --engine atropos \
   --out_root data/derivatives/bsc/oasis3/atropos
+
 
 echo "==== OASIS3 PIPELINE COMPLETE ===="

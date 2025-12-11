@@ -1,0 +1,15 @@
+{
+  "BSC_dir": 0.472777783870697,
+  "BSC_mag": 0.5637168288230896,
+  "Nboundary": 68138,
+  "engine": "atropos",
+  "units": "SD/mm",
+  "spacing": [
+    0.9999999956180267,
+    1.0000000120248311,
+    1.0000000286813422
+  ],
+  "mu_wm": 174.26528930664062,
+  "sd_wm": 27.994108200073242,
+  "t1": "data/raw/oasis3/t1_mprage_sag/t1_mprage_sag_images/OASIS_OAS30567_20250423053932946.nii"
+}

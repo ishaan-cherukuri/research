@@ -1,4 +1,4 @@
-preproc_engine: monai       # options: monai | ants
+preproc_engine: nibabel       # options: monai | ants
 skullstrip_engine: synthstrip   # options: synthstrip | hdbet | antsmask
 seg_engine: synthseg        # options: synthseg | freesurfer | atropos
 
