@@ -1,0 +1,15 @@
+{
+  "BSC_dir": 0.3685563802719116,
+  "BSC_mag": 0.4510105848312378,
+  "Nboundary": 53345,
+  "engine": "atropos",
+  "units": "SD/mm",
+  "spacing": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "mu_wm": 659.22119140625,
+  "sd_wm": 111.73591613769531,
+  "t1": "data/raw/adni/adni_3yr_3t/023_S_0625/MPR-R__GradWarp__B1_Correction__N3__Scaled/2008-01-11_13_44_15.0/I89607/ADNI_023_S_0625_MR_MPR-R__GradWarp__B1_Correction__N3__Scaled_Br_20080206160446177_S44503_I89607.nii"
+}

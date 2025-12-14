@@ -1,59 +1,107 @@
-import os
+import argparse
 import pandas as pd
-from pathlib import Path
-import re
+import boto3
+from datetime import datetime
 
-def parse_date_from_dir(dirname):
-    # Example: "2006-05-19_16_17_47.0" → "2006-05-19"
-    m = re.match(r"(\d{4}-\d{2}-\d{2})", dirname)
-    return m.group(1) if m else None
 
-def build_manifest_adni(root, out_csv):
-    
-    rows = []
-    root = Path(root)
+s3 = boto3.client("s3")
 
-    for subject_dir in sorted(root.iterdir()):
-        if not subject_dir.is_dir():
-            continue
 
-        subject = subject_dir.name  # e.g., "002_S_0413"
+def normalize_date(s):
+    try:
+        return datetime.strptime(s, "%m/%d/%Y").strftime("%Y-%m-%d")
+    except Exception:
+        return None
 
-        # Loop sequence types (usually 1 folder)
-        for seq_dir in subject_dir.iterdir():
-            if not seq_dir.is_dir():
-                continue
 
-            # Loop visits
-            for visit_dir in seq_dir.iterdir():
-                if not visit_dir.is_dir():
-                    continue
+def list_s3_objects(bucket, prefix):
+    paginator = s3.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        for obj in page.get("Contents", []):
+            yield obj["Key"]
 
-                date_str = parse_date_from_dir(visit_dir.name)
 
-                nii_path = visit_dir / "img.nii.gz"
-                if not nii_path.exists():
-                    continue
+def build_manifest_adni(csv_path, s3_raw_root, out_csv):
+    df = pd.read_csv(csv_path)
+    df.columns = [c.strip() for c in df.columns]
 
-                # ADNI often encodes visit time via date differences
-                # but you may later map dates → m12/m24/m36
-                visit = visit_dir.name   
+    required = {
+        "Image Data ID",
+        "Subject",
+        "Group",
+        "Sex",
+        "Age",
+        "Visit",
+        "Acq Date",
+        "Description",
+    }
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
 
-                rows.append({
-                    "subject": subject,
-                    "visit": visit,
-                    "acq_date": date_str,
-                    "path": str(nii_path),
-                    "diagnosis": None,    # Will fill using your CSV
-                    "sex": None, 
-                    "age": None,
-                    "image_id": None,
-                    "desc": seq_dir.name
-                })
+    assert s3_raw_root.startswith("s3://")
 
-    df = pd.DataFrame(rows)
-    df = df.sort_values(["subject", "acq_date"])
-    df.to_csv(out_csv, index=False)
+    _, _, bucket_and_prefix = s3_raw_root.partition("s3://")
+    bucket, _, root_prefix = bucket_and_prefix.partition("/")
 
-    print(f"[build_manifest_adni] Wrote manifest with {len(df)} rows to {out_csv}")
-    return df
+    records = []
+
+    for _, row in df.iterrows():
+        image_id = f"I{int(row['Image Data ID'][1::])}"
+        subject = row["Subject"]
+        visit_code = row["Visit"]
+
+        acq_date = normalize_date(str(row["Acq Date"]))
+        diagnosis = row["Group"]
+
+        # Search for the image_id directory anywhere under subject
+        search_prefix = f"{root_prefix}/{subject}/"
+        nii_files = [
+            k for k in list_s3_objects(bucket, search_prefix)
+            if f"/{image_id}/" in k and k.lower().endswith((".nii", ".nii.gz"))
+        ]
+
+        if not nii_files:
+            continue  # skip unmatched rows
+
+        # ADNI guarantees 1 NIfTI per Image Data ID
+        nii_key = nii_files[0]
+
+        records.append({
+            "subject": subject,
+            "session": visit_code,           # kept for compatibility
+            "visit_code": visit_code,
+            "acq_date": acq_date,
+            "path": f"s3://{bucket}/{nii_key}",
+            "modality": "T1w",
+            "desc": row["Description"],
+            "image_id": image_id,
+            "diagnosis": diagnosis,
+            "sex": row["Sex"],
+            "age": row["Age"],
+        })
+
+    out_df = pd.DataFrame(records)
+    out_df = out_df.sort_values(["subject", "acq_date"])
+
+    out_df.to_csv(out_csv, index=False)
+    print(f"[OK] Wrote ADNI manifest → {out_csv}")
+    print(f"     Rows: {len(out_df)}")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--csv_path", required=True)
+    ap.add_argument("--s3_raw_root", required=True)
+    ap.add_argument("--out_csv", required=True)
+    args = ap.parse_args()
+
+    build_manifest_adni(
+        csv_path=args.csv_path,
+        s3_raw_root=args.s3_raw_root,
+        out_csv=args.out_csv,
+    )
+
+
+if __name__ == "__main__":
+    main()

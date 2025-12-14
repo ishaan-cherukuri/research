@@ -1,53 +1,77 @@
 import argparse
+import json
+import pandas as pd
+import tempfile
 from pathlib import Path
 
 import nibabel as nib
 import numpy as np
-import pandas as pd
+
+from code.io.s3 import download_to_temp, upload_file, ensure_s3_prefix
 
 
-def normalize(img):
-    img = img.astype(np.float32)
-    mean = img.mean()
-    std = img.std()
-    if std == 0:
-        return img
-    return (img - mean) / std
+def preprocess_one(
+    image_s3_path: str,
+    out_s3_dir: str,
+):
+    ensure_s3_prefix(out_s3_dir)
 
+    # --- download ---
+    local_nii = download_to_temp(image_s3_path)
 
-def preprocess(manifest_csv, out_dir):
-    out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    # --- load ---
+    img = nib.load(local_nii)
+    data = img.get_fdata().astype(np.float32)
 
-    df = pd.read_csv(manifest_csv)
+    # --- simple normalization (placeholder for N4/skullstrip) ---
+    data = (data - data.mean()) / (data.std() + 1e-6)
 
-    for _, row in df.iterrows():
-        in_path = Path(row["path"])
-        subject = row["subject"]
+    # --- fake masks (replace with real segmentation later) ---
+    brain_mask = (data > -1).astype(np.uint8)
+    gm = np.clip(data, 0, 1)
+    wm = np.clip(1 - gm, 0, 1)
 
-        out_subdir = out_dir / subject
-        out_subdir.mkdir(parents=True, exist_ok=True)
+    # --- save locally ---
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
 
-        out_path = out_subdir / in_path.name
+        out_files = {
+            "t1w_preproc.nii.gz": data,
+            "gm_prob.nii.gz": gm,
+            "wm_prob.nii.gz": wm,
+            "brain_mask.nii.gz": brain_mask,
+        }
 
-        nii = nib.load(in_path)
-        data = nii.get_fdata()
+        for name, arr in out_files.items():
+            out_path = td / name
+            nib.save(nib.Nifti1Image(arr, img.affine, img.header), out_path)
+            upload_file(out_path, f"{out_s3_dir}/{name}")
 
-        data = normalize(data)
-
-        new_nii = nib.Nifti1Image(data, nii.affine, nii.header)
-        nib.save(new_nii, out_path)
-
-        print(f"[preprocess] Saved {out_path}")
+        meta = {
+            "source": image_s3_path,
+            "steps": ["normalize", "mask", "gm_wm_placeholder"],
+        }
+        meta_path = td / "preprocess_metadata.json"
+        meta_path.write_text(json.dumps(meta, indent=2))
+        upload_file(meta_path, f"{out_s3_dir}/preprocess_metadata.json")
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--manifest", required=True)
-    ap.add_argument("--out_dir", required=True)
+    ap.add_argument("--out_root", required=True)
     args = ap.parse_args()
 
-    preprocess(args.manifest, args.out_dir)
+    df = pd.read_csv(args.manifest)
+
+    for _, row in df.iterrows():
+        image_id = row["image_id"]
+        image_path = row["path"]
+
+        out_dir = f"{args.out_root}/{image_id}"
+        preprocess_one(image_path, out_dir)
+
+        print(f"[OK] Preprocessed {image_id}")
 
 
 if __name__ == "__main__":

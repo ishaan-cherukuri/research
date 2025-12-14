@@ -1,0 +1,2 @@
+subject,BSC_dir,BSC_mag,Nboundary,engine,units,spacing,mu_wm,sd_wm,t1
+ADNI_053_S_0507_MR_MPR____N3__Scaled__No_phantom_for_scaling_Br_20090107125111129_S51462_I132918,0.5573342442512512,0.718109667301178,47107,atropos,SD/mm,"(1.0, 1.0, 1.0)",233.95260620117188,34.01943588256836,data/raw/adni/adni_3yr_3t/053_S_0507/MPR____N3__Scaled__No_phantom_for_scaling/2008-06-11_09_06_08.0/I132918/ADNI_053_S_0507_MR_MPR____N3__Scaled__No_phantom_for_scaling_Br_20090107125111129_S51462_I132918.nii
