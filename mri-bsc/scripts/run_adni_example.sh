@@ -27,35 +27,35 @@ S3_INDEX="$S3_BASE/index"
 # # -------------------------
 # # 2. Preprocess Images
 # # -------------------------
-echo "Running preprocessing..."
+# echo "Running preprocessing..."
 
-python3 -m code.preprocess.simple_preproc \
-  --manifest s3://ishaan-research/data/manifests/adni_manifest_test.csv \
-  --out_root s3://ishaan-research/data/derivatives/preprocess/adni
+# python3 -m code.preprocess.simple_preproc \
+#   --manifest s3://ishaan-research/data/manifests/adni_manifest_test.csv \
+#   --out_root s3://ishaan-research/data/derivatives/preprocess/adni
 
 
 # -------------------------
-# 3. Run BSC Batch (Atropos)
-# -------------------------
-echo "Running BSC (Atropos)..."
+# # 3. Run BSC Batch (Atropos)
+# # -------------------------
+# echo "Running BSC (Atropos)..."
 
-python3 -m code.pipeline.run_batch \
-  --manifest "$S3_MANIFESTS/adni_manifest_test.csv" \
-  --engine atropos \
-  --out_root "$S3_DERIVS" \
-  --work_dir "$WORK_DIR"
+# python3 -m code.pipeline.run_batch \
+#   --manifest s3://ishaan-research/data/manifests/adni_manifest_test.csv \
+#   --engine atropos \
+#   --out_root s3://ishaan-research/data/derivatives/bsc/adni/atropos \
+#   # --limit 5
 
 # -------------------------
 # 4. Build longitudinal index
-# -------------------------
-echo "Building longitudinal index (S3)..."
+# # -------------------------
+# echo "Building longitudinal index (S3)..."
 
-python3 -m code.index.build_longitudinal_index \
-  --manifest "$S3_MANIFESTS/adni_manifest_test.csv" \
-  --labels "s3://ishaan-research/index/adni_mci_conversion_labels.csv" \
-  --derivatives_root "$S3_DERIVS" \
-  --out_csv "$S3_INDEX/adni_longitudinal_index.csv" \
-  --out_unmatched_csv "$S3_INDEX/adni_longitudinal_index_unmatched.csv" \
-  --require t1,gm,wm,mask
+# python3 -m code.index.build_longitudinal_index \
+#   --manifest "$S3_MANIFESTS/adni_manifest_test.csv" \
+#   --labels "s3://ishaan-research/index/adni_mci_conversion_labels.csv" \
+#   --derivatives_root "$S3_DERIVS" \
+#   --out_csv "$S3_INDEX/adni_longitudinal_index.csv" \
+#   --out_unmatched_csv "$S3_INDEX/adni_longitudinal_index_unmatched.csv" \
+#   --require t1,gm,wm,mask
 
-echo "==== ADNI PIPELINE COMPLETE ===="
+# echo "==== ADNI PIPELINE COMPLETE ===="

@@ -50,7 +50,7 @@ def _write_csv_any(df: pd.DataFrame, path: str) -> None:
     """
     Writes local path OR s3://... path (requires s3fs installed for s3).
     """
-    df.to_csv(path, index=False)    
+    df.to_csv(path, index=False)
 
 
 def _find_visit_dir(derivatives_root: Path, image_id: str, nii_path: str):
@@ -145,14 +145,18 @@ def build_index(
             image_id = "" if pd.isna(row["image_id"]) else str(row["image_id"])
             nii_path = "" if pd.isna(row["path"]) else str(row["path"])
 
-            visit_dir = _find_visit_dir(derivatives_root, image_id=image_id, nii_path=nii_path)
+            visit_dir = _find_visit_dir(
+                derivatives_root, image_id=image_id, nii_path=nii_path
+            )
             if visit_dir is None:
-                unmatched.append({
-                    "subject": subject,
-                    "visit_code": row["visit_code"],
-                    "image_id": image_id,
-                    "reason": "missing_derivatives_dir",
-                })
+                unmatched.append(
+                    {
+                        "subject": subject,
+                        "visit_code": row["visit_code"],
+                        "image_id": image_id,
+                        "reason": "missing_derivatives_dir",
+                    }
+                )
                 continue
 
             paths = {
@@ -167,37 +171,47 @@ def build_index(
 
             if any(paths[m] is None for m in required_modalities):
                 missing_mods = [m for m in required_modalities if paths[m] is None]
-                unmatched.append({
-                    "subject": subject,
-                    "visit_code": row["visit_code"],
-                    "image_id": image_id,
-                    "reason": f"missing_required_files:{','.join(missing_mods)}",
-                    "visit_dir": str(visit_dir),
-                })
+                unmatched.append(
+                    {
+                        "subject": subject,
+                        "visit_code": row["visit_code"],
+                        "image_id": image_id,
+                        "reason": f"missing_required_files:{','.join(missing_mods)}",
+                        "visit_dir": str(visit_dir),
+                    }
+                )
                 continue
 
             months = _months_between(bl_date, row["acq_date_dt"])
-            visits.append({
-                "visit_code": str(row["visit_code"]),
-                "acq_date": str(row["acq_date"]),
-                "months_since_bl": round(months, 3) if months is not None else None,
-                "image_id": image_id,
-                "visit_dir": str(visit_dir),
-                "paths": paths,
-            })
+            visits.append(
+                {
+                    "visit_code": str(row["visit_code"]),
+                    "acq_date": str(row["acq_date"]),
+                    "months_since_bl": round(months, 3) if months is not None else None,
+                    "image_id": image_id,
+                    "visit_dir": str(visit_dir),
+                    "paths": paths,
+                }
+            )
 
         if not visits:
             unmatched.append({"subject": subject, "reason": "no_complete_visits"})
             continue
 
-        index_rows.append({
-            "subject": subject,
-            "label": int(label_map[subject]),
-            "n_visits": int(len(visits)),
-            "visits_json": json.dumps(visits),
-        })
+        index_rows.append(
+            {
+                "subject": subject,
+                "label": int(label_map[subject]),
+                "n_visits": int(len(visits)),
+                "visits_json": json.dumps(visits),
+            }
+        )
 
-    out_df = pd.DataFrame(index_rows).sort_values(["subject"])
+    if not index_rows:
+        print("[WARNING] No valid subjects found. Creating empty output CSV.")
+        out_df = pd.DataFrame(columns=["subject", "label", "n_visits", "visits_json"])
+    else:
+        out_df = pd.DataFrame(index_rows).sort_values(["subject"])
 
     # ---- Write outputs (local OR S3) ----
     _write_csv_any(out_df, out_csv)
@@ -225,7 +239,9 @@ def main():
     ap.add_argument("--labels", required=True)
     ap.add_argument("--derivatives_root", required=True)
     ap.add_argument("--out_csv", required=True)
-    ap.add_argument("--require", default="t1,gm,wm,mask", help="comma-separated required modalities")
+    ap.add_argument(
+        "--require", default="t1,gm,wm,mask", help="comma-separated required modalities"
+    )
     ap.add_argument("--out_unmatched_csv", default="")
     args = ap.parse_args()
 

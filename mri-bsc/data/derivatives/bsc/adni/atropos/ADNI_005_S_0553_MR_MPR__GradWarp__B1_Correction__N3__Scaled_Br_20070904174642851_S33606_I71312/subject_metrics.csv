@@ -1,2 +1,0 @@
-subject,BSC_dir,BSC_mag,Nboundary,engine,units,spacing,mu_wm,sd_wm,t1
-ADNI_005_S_0553_MR_MPR__GradWarp__B1_Correction__N3__Scaled_Br_20070904174642851_S33606_I71312,0.21638834476470947,0.24928069114685059,57800,atropos,SD/mm,"(1.0, 1.0, 1.0)",5483.5810546875,1455.73876953125,data/raw/adni/adni_3yr_3t/005_S_0553/MPR__GradWarp__B1_Correction__N3__Scaled/2007-06-14_11_39_03.0/I71312/ADNI_005_S_0553_MR_MPR__GradWarp__B1_Correction__N3__Scaled_Br_20070904174642851_S33606_I71312.nii
