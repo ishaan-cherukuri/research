@@ -40,10 +40,14 @@ def run_atropos_bsc(t1_path, out_dir, eps=0.05, sigma_mm=1.0):
     # Preprocess (N4 + resample 1mm) and mask
     t1 = ants.image_read(str(t1_path))
     t1_n4 = ants.n4_bias_field_correction(t1)
+    # Preserve spacing metadata from original image to avoid ITK errors
+    t1_n4.set_spacing(t1.spacing)
     brain_mask = ants.get_mask(t1_n4)
+    print(f"Image spacing: {t1_n4.spacing}")
     t1_iso = ants.resample_image(
         t1_n4, (1.0, 1.0, 1.0), use_voxels=False, interp_type=1
     )
+    print(f"Image spacing: {brain_mask.spacing}")
     mask_iso = ants.resample_image(
         brain_mask, (1.0, 1.0, 1.0), use_voxels=False, interp_type=0
     )

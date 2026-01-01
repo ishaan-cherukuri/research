@@ -29,10 +29,12 @@ def run_batch(
     engine,
     out_root,
     limit=None,
+    skip=0,
     preproc_root="s3://ishaan-research/data/derivatives/preprocess/adni",
     **kwargs,
 ):
     df = pd.read_csv(manifest_csv)
+    df = df.iloc[int(skip) :]
     if limit is not None:
         df = df.head(int(limit))
 
@@ -95,6 +97,9 @@ if __name__ == "__main__":
     ap.add_argument("--engine", required=True, choices=["atropos", "freesurfer"])
     ap.add_argument("--out_root", required=True)
     ap.add_argument("--limit", type=int)
+    ap.add_argument(
+        "--skip", type=int, default=0, help="Skip first N images (0-indexed)"
+    )
     ap.add_argument("--eps", type=float, default=0.05)
     ap.add_argument("--sigma_mm", type=float, default=1.0)
     ap.add_argument("--subjects_dir")
@@ -107,6 +112,7 @@ if __name__ == "__main__":
         args.engine,
         args.out_root,
         limit=args.limit,
+        skip=args.skip,
         eps=args.eps,
         sigma_mm=args.sigma_mm,
         subjects_dir=args.subjects_dir,

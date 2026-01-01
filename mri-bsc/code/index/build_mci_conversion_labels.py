@@ -1,4 +1,5 @@
-"""code.index.build_mci_conversion_labels
+"""
+code.index.build_mci_conversion_labels
 
 Build subject-level MCI->AD conversion labels from a longitudinal ADNI manifest.
 
@@ -14,9 +15,10 @@ Outputs:
 
 from __future__ import annotations
 
-from pathlib import Path
 import argparse
 import pandas as pd
+
+from code.utils.io_any import read_csv_any, write_csv_any
 
 
 def _to_dt(s):
@@ -38,7 +40,8 @@ def build_labels(
     horizon_months: float | None = 36.0,
     out_unmatched_csv: str | None = None,
 ) -> pd.DataFrame:
-    df = pd.read_csv(manifest_csv)
+
+    df = read_csv_any(manifest_csv)
 
     required = {"subject", "visit_code", "acq_date", "diagnosis"}
     missing = required - set(df.columns)
@@ -57,7 +60,7 @@ def build_labels(
         bl = g[g["visit_code"] == baseline_code]
 
         if bl.empty:
-            unmatched.append({"subject": subject, "reason": "missing_baseline"})
+            unmatched.append({"subject": str(subject), "reason": "missing_baseline"})
             continue
 
         bl_row = bl.iloc[0]
@@ -65,10 +68,15 @@ def build_labels(
         bl_date = bl_row["acq_date_dt"]
 
         if bl_dx != baseline_dx:
-            unmatched.append({"subject": subject, "reason": f"baseline_dx_not_{baseline_dx}", "baseline_dx": bl_dx})
+            unmatched.append(
+                {
+                    "subject": str(subject),
+                    "reason": f"baseline_dx_not_{baseline_dx}",
+                    "baseline_dx": bl_dx,
+                }
+            )
             continue
 
-        # Identify first AD after baseline (by date)
         later = g[g["acq_date_dt"] >= bl_date]
         ad_rows = later[later["diagnosis"] == converter_dx].sort_values("acq_date_dt")
 
@@ -84,32 +92,39 @@ def build_labels(
             if horizon_months is None:
                 label = 1
             else:
-                label = int(conversion_months is not None and conversion_months <= float(horizon_months))
+                label = int(
+                    conversion_months is not None
+                    and conversion_months <= float(horizon_months)
+                )
 
             if label == 0 and conversion_months is not None:
                 notes = f"AD found but after horizon ({conversion_months:.2f}mo > {horizon_months}mo)"
 
-        rows.append({
-            "subject": subject,
-            "label": int(label),
-            "bl_date": bl_date.date().isoformat() if not pd.isna(bl_date) else "",
-            "first_ad_date": first_ad_date.date().isoformat() if not pd.isna(first_ad_date) else "",
-            "conversion_months": round(conversion_months, 3) if conversion_months is not None else "",
-            "n_visits": int(len(g)),
-            "notes": notes,
-        })
+        rows.append(
+            {
+                "subject": str(subject),
+                "label": int(label),
+                "bl_date": bl_date.date().isoformat() if not pd.isna(bl_date) else "",
+                "first_ad_date": first_ad_date.date().isoformat()
+                if not pd.isna(first_ad_date)
+                else "",
+                "conversion_months": round(conversion_months, 3)
+                if conversion_months is not None
+                else "",
+                "n_visits": int(len(g)),
+                "notes": notes,
+            }
+        )
 
-    out_path = Path(out_csv)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_df = pd.DataFrame(rows).sort_values(["subject"])
-    out_df.to_csv(out_path, index=False)
+    out_df = pd.DataFrame(rows).sort_values(["subject"]) if rows else pd.DataFrame(
+        columns=["subject", "label", "bl_date", "first_ad_date", "conversion_months", "n_visits", "notes"]
+    )
+    write_csv_any(out_df, out_csv)
 
     if out_unmatched_csv:
-        um_path = Path(out_unmatched_csv)
-        um_path.parent.mkdir(parents=True, exist_ok=True)
-        pd.DataFrame(unmatched).to_csv(um_path, index=False)
+        write_csv_any(pd.DataFrame(unmatched), out_unmatched_csv)
 
-    print("[OK] Wrote labels CSV:", out_path)
+    print("[OK] Wrote labels CSV:", out_csv)
     print("  labeled subjects:", len(out_df))
     if unmatched:
         msg = f"[WARNING] skipped subjects: {len(unmatched)}"
@@ -127,7 +142,12 @@ def main():
     ap.add_argument("--baseline_code", default="bl")
     ap.add_argument("--baseline_dx", default="MCI")
     ap.add_argument("--converter_dx", default="AD")
-    ap.add_argument("--horizon_months", type=float, default=36.0, help="Set <=0 to disable horizon.")
+    ap.add_argument(
+        "--horizon_months",
+        type=float,
+        default=36.0,
+        help="Set <=0 to disable horizon.",
+    )
     ap.add_argument("--out_unmatched_csv", default="")
     args = ap.parse_args()
 

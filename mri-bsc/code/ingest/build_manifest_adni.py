@@ -3,13 +3,12 @@ import pandas as pd
 import boto3
 from datetime import datetime
 
-
 s3 = boto3.client("s3")
 
 
 def normalize_date(s):
     try:
-        return datetime.strptime(s, "%m/%d/%Y").strftime("%Y-%m-%d")
+        return datetime.strptime(str(s), "%Y-%m-%d").strftime("%Y-%m-%d")
     except Exception:
         return None
 
@@ -26,14 +25,12 @@ def build_manifest_adni(csv_path, s3_raw_root, out_csv):
     df.columns = [c.strip() for c in df.columns]
 
     required = {
-        "Image Data ID",
-        "Subject",
-        "Group",
-        "Sex",
-        "Age",
-        "Visit",
-        "Acq Date",
-        "Description",
+        "subject_id",
+        "image_visit",
+        "image_id",
+        "image_date",
+        "diagnosis_group",
+        "series_description",
     }
     missing = required - set(df.columns)
     if missing:
@@ -47,42 +44,52 @@ def build_manifest_adni(csv_path, s3_raw_root, out_csv):
     records = []
 
     for _, row in df.iterrows():
-        image_id = f"I{int(row['Image Data ID'][1::])}"
-        subject = row["Subject"]
-        visit_code = row["Visit"]
-
-        acq_date = normalize_date(str(row["Acq Date"]))
-        diagnosis = row["Group"]
+        subject = row["subject_id"]
+        visit_code = row["image_visit"]
+        image_id = f"I{int(row['image_id'])}"
+        series_description = row["series_description"]
+        acq_date = normalize_date(row["image_date"])
+        diagnosis = row["diagnosis_group"]
 
         # Search for the image_id directory anywhere under subject
+        # (don't rely on series_description matching exactly, as S3 may have variants)
         search_prefix = f"{root_prefix}/{subject}/"
+
         nii_files = [
-            k for k in list_s3_objects(bucket, search_prefix)
-            if f"/{image_id}/" in k and k.lower().endswith((".nii", ".nii.gz"))
+            k
+            for k in list_s3_objects(bucket, search_prefix)
+            if f"/{image_id}/" in k and k.endswith("/image.nii.gz")
         ]
 
         if not nii_files:
+            print(
+                f"[DEBUG] No match for {subject} / {image_id} / {series_description} in prefix {search_prefix}"
+            )
             continue  # skip unmatched rows
 
         # ADNI guarantees 1 NIfTI per Image Data ID
         nii_key = nii_files[0]
 
-        records.append({
-            "subject": subject,
-            "session": visit_code,           # kept for compatibility
-            "visit_code": visit_code,
-            "acq_date": acq_date,
-            "path": f"s3://{bucket}/{nii_key}",
-            "modality": "T1w",
-            "desc": row["Description"],
-            "image_id": image_id,
-            "diagnosis": diagnosis,
-            "sex": row["Sex"],
-            "age": row["Age"],
-        })
+        records.append(
+            {
+                "subject_id": subject,
+                "visit_code": visit_code,
+                "acq_date": acq_date,
+                "path": f"s3://{bucket}/{nii_key}",
+                "modality": "T1w",
+                "series_description": series_description,
+                "image_id": image_id,
+                "diagnosis": diagnosis,
+            }
+        )
 
     out_df = pd.DataFrame(records)
-    out_df = out_df.sort_values(["subject", "acq_date"])
+    if out_df.empty:
+        print("[WARNING] No matching images found. Manifest is empty.")
+        out_df.to_csv(out_csv, index=False)
+        return
+    print(out_df.columns.tolist())
+    out_df = out_df.sort_values(["subject_id", "acq_date", "series_description"])
 
     out_df.to_csv(out_csv, index=False)
     print(f"[OK] Wrote ADNI manifest → {out_csv}")
