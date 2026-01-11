@@ -6,12 +6,13 @@ __pycache__/
 .envrc
 
 # Data (never commit PHI)
-data/raw/**
-data/**/*.dcm
-data/**/*.nii
-data/**/*.nii.gz
-data/**/*.mgz
-data/**/*.mgh
+data/
+csv_misc/
+csv_organization_adni/
+csv_organization_nacc/
+
+notebooks/ANTsPy/
+notebooks/SDC-BIDS-fMRI/
 
 # Heavy outputs
 **/freesurfer/**
