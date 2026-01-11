@@ -4,8 +4,8 @@ __pycache__/
 .venv/
 .env/
 .envrc
-
-# Data (never commit PHI)
+/data
+/csv_misc/
 data/
 csv_misc/
 csv_organization_adni/
