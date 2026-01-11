@@ -12,8 +12,7 @@ csv_organization_adni/
 csv_organization_nacc/
 
 # Notebook repos / large tutorial materials
-notebooks/ANTsPy/
-notebooks/SDC-BIDS-fMRI/
+notebooks/
 
 # Heavy outputs
 **/freesurfer/**
