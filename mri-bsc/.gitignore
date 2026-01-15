@@ -22,3 +22,4 @@ notebooks/
 
 # Misc
 .DS_Store
+*.csv
