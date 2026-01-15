@@ -1,7 +1,7 @@
 import os, json, argparse, tempfile, numpy as np, ants, pandas as pd
 from pathlib import Path
 from nibabel import Nifti1Image, save as nib_save
-from code.bsc.bsc_core import load_img, wm_zscore, directional_bsc
+from code.bsc.bsc_core import load_img, wm_zscore, directional_bsc_voxelwise
 from code.io.s3 import upload_file, parse_s3_uri
 
 
@@ -81,8 +81,13 @@ def run_atropos_bsc(t1_path, out_dir, eps=0.05, sigma_mm=1.0):
     brain_mask_arr, _, _ = load_img(mask_path)
 
     t1_norm, mu, sd = wm_zscore(t1_arr, wm_prob=wm_prob)
-    metrics = directional_bsc(
-        t1_norm, gm_prob, brain_mask_arr, spacing, band_eps=eps, sigma_mm=sigma_mm
+    bsc_dir_map, bsc_mag_map, band_mask, metrics = directional_bsc_voxelwise(
+        t1_norm,
+        gm_prob,
+        brain_mask_arr,
+        spacing,
+        band_eps=eps,
+        sigma_mm=sigma_mm,
     )
 
     metrics.update(
@@ -95,7 +100,17 @@ def run_atropos_bsc(t1_path, out_dir, eps=0.05, sigma_mm=1.0):
             t1=str(t1_path),
         )
     )
+    # Save voxel-wise maps locally (same affine as preproc)
+    _, aff, _ = load_img(preproc_path)
 
+    bsc_dir_map_path = os.path.join(local_work_dir, "bsc_dir_map.nii.gz")
+    bsc_mag_map_path = os.path.join(local_work_dir, "bsc_mag_map.nii.gz")
+    band_mask_path = os.path.join(local_work_dir, "boundary_band_mask.nii.gz")
+
+    nib_save(Nifti1Image(bsc_dir_map.astype(np.float32), aff), bsc_dir_map_path)
+    nib_save(Nifti1Image(bsc_mag_map.astype(np.float32), aff), bsc_mag_map_path)
+    nib_save(Nifti1Image(band_mask.astype(np.uint8), aff), band_mask_path)
+    
     # Save metrics and upload to S3 if needed
     metrics_json_path = os.path.join(local_work_dir, "bsc_metrics.json")
     metrics_csv_path = os.path.join(local_work_dir, "subject_metrics.csv")
@@ -113,6 +128,9 @@ def run_atropos_bsc(t1_path, out_dir, eps=0.05, sigma_mm=1.0):
             "brain_mask.nii.gz",
             "gm_prob.nii.gz",
             "wm_prob.nii.gz",
+            "bsc_dir_map.nii.gz",
+            "bsc_mag_map.nii.gz",
+            "boundary_band_mask.nii.gz",
             "bsc_metrics.json",
             "subject_metrics.csv",
         ]:

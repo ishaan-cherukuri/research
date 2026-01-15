@@ -68,3 +68,5 @@ done
 
 echo "Done."
 echo "If anything failed, see: $LOG"
+
+python -m code.ingest.build_manifest_adni 
