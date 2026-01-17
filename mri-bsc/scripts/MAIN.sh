@@ -57,7 +57,8 @@ python3 -m code.pipeline.run_batch \
   --manifest s3://ishaan-research/data/manifests/adni_manifest.csv \
   --engine atropos \
   --out_root s3://ishaan-research/data/derivatives/bsc/adni/atropos \
-  --preproc_root s3://ishaan-research/data/derivatives/preprocess/adni_5
+  --preproc_root s3://ishaan-research/data/derivatives/preprocess/adni_5 \
+  --temp_root data/splits \
 
 # # -------------------------
 # # 4. Build longitudinal index

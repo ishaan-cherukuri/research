@@ -40,6 +40,23 @@ def make_image_id(row: pd.Series) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "_", raw)
 
 
+def s3_exists(s3_path: str) -> bool:
+    """
+    Return True if s3://bucket/key exists.
+    Uses HEAD request (fast).
+    """
+    bucket, key = parse_s3_uri(s3_path)
+    try:
+        s3.head_object(Bucket=bucket, Key=key)
+        return True
+    except s3.exceptions.ClientError as e:
+        status = e.response.get("ResponseMetadata", {}).get("HTTPStatusCode", None)
+        if status == 404:
+            return False
+        # If something else happened (403, 500, etc), surface it
+        raise
+
+
 def copy_preproc_to_bsc(image_id: str, preproc_root: str, bsc_dir: str):
     preproc_root = preproc_root.rstrip("/")
     bsc_dir = bsc_dir.rstrip("/")
@@ -73,9 +90,11 @@ def run_batch(
     required = {"subject", "visit_code", "acq_date"}
     missing = required - set(df.columns)
     if missing:
-        raise ValueError(f"Manifest missing columns: {sorted(missing)}. Found: {list(df.columns)}")
+        raise ValueError(
+            f"Manifest missing columns: {sorted(missing)}. Found: {list(df.columns)}"
+        )
 
-    df = df.iloc[int(skip):]
+    df = df.iloc[int(skip) :]
     if limit is not None:
         df = df.head(int(limit))
 
@@ -88,24 +107,26 @@ def run_batch(
 
         for _, row in tqdm(df.iterrows(), total=len(df), desc="Atropos BSC", unit="scan"):
             image_id = make_image_id(row)
-            bsc_dir = f"{out_root.rstrip('/')}/{image_id}"
+            out_dir = f"{out_root.rstrip('/')}/{image_id}"
 
-            # 1) Copy preprocessing outputs into this BSC folder
-            copy_preproc_to_bsc(image_id, preproc_root, bsc_dir)
+            # ✅ SKIP if already processed (voxel-wise map exists)
+            done_flag = f"{out_dir}/bsc_dir_map.nii.gz"
+            if s3_exists(done_flag):
+                tqdm.write(f"[SKIP] Already done in S3 → {image_id}")
+                continue
 
-            # 2) Run Atropos BSC from the PREPROCESSED T1
-            t1_s3_path = f"{bsc_dir}/t1w_preproc.nii.gz"
-            t1_path = download_to_temp(t1_s3_path)
+            t1_s3 = f"{preproc_root.rstrip('/')}/{image_id}/t1w_preproc.nii.gz"
+            t1_local = download_to_temp(t1_s3)
 
             mod.run_atropos_bsc(
-                t1_path=t1_path,
-                out_dir=bsc_dir,
+                t1_path=t1_local,
+                out_dir=out_dir,
                 eps=float(kwargs.get("eps", 0.05)),
                 sigma_mm=float(kwargs.get("sigma_mm", 1.0)),
+                work_dir=kwargs.get("temp_root"),
             )
 
-            # tqdm-friendly logging
-            tqdm.write(f"[OK] BSC bundle complete → {image_id}")
+            tqdm.write(f"[OK] Voxel-wise BSC complete → {image_id}")
 
     elif engine == "freesurfer":
         mod = import_module("code.seg.freesurfer_bsc")
@@ -117,11 +138,19 @@ def run_batch(
             subject_id = str(row["subject"])
             out_dir = f"{out_root.rstrip('/')}/{subject_id}"
 
+            # ✅ SKIP if already processed
+            done_flag = f"{out_dir}/bsc_dir_map.nii.gz"
+            if s3_exists(done_flag):
+                tqdm.write(f"[SKIP] Already done in S3 → {subject_id}")
+                continue
+
             mod.run_fs_bsc(
                 subjects_dir,
                 subject_id,
                 t1_mgz=kwargs.get("t1_mgz", "mri/brain.mgz"),
-                offsets_mm=tuple(map(float, str(kwargs.get("offsets", "-2,-1,0,1,2")).split(","))),
+                offsets_mm=tuple(
+                    map(float, str(kwargs.get("offsets", "-2,-1,0,1,2")).split(","))
+                ),
                 out_dir=out_dir,
             )
 
@@ -158,7 +187,11 @@ if __name__ == "__main__":
     ap.add_argument("--subjects_dir")
     ap.add_argument("--t1_mgz", default="mri/brain.mgz")
     ap.add_argument("--offsets", default="-2,-1,0,1,2")
-
+    ap.add_argument(
+        "--temp_root",
+        default="/tmp/bsc_work",
+        help="Local directory for temporary work files (fast SSD recommended)",
+    )
     args = ap.parse_args()
 
     run_batch(
@@ -174,4 +207,5 @@ if __name__ == "__main__":
         subjects_dir=args.subjects_dir,
         t1_mgz=args.t1_mgz,
         offsets=args.offsets,
+        temp_root=args.temp_root,  
     )
