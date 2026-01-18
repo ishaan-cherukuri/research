@@ -53,12 +53,71 @@ S3_INDEX="$S3_BASE/index"
 # # -------------------------
 # echo "Running BSC (Atropos)..."
 
-python3 -m code.pipeline.run_batch \
-  --manifest s3://ishaan-research/data/manifests/adni_manifest.csv \
-  --engine atropos \
-  --out_root s3://ishaan-research/data/derivatives/bsc/adni/atropos \
-  --preproc_root s3://ishaan-research/data/derivatives/preprocess/adni_5 \
-  --temp_root data/splits \
+# python3 -m code.pipeline.run_batch \
+#   --manifest s3://ishaan-research/data/manifests/adni_manifest.csv \
+#   --engine atropos \
+#   --out_root s3://ishaan-research/data/derivatives/bsc/adni/atropos \
+#   --preproc_root s3://ishaan-research/data/derivatives/preprocess/adni_5 \
+#   --temp_root data/splits \
+
+# echo " BSC (Atropos)..."
+
+echo "Postprocessing BSC maps (hard mask + overwrite in S3)..."
+
+# macOS-safe temp control (prevents /private/var/folders/... temp blowups)
+TMPROOT="$PWD/data/splits/tmp"
+mkdir -p "$TMPROOT"
+export TMPDIR="$TMPROOT"
+export TMP="$TMPROOT"
+export TEMP="$TMPROOT"
+
+# -------------------------
+# 3b. Postprocess BSC outputs in S3 (overwrite)
+# -------------------------
+# This step enforces that voxel-wise BSC maps are exactly zero outside the boundary mask.
+# It overwrites (per scan folder):
+#   - bsc_dir_map.nii.gz
+#   - bsc_mag_map.nii.gz (if present)
+# Optional overwrite:
+#   - boundary_band_mask.nii.gz  (WRITE_MASK=1)
+#   - bsc_metrics.json + subject_metrics.csv (WRITE_METRICS=1)
+
+MASK_MODE="interface"        # band|interface
+NO_SKIP=1                    # 1 => overwrite all scans even if already masked
+WRITE_MASK=1                 # 1 => overwrite boundary_band_mask.nii.gz with final mask
+WRITE_METRICS=1              # 1 => recompute + overwrite metrics after masking
+
+# Optional FreeSurfer constraints (ONLY if FS outputs already exist in S3):
+# FS_ROOT="s3://<bucket>/<prefix-to-freesurfer-recons>"
+# FS_ID="subject"            # image_id|subject
+# FS_MASK="cortex"           # interface|cortex|both
+
+POST_ARGS=(
+  --manifest "${S3_MANIFESTS}/adni_manifest.csv"
+  --out_root  "${S3_DERIVS}"
+  --temp_root data/splits
+  --mask_mode "${MASK_MODE}"
+)
+
+if [[ "$NO_SKIP" == "1" ]]; then
+  POST_ARGS+=(--no_skip_if_already_masked)
+fi
+
+if [[ "$WRITE_MASK" == "1" ]]; then
+  POST_ARGS+=(--write_mask)
+fi
+
+if [[ "$WRITE_METRICS" == "1" ]]; then
+  POST_ARGS+=(--write_metrics)
+fi
+
+if [[ -n "${FS_ROOT:-}" ]]; then
+  POST_ARGS+=(--fs_root "${FS_ROOT}")
+  POST_ARGS+=(--fs_id "${FS_ID:-image_id}")
+  POST_ARGS+=(--fs_mask "${FS_MASK:-interface}")
+fi
+
+python3 -m code.pipeline.postprocess_mask_bsc_s3 "${POST_ARGS[@]}"
 
 # # -------------------------
 # # 4. Build longitudinal index
