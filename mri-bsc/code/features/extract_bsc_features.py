@@ -128,15 +128,16 @@ def read_manifest(manifest_csv: str) -> list[Row]:
         for row in r:
             s = (row.get("subject") or "").strip()
             v = (row.get("visit_code") or "").strip()
-            d = (row.get("acq_date") or "").strip()
+            d_raw = (row.get("acq_date") or "").strip()
             dx = row.get("diagnosis")
             try:
                 dxv = float(dx) if dx not in (None, "", "nan", "NaN") else None
             except Exception:
                 dxv = None
-            dt = _parse_date(d)
-            if not s or not v or not d or dt is None:
+            dt = _parse_date(d_raw)
+            if not s or not v or not d_raw or dt is None:
                 continue
+            d = dt.strftime("%Y-%m-%d")
             rows.append(Row(subject=s, visit_code=v, acq_date=d, diagnosis=dxv, dt=dt))
 
     rows.sort(key=lambda x: (x.subject, x.dt))

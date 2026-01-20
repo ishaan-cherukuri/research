@@ -140,29 +140,53 @@ S3_INDEX="$S3_BASE/index"
 # 5. LOCAL BSC v2 + FEATURES (YAAGL MODE)
 # -------------------------
 # macOS-safe temp control (recommended)
-TMPROOT="$PWD/data/splits/tmp"; mkdir -p "$TMPROOT"; export TMPDIR="$TMPROOT" TMP="$TMPROOT" TEMP="$TMPROOT"
+# Put temp/work on the external drive to avoid filling system disk.
+TMPROOT="/Volumes/YAAGL/tmp/mri-bsc"; mkdir -p "$TMPROOT"; export TMPDIR="$TMPROOT" TMP="$TMPROOT" TEMP="$TMPROOT"
+
+PY="$PWD/.venv/bin/python3"; [[ -x "$PY" ]] || PY=python3
+MANIFEST="$HOME/Downloads/adni_manifest.csv"
+if [[ ! -f "$MANIFEST" ]]; then
+  echo "[FATAL] Manifest not found: $MANIFEST" >&2
+  exit 1
+fi
+
+WORK_ROOT="$TMPROOT/bsc_v2_work"; mkdir -p "$WORK_ROOT"
+
+cleanup_work() {
+  # Keep the work directory empty at end of run.
+  if [[ -d "$WORK_ROOT" ]]; then
+    find "$WORK_ROOT" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || true
+  fi
+}
+trap cleanup_work EXIT
 
 # (Optional) FreeSurfer volume-only recons must already exist locally for --fs_cortex
 # export FS_SUBJECTS_DIR="/Volumes/YAAGL/derivatives/freesurfer/adni"
 
-python3 -m code.pipeline.bsc_v2_local \
-  --manifest "$PWD/data/manifests/adni_manifest_test.csv" \
-  --preproc_root "/Volumes/YAAGL/derivatives/preprocess/adni_5" \
-  --out_root     "/Volumes/YAAGL/derivatives/bsc/adni/atropos_v2" \
-  --work_root    "/Volumes/YAAGL/tmp/bsc_v2" \
-  --skip_done \
-  --write_mask \
-  --fs_subjects_dir "$FS_SUBJECTS_DIR" \
-  --fs_cortex
+BSC_ARGS=(
+  --manifest "$MANIFEST"
+  --preproc_root "/Volumes/YAAGL/derivatives/preprocess/adni_5"
+  --out_root     "/Volumes/YAAGL/derivatives/bsc/adni/atropos_v2"
+  --work_root    "$WORK_ROOT"
+  --plan_from preproc
+  --skip_done
+  --write_mask
+)
 
-python3 -m code.features.extract_bsc_features \
-  --manifest "$PWD/data/manifests/adni_manifest_test.csv" \
+if [[ -n "${FS_SUBJECTS_DIR:-}" ]]; then
+  BSC_ARGS+=(--fs_subjects_dir "$FS_SUBJECTS_DIR" --fs_cortex)
+fi
+
+"$PY" -m code.pipeline.bsc_v2_local "${BSC_ARGS[@]}"
+
+"$PY" -m code.features.extract_bsc_features \
+  --manifest "$MANIFEST" \
   --bsc_root  "/Volumes/YAAGL/derivatives/bsc/adni/atropos_v2" \
   --out_csv   "$PWD/code/index/bsc_scan_features_v2.csv" \
   --bins 2,2,2
 
-python3 -m code.features.build_longitudinal_features \
-  --manifest "$PWD/data/manifests/adni_manifest_test.csv" \
+"$PY" -m code.features.build_longitudinal_features \
+  --manifest "$MANIFEST" \
   --scan_features "$PWD/code/index/bsc_scan_features_v2.csv" \
   --out_csv "$PWD/code/index/bsc_subject_features_v2.csv"
 

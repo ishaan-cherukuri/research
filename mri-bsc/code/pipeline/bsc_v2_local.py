@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 import shutil
 import tempfile
 from dataclasses import dataclass
@@ -67,6 +68,17 @@ def _parse_date(s: str) -> Optional[datetime]:
 
 def _image_id(subject: str, visit_code: str, acq_date: str) -> str:
     return f"{subject}_{visit_code}_{acq_date}"
+
+
+def _parse_image_id(image_id: str) -> tuple[str, str, str]:
+    """Return (subject, visit_code, acq_date) from <subject>_<visit_code>_<acq_date>."""
+    parts = image_id.split("_")
+    if len(parts) < 3:
+        raise ValueError(f"Invalid image_id: {image_id}")
+    visit_code = parts[-2]
+    acq_date = parts[-1]
+    subject = "_".join(parts[:-2])
+    return subject, visit_code, acq_date
 
 
 def _load_nii(path: Path) -> tuple[np.ndarray, np.ndarray, nib.Nifti1Header]:
@@ -162,10 +174,12 @@ def read_visits(manifest_csv: str) -> list[Visit]:
         for row in r:
             subject = (row.get("subject") or "").strip()
             visit_code = (row.get("visit_code") or "").strip()
-            acq_date = (row.get("acq_date") or "").strip()
-            dt = _parse_date(acq_date)
-            if not subject or not visit_code or not acq_date or dt is None:
+            acq_date_raw = (row.get("acq_date") or "").strip()
+            dt = _parse_date(acq_date_raw)
+            if not subject or not visit_code or not acq_date_raw or dt is None:
                 continue
+            # Canonicalize to match local folder naming.
+            acq_date = dt.strftime("%Y-%m-%d")
             out.append(
                 Visit(subject=subject, visit_code=visit_code, acq_date=acq_date, dt=dt)
             )
@@ -192,19 +206,33 @@ def run_one(
     fs_cortex: bool,
     missing_input: str,
 ) -> bool:
-    t1 = preproc_root / image_id / "t1w_preproc.nii.gz"
-    if not t1.exists():
-        t1 = preproc_root / image_id / "t1w_preproc.nii"
-    if not t1.exists():
+    candidates = [
+        preproc_root / image_id / "t1w_preproc.nii.gz",
+    ]
+    t1 = next((p for p in candidates if p.exists()), None)
+    if t1 is None:
+        msg = f"Missing preproc T1 for {image_id}. Tried:\n" + "\n".join(
+            [f"  - {p}" for p in candidates]
+        )
         if missing_input == "skip":
-            print(f"[SKIP] missing preproc T1 for {image_id}: {t1}")
+            print("[SKIP] " + msg)
             return False
-        raise FileNotFoundError(f"Missing preproc T1 for {image_id}: {t1}")
+        raise FileNotFoundError(msg)
 
     out_dir = out_root / image_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
     scan_work = Path(tempfile.mkdtemp(dir=str(work_root)))
+    # Force temp usage into per-scan folder to avoid system temp blowups and
+    # to keep work_root empty after each scan.
+    prev_tmpdir = os.environ.get("TMPDIR")
+    prev_tmp = os.environ.get("TMP")
+    prev_temp = os.environ.get("TEMP")
+    prev_tempfile_tempdir = getattr(tempfile, "tempdir", None)
+    os.environ["TMPDIR"] = str(scan_work)
+    os.environ["TMP"] = str(scan_work)
+    os.environ["TEMP"] = str(scan_work)
+    tempfile.tempdir = str(scan_work)
     try:
         run_atropos_bsc(
             t1_path=str(t1),
@@ -251,6 +279,20 @@ def run_one(
                 hdr_b,
             )
     finally:
+        # Restore prior temp settings
+        if prev_tmpdir is None:
+            os.environ.pop("TMPDIR", None)
+        else:
+            os.environ["TMPDIR"] = prev_tmpdir
+        if prev_tmp is None:
+            os.environ.pop("TMP", None)
+        else:
+            os.environ["TMP"] = prev_tmp
+        if prev_temp is None:
+            os.environ.pop("TEMP", None)
+        else:
+            os.environ["TEMP"] = prev_temp
+        tempfile.tempdir = prev_tempfile_tempdir
         shutil.rmtree(scan_work, ignore_errors=True)
 
     return True
@@ -263,6 +305,12 @@ def main() -> None:
         "--preproc_root",
         required=True,
         help="Local preproc root containing <image_id>/t1w_preproc.nii.gz",
+    )
+    ap.add_argument(
+        "--plan_from",
+        choices=("manifest", "preproc"),
+        default="manifest",
+        help="Plan scans from the manifest or from folders under preproc_root.",
     )
     ap.add_argument("--out_root", required=True, help="Local output root for BSC v2")
     ap.add_argument(
@@ -301,16 +349,32 @@ def main() -> None:
         Path(args.fs_subjects_dir) if args.fs_subjects_dir else None
     )
 
-    visits = read_visits(args.manifest)
-    counts: dict[str, int] = {}
-    for v in visits:
-        counts[v.subject] = counts.get(v.subject, 0) + 1
-
     plan: list[str] = []
-    for v in visits:
-        if counts.get(v.subject, 0) < int(args.min_visits_per_subject):
-            continue
-        plan.append(_image_id(v.subject, v.visit_code, v.acq_date))
+    if args.plan_from == "preproc":
+        # Process exactly what's present locally.
+        for p in sorted(preproc_root.iterdir()):
+            if p.is_dir():
+                plan.append(p.name)
+        # Apply >= min visits filter based on folder names.
+        counts: dict[str, int] = {}
+        for image_id in plan:
+            subject, _, _ = _parse_image_id(image_id)
+            counts[subject] = counts.get(subject, 0) + 1
+        plan = [
+            image_id
+            for image_id in plan
+            if counts.get(_parse_image_id(image_id)[0], 0)
+            >= int(args.min_visits_per_subject)
+        ]
+    else:
+        visits = read_visits(args.manifest)
+        counts: dict[str, int] = {}
+        for v in visits:
+            counts[v.subject] = counts.get(v.subject, 0) + 1
+        for v in visits:
+            if counts.get(v.subject, 0) < int(args.min_visits_per_subject):
+                continue
+            plan.append(_image_id(v.subject, v.visit_code, v.acq_date))
 
     if int(args.limit_scans) > 0:
         plan = plan[: int(args.limit_scans)]
@@ -320,6 +384,7 @@ def main() -> None:
     print("[INFO] preproc_root:", str(preproc_root))
     print("[INFO] out_root:", str(out_root))
     print("[INFO] fs_cortex:", bool(args.fs_cortex))
+    print("[INFO] plan_from:", str(args.plan_from))
 
     ran = 0
     skipped_missing = 0
