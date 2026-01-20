@@ -39,8 +39,12 @@ def run_atropos_bsc(t1_path, out_dir, eps=0.05, sigma_mm=1.0, work_dir=None):
     t1_brain = t1_n4 * brain_mask
 
     # --- resample to 1mm ---
-    t1_iso = ants.resample_image(t1_brain, (1.0, 1.0, 1.0), use_voxels=False, interp_type=1)
-    mask_iso = ants.resample_image(brain_mask, (1.0, 1.0, 1.0), use_voxels=False, interp_type=0)
+    t1_iso = ants.resample_image(
+        t1_brain, (1.0, 1.0, 1.0), use_voxels=False, interp_type=1
+    )
+    mask_iso = ants.resample_image(
+        brain_mask, (1.0, 1.0, 1.0), use_voxels=False, interp_type=0
+    )
 
     # --- write preproc + mask locally ---
     preproc_path = os.path.join(local_work_dir, "t1w_preproc.nii.gz")
@@ -113,6 +117,7 @@ def run_atropos_bsc(t1_path, out_dir, eps=0.05, sigma_mm=1.0, work_dir=None):
 
     pd.DataFrame([metrics]).to_csv(metrics_csv_path, index=False)
 
+    # Materialize outputs
     if is_s3_out:
         for filename in [
             "t1w_preproc.nii.gz",
@@ -130,6 +135,32 @@ def run_atropos_bsc(t1_path, out_dir, eps=0.05, sigma_mm=1.0, work_dir=None):
                 upload_file(Path(local_file), f"{out_dir.rstrip('/')}/{filename}")
 
         import shutil
+
+        shutil.rmtree(local_work_dir, ignore_errors=True)
+    else:
+        out_dir_p = Path(out_dir)
+        out_dir_p.mkdir(parents=True, exist_ok=True)
+
+        for filename in [
+            "t1w_preproc.nii.gz",
+            "brain_mask.nii.gz",
+            "gm_prob.nii.gz",
+            "wm_prob.nii.gz",
+            "bsc_dir_map.nii.gz",
+            "bsc_mag_map.nii.gz",
+            "boundary_band_mask.nii.gz",
+            "bsc_metrics.json",
+            "subject_metrics.csv",
+        ]:
+            src = Path(local_work_dir) / filename
+            if not src.exists():
+                continue
+            dst = out_dir_p / filename
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_bytes(src.read_bytes())
+
+        import shutil
+
         shutil.rmtree(local_work_dir, ignore_errors=True)
 
     return metrics
