@@ -10,6 +10,13 @@ def _is_s3_path(path: str) -> bool:
     return isinstance(path, str) and path.startswith("s3://")
 
 
+def _atomic_copy(src: Path, dst: Path) -> None:
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dst.with_name(dst.name + ".tmp")
+    tmp.write_bytes(src.read_bytes())
+    tmp.replace(dst)
+
+
 def run_atropos_bsc(t1_path, out_dir, eps=0.05, sigma_mm=1.0, work_dir=None):
     """
     Always run locally inside work_dir, then upload results to out_dir if out_dir is S3.
@@ -156,8 +163,7 @@ def run_atropos_bsc(t1_path, out_dir, eps=0.05, sigma_mm=1.0, work_dir=None):
             if not src.exists():
                 continue
             dst = out_dir_p / filename
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            dst.write_bytes(src.read_bytes())
+            _atomic_copy(src, dst)
 
         import shutil
 

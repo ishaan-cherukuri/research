@@ -27,6 +27,8 @@ dependencies = [
   "tree>=0.2.4",
   "s3fs>=2025.10.0",
   "boto3>=1.41.5",
+  "lifelines>=0.30.0",
+  "xgboost>=2.1.4",
 ]
 
 [tool.setuptools.packages.find]

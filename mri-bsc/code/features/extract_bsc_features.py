@@ -215,23 +215,29 @@ def main() -> None:
             vals_dir = _load(bdir_p).astype(np.float32)
             vals_dir = vals_dir[mask > 0]
 
+            # Filter to non-zero BSC voxels only for stats (BSC is legitimately 0 outside tight interface)
+            vals_dir_nonzero = vals_dir[vals_dir != 0]
+
             row_out: dict[str, object] = {
                 "subject": r.subject,
                 "visit_code": r.visit_code,
                 "acq_date": r.acq_date,
                 "image_id": image_id,
                 "diagnosis": "" if r.diagnosis is None else r.diagnosis,
-                "Nboundary": int(np.count_nonzero(mask)),
+                "Nboundary": int(
+                    np.count_nonzero(vals_dir_nonzero)
+                ),  # count only non-zero
             }
 
-            sdir = _stats(vals_dir, percentiles)
+            sdir = _stats(vals_dir_nonzero, percentiles)
             for k, v in sdir.items():
                 row_out[f"bsc_dir_{k}"] = v
 
             if bmag_p.exists():
                 vals_mag = _load(bmag_p).astype(np.float32)
                 vals_mag = vals_mag[mask > 0]
-                smag = _stats(vals_mag, percentiles)
+                vals_mag_nonzero = vals_mag[vals_mag != 0]  # filter to non-zero
+                smag = _stats(vals_mag_nonzero, percentiles)
                 for k, v in smag.items():
                     row_out[f"bsc_mag_{k}"] = v
             else:

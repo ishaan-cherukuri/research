@@ -155,9 +155,8 @@ def main() -> None:
         w.writeheader()
 
         for subject, scans in by_subject.items():
-            if visit_count.get(subject, 0) < int(args.min_visits_per_subject):
-                continue
-            if len(scans) < 2:
+            # Filter by actual number of processed scans, not manifest count
+            if len(scans) < int(args.min_visits_per_subject):
                 skipped += 1
                 continue
 

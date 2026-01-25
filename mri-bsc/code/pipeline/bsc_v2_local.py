@@ -234,23 +234,35 @@ def run_one(
     os.environ["TEMP"] = str(scan_work)
     tempfile.tempdir = str(scan_work)
     try:
-        run_atropos_bsc(
-            t1_path=str(t1),
-            out_dir=str(out_dir),
-            eps=float(eps),
-            sigma_mm=float(sigma_mm),
-            work_dir=str(scan_work),
-        )
-
         bsc_dir_p = out_dir / "bsc_dir_map.nii.gz"
         bsc_mag_p = out_dir / "bsc_mag_map.nii.gz"
         gm_p = out_dir / "gm_prob.nii.gz"
         wm_p = out_dir / "wm_prob.nii.gz"
         brain_p = out_dir / "brain_mask.nii.gz"
 
-        gm, _, _ = _load_nii(gm_p)
-        wm, _, _ = _load_nii(wm_p)
-        brain, _, _ = _load_nii(brain_p)
+        # Retry once if outputs are corrupted (e.g., truncated .nii.gz -> EOFError)
+        for attempt in (1, 2):
+            run_atropos_bsc(
+                t1_path=str(t1),
+                out_dir=str(out_dir),
+                eps=float(eps),
+                sigma_mm=float(sigma_mm),
+                work_dir=str(scan_work),
+            )
+            try:
+                gm, _, _ = _load_nii(gm_p)
+                wm, _, _ = _load_nii(wm_p)
+                brain, _, _ = _load_nii(brain_p)
+                break
+            except Exception as e:
+                if attempt == 1:
+                    print(
+                        f"[WARN] Corrupt/incomplete outputs for {image_id}; retrying once. Error: {e}"
+                    )
+                    shutil.rmtree(out_dir, ignore_errors=True)
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                    continue
+                raise
 
         interface = build_interface_mask(gm, wm, brain)
 
@@ -388,29 +400,36 @@ def main() -> None:
 
     ran = 0
     skipped_missing = 0
+    skipped_error = 0
     for i, image_id in enumerate(plan, start=1):
         out_dir = out_root / image_id
         if args.skip_done and is_done(out_dir):
             continue
         print(f"[RUN] {i}/{total} {image_id}")
-        did_run = run_one(
-            image_id=image_id,
-            preproc_root=preproc_root,
-            out_root=out_root,
-            work_root=work_root,
-            eps=float(args.eps),
-            sigma_mm=float(args.sigma_mm),
-            write_mask=bool(args.write_mask),
-            fs_subjects_dir=fs_subjects_dir,
-            fs_cortex=bool(args.fs_cortex),
-            missing_input=str(args.missing_input),
-        )
+        try:
+            did_run = run_one(
+                image_id=image_id,
+                preproc_root=preproc_root,
+                out_root=out_root,
+                work_root=work_root,
+                eps=float(args.eps),
+                sigma_mm=float(args.sigma_mm),
+                write_mask=bool(args.write_mask),
+                fs_subjects_dir=fs_subjects_dir,
+                fs_cortex=bool(args.fs_cortex),
+                missing_input=str(args.missing_input),
+            )
+        except Exception as e:
+            skipped_error += 1
+            print(f"[ERROR] Failed scan {image_id}: {e}")
+            continue
         if did_run:
             ran += 1
         else:
             skipped_missing += 1
     print("[DONE] ran:", ran)
     print("[DONE] skipped_missing:", skipped_missing)
+    print("[DONE] skipped_error:", skipped_error)
 
 
 if __name__ == "__main__":
