@@ -1,4 +1,4 @@
-# MRI-BSC (ADNI) — Project Recap (Jan 2026)
+# MRI-BSC (ADNI) — Project Recap (Jan 2026) RUN WITH CMD + SHIFT + V
 
 This repo is an end-to-end pipeline to compute **Boundary Sharpness Coefficient (BSC)** from longitudinal T1 MRI (ADNI-style data), store voxel-wise maps + summary metrics in **S3**, and then use compact derived features for downstream ML.
 
@@ -183,17 +183,102 @@ Note:
 
 ---
 
-## 8) Recommended ML approach (4 timepoints per subject)
+## 8) Feature extraction and ML progress (Jan 2026)
 
-Given ~400 subjects and only 4 scans each:
+### Feature extraction completed
+- **Script:** `code/features/extract_simple_features.py`
+- **Output:** `data/index/bsc_simple_features.csv` (1,718 scans × 187 features)
+- **Features include:**
+  - Global statistics (mean, std, median, percentiles p5-p95, skew, kurtosis, IQR, range)
+  - GM/WM-weighted means (6 features)
+  - Spatial binning (4×4×4 = 64 bins × 2 maps = 128 features)
+  - Texture metrics (CV, entropy)
+  - Sign-specific stats (pos/neg fractions and means for directional BSC)
+- **Filtering:** Non-zero BSC values only to handle sparse data (96.5% of voxels are zero outside boundary)
+- **Error handling:** Try-except per scan to skip corrupted NIfTI files
 
-Best baseline:
-- Extract compact per-scan features from boundary-only BSC (global stats or coarse spatial bins)
-- Convert 4 timepoints into longitudinal features (baseline, last, change, slope)
-- Train XGBoost / LightGBM or elastic-net logistic regression
+### ML experiments conducted
 
-Why:
-- Sequence models (RNN/Transformer) tend to overfit at this dataset size unless inputs are already compact and robust.
+#### 1. Survival analysis approach (FAILED)
+**Goal:** Predict time-to-AD-conversion from baseline BSC features
+
+**Datasets created:**
+- `data/ml/survival/time_to_conversion.csv` (424 subjects, 91 events, 333 censored)
+- `data/ml/survival/landmark_1yr.csv` (409 subjects, 79 events)
+- `data/ml/survival/landmark_2yr.csv` (353 subjects, 40 events)
+- `data/ml/survival/landmark_3yr.csv` (277 subjects, 15 events)
+- `data/ml/survival/joint_longitudinal_survival.csv` (all timepoints)
+
+**Models trained:**
+- Parametric AFT (Weibull) via lifelines
+- XGBoost survival (AFT objective) - created but not tested due to library issues
+
+**Results:** **All failed spectacularly**
+- Baseline (top 20): C-index = 0.2386 (worse than random 0.5)
+- Baseline (all 187): C-index = 0.1362 (even worse!)
+- Landmark 1yr: C-index = 0.2227
+- Landmark 2yr: C-index = 0.2074
+
+**Diagnosis:**
+- Predictions NOT inverted (converters correctly predicted shorter times than non-converters)
+- BUT weak correlation (0.132) between actual and predicted times
+- Model over-optimistic (predicts converters at 11 years, actual 1.9 years)
+- Some predictions unrealistic (100+ years for non-converters)
+
+**Key insight:** BSC features measure **current tissue state**, not **future conversion risk**
+- Baseline BSC doesn't predict WHEN someone will convert
+- Conversion timing depends on many factors BSC can't capture (genetics, cognitive reserve, other pathologies)
+
+#### 2. Classification approach (PROPOSED - NOT YET RUN)
+**Goal:** Predict diagnosis category (CN/MCI/AD) from BSC features
+
+**Rationale:**
+- BSC should show categorical differences: CN > MCI > AD (sharper → blurrier boundaries)
+- Measuring **what is** (current disease state) not **what will be** (future conversion)
+- Simpler problem aligned with BSC's biological meaning
+
+**Script created:** `code/ml/train_diagnosis_classifier.py`
+- Supports 3-class (CN/MCI/AD), 2-class (CN+MCI vs AD), binary (CN vs AD only)
+- Logistic regression + Random Forest
+- 5-fold cross-validation
+- Balanced accuracy for class imbalance
+- Feature importance from RF
+
+**Status:** Code ready, not yet executed
+
+### Critical finding: What BSC should be used for
+
+**❌ WEAK for:**
+- Baseline-only survival prediction (failed)
+- Predicting conversion TIMING from cross-section
+- Standalone predictor without clinical context
+
+**✅ STRONG for (proposed):**
+
+1. **Cross-sectional staging (CN/MCI/AD classification)** ← Next step
+   - BSC should show: CN (sharp) > MCI (moderate blur) > AD (severe blur)
+   
+2. **Longitudinal BSC slopes** ← **KILLER FEATURE (NOT YET TRIED!)**
+   - Compute **rate of BSC decline** per subject (4 timepoints available)
+   - Rate of boundary degradation might predict conversion
+   - Literature shows: change rate >> absolute baseline values
+   - Example: `-0.067/year` (rapid decline) vs `-0.017/year` (stable)
+   - **This aligns with successful volumetric predictors (hippocampal atrophy rates)**
+   
+3. **Regional BSC analysis** (hippocampal/entorhinal boundaries)
+   - Focus on anatomically-relevant regions
+   - Atlas-based regional BSC
+   - Align with known AD pathology
+   
+4. **Microstructural complement to volumetrics**
+   - Volumes measure size, BSC measures tissue quality
+   - Combine: "small hippocampus + blurry boundaries" = high risk
+   - BSC might catch early changes before atrophy
+   
+5. **Subtyping/stratification marker**
+   - AD heterogeneity matters (multiple papers show this)
+   - BSC spatial patterns might identify subtypes
+   - Stratify first, then predict within strata
 
 ---
 

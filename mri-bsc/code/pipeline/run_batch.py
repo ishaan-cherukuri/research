@@ -40,21 +40,26 @@ def make_image_id(row: pd.Series) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "_", raw)
 
 
-def s3_exists(s3_path: str) -> bool:
+def path_exists(path: str) -> bool:
     """
-    Return True if s3://bucket/key exists.
-    Uses HEAD request (fast).
+    Return True if path exists (local file or s3://bucket/key).
     """
-    bucket, key = parse_s3_uri(s3_path)
-    try:
-        s3.head_object(Bucket=bucket, Key=key)
-        return True
-    except s3.exceptions.ClientError as e:
-        status = e.response.get("ResponseMetadata", {}).get("HTTPStatusCode", None)
-        if status == 404:
-            return False
-        # If something else happened (403, 500, etc), surface it
-        raise
+    if path.startswith("s3://"):
+        bucket, key = parse_s3_uri(path)
+        try:
+            s3.head_object(Bucket=bucket, Key=key)
+            return True
+        except s3.exceptions.ClientError as e:
+            status = e.response.get("ResponseMetadata", {}).get("HTTPStatusCode", None)
+            if status == 404:
+                return False
+            # If something else happened (403, 500, etc), surface it
+            raise
+    else:
+        # Local path
+        from pathlib import Path
+
+        return Path(path).exists()
 
 
 def copy_preproc_to_bsc(image_id: str, preproc_root: str, bsc_dir: str):
@@ -100,19 +105,30 @@ def run_batch(
 
     # Optional clear: safer to NOT delete unless you explicitly ask
     if clear_out:
-        clear_s3_prefix(out_root)
+        if out_root.startswith("s3://"):
+            clear_s3_prefix(out_root)
+        else:
+            from pathlib import Path
+            import shutil
+
+            out_path = Path(out_root)
+            if out_path.exists():
+                shutil.rmtree(out_path)
+            out_path.mkdir(parents=True, exist_ok=True)
 
     if engine == "atropos":
         mod = import_module("code.seg.atropos_bsc")
 
-        for _, row in tqdm(df.iterrows(), total=len(df), desc="Atropos BSC", unit="scan"):
+        for _, row in tqdm(
+            df.iterrows(), total=len(df), desc="Atropos BSC", unit="scan"
+        ):
             image_id = make_image_id(row)
             out_dir = f"{out_root.rstrip('/')}/{image_id}"
 
             # ✅ SKIP if already processed (voxel-wise map exists)
             done_flag = f"{out_dir}/bsc_dir_map.nii.gz"
-            if s3_exists(done_flag):
-                tqdm.write(f"[SKIP] Already done in S3 → {image_id}")
+            if path_exists(done_flag):
+                tqdm.write(f"[SKIP] Already done → {image_id}")
                 continue
 
             t1_s3 = f"{preproc_root.rstrip('/')}/{image_id}/t1w_preproc.nii.gz"
@@ -140,8 +156,8 @@ def run_batch(
 
             # ✅ SKIP if already processed
             done_flag = f"{out_dir}/bsc_dir_map.nii.gz"
-            if s3_exists(done_flag):
-                tqdm.write(f"[SKIP] Already done in S3 → {subject_id}")
+            if path_exists(done_flag):
+                tqdm.write(f"[SKIP] Already done → {subject_id}")
                 continue
 
             mod.run_fs_bsc(
@@ -181,7 +197,11 @@ if __name__ == "__main__":
     )
 
     # Safety: don’t wipe outputs unless explicitly requested
-    ap.add_argument("--clear_out", action="store_true", help="DANGEROUS: clear out_root before running")
+    ap.add_argument(
+        "--clear_out",
+        action="store_true",
+        help="DANGEROUS: clear out_root before running",
+    )
 
     # Freesurfer params
     ap.add_argument("--subjects_dir")
@@ -207,5 +227,5 @@ if __name__ == "__main__":
         subjects_dir=args.subjects_dir,
         t1_mgz=args.t1_mgz,
         offsets=args.offsets,
-        temp_root=args.temp_root,  
+        temp_root=args.temp_root,
     )
