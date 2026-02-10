@@ -25,13 +25,23 @@ echo "==== ADNI BSC LONGITUDINAL SLOPES PIPELINE ===="
 #   --out_dir data/ml/survival
 
 # Step 4: Train survival model with BSC SLOPES (the killer feature!)
-echo "Step 4: Training survival model with BSC slopes..."
-python3 -m code.ml.train_survival_with_slopes \
+# echo "Step 4: Training survival model with BSC slopes..."
+# python3 -m code.ml.train_survival_with_slopes \
+#   --slopes data/index/bsc_longitudinal_slopes.csv \
+#   --survival data/ml/survival/time_to_conversion.csv \
+#   --out_dir data/ml/results/slopes \
+#   --top_k 20 \
+#   --model weibull
+
+# python3 scripts/extract_paper_statistics.py
+# python3 scripts/diagnose_model_issues.py
+
+python3 -m code.ml.train_rsf_with_slopes \
   --slopes data/index/bsc_longitudinal_slopes.csv \
   --survival data/ml/survival/time_to_conversion.csv \
-  --out_dir data/ml/results/slopes \
+  --out_dir data/ml/results/rsf \
   --top_k 20 \
-  --model weibull
+  --n_estimators 1000
 
 echo "==== PIPELINE COMPLETE ===="
 echo ""

@@ -23,3 +23,4 @@ Requires-Dist: s3fs>=2025.10.0
 Requires-Dist: boto3>=1.41.5
 Requires-Dist: lifelines>=0.30.0
 Requires-Dist: xgboost>=2.1.4
+Requires-Dist: scikit-survival>=0.23.1

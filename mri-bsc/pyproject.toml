@@ -29,6 +29,7 @@ dependencies = [
   "boto3>=1.41.5",
   "lifelines>=0.30.0",
   "xgboost>=2.1.4",
+  "scikit-survival>=0.23.1",
 ]
 
 [tool.setuptools.packages.find]

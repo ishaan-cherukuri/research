@@ -16,6 +16,7 @@ s3fs>=2025.10.0
 boto3>=1.41.5
 lifelines>=0.30.0
 xgboost>=2.1.4
+scikit-survival>=0.23.1
 
 [:platform_system == "Linux" or platform_system == "Darwin"]
 antspyx
