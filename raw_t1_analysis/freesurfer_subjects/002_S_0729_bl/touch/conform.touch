@@ -1,0 +1,1 @@
+mri_convert /Users/chakri/ishu/adni/freesurfer_subjects/002_S_0729_bl/mri/rawavg.mgz /Users/chakri/ishu/adni/freesurfer_subjects/002_S_0729_bl/mri/orig.mgz --conform

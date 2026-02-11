@@ -1,0 +1,42 @@
+2026-01-25 18:26:09,382 - INFO - ======================================================================
+2026-01-25 18:26:09,383 - INFO - ADNI Feature Extraction with Segmentation
+2026-01-25 18:26:09,383 - INFO - ======================================================================
+2026-01-25 18:26:09,383 - INFO - Log file: logs/test_log_folder.log
+2026-01-25 18:26:09,383 - INFO - 
+2026-01-25 18:26:09,383 - INFO - 📊 Loading metadata from data/subject_metadata.tsv...
+2026-01-25 18:26:09,388 - INFO -    Found 2 subjects to process
+2026-01-25 18:26:09,388 - INFO -    S3 enabled: False
+2026-01-25 18:26:09,388 - INFO -    Segmentation enabled: True
+2026-01-25 18:26:09,388 - INFO -    Segmentation method: simple
+2026-01-25 18:26:09,388 - INFO - 
+2026-01-25 18:26:09,388 - INFO - [1/2] Processing 002_S_0729...
+2026-01-25 18:26:09,394 - INFO -    🔴 MCI→AD conversion at 2.16 years
+2026-01-25 18:26:09,394 - INFO - 
+2026-01-25 18:26:09,394 - INFO - [2/2] Processing 002_S_0782...
+2026-01-25 18:26:09,400 - INFO -    🟢 No conversion (censored at 2.18 years)
+2026-01-25 18:26:09,400 - INFO - 
+2026-01-25 18:26:09,402 - INFO - 
+======================================================================
+2026-01-25 18:26:09,402 - INFO - ✅ PROCESSING COMPLETE
+2026-01-25 18:26:09,402 - INFO - ======================================================================
+2026-01-25 18:26:09,402 - INFO - Successful: 2/2
+2026-01-25 18:26:09,402 - INFO - Failed: 0/2
+2026-01-25 18:26:09,402 - INFO - Total features: 46
+2026-01-25 18:26:09,402 - INFO - Output file: test_log_folder.csv
+2026-01-25 18:26:09,402 - INFO - Log file: logs/test_log_folder.log
+2026-01-25 18:26:09,402 - INFO - Time elapsed: 0.0 minutes
+2026-01-25 18:26:09,402 - INFO - Average: 0.0 seconds per subject
+2026-01-25 18:26:09,402 - INFO - 
+📊 Feature Categories:
+2026-01-25 18:26:09,402 - INFO -    Segmentation: 0
+2026-01-25 18:26:09,402 - INFO -    QC metrics: 0
+2026-01-25 18:26:09,402 - INFO -    Longitudinal: 25
+2026-01-25 18:26:09,402 - INFO -    Metadata: 5
+2026-01-25 18:26:09,402 - INFO -    Other: 16
+2026-01-25 18:26:09,403 - INFO - 
+🔬 Sample Statistics:
+2026-01-25 18:26:09,403 - INFO -    MCI→AD conversions: 1/2 (50.0%)
+2026-01-25 18:26:09,403 - INFO -    Mean follow-up: 2.17 years
+2026-01-25 18:26:09,403 - INFO -    Mean conversion time: 2.16 years
+2026-01-25 18:26:09,403 - INFO - ======================================================================
+

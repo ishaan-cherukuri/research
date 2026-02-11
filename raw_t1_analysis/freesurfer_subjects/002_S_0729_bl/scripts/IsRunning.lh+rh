@@ -1,0 +1,11 @@
+------------------------------
+SUBJECT 002_S_0729_bl
+HEMI    lh rh
+DATE Sat Jan 24 13:42:38 EST 2026
+USER chakri
+HOST Chakris-MBP-2
+PROCESSID 65365 
+PROCESSOR arm64
+OS Darwin
+Darwin Chakris-MBP-2 23.6.0 Darwin Kernel Version 23.6.0: Mon Jul 29 21:14:21 PDT 2024; root:xnu-10063.141.2~1/RELEASE_ARM64_T8103 arm64
+$Id: FreeSurferEnv.csh,v 1.89 2016/06/09 14:54:31 zkaufman Exp $

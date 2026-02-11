@@ -1,0 +1,11 @@
+status file for recon-all
+Sat Jan 24 13:42:38 EST 2026
+#@# MotionCor Sat Jan 24 13:42:42 EST 2026
+#@# Talairach Sat Jan 24 13:42:50 EST 2026
+#@# Talairach Failure Detection Sat Jan 24 13:44:36 EST 2026
+#@# Nu Intensity Correction Sat Jan 24 13:44:37 EST 2026
+#@# Intensity Normalization Sat Jan 24 13:46:34 EST 2026
+#@# Skull Stripping Sat Jan 24 13:48:53 EST 2026
+#@# EM Registration Sat Jan 24 14:03:02 EST 2026
+#@# CA Normalize Sat Jan 24 14:15:18 EST 2026
+#@# CA Reg Sat Jan 24 14:56:24 EST 2026
