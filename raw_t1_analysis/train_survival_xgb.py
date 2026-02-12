@@ -9,7 +9,6 @@ import numpy as np
 import xgboost as xgb
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import roc_auc_score, average_precision_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
@@ -214,13 +213,11 @@ class SurvivalXGBPipeline:
         print(f"  Min: {np.min(y_pred):.3f}")
         print(f"  Max: {np.max(y_pred):.3f}")
 
-        # Concordance index approximation
+        # Concordance index (C-index) for right-censored survival data
         # Lower predicted time should correspond to higher risk (events)
-        if len(np.unique(event_observed_test)) > 1:
-            # Use inverse prediction as risk score for AUC
-            risk_scores = -y_pred
-            auc = roc_auc_score(event_observed_test, risk_scores)
-            print(f"\nAUC (using -pred_time as risk): {auc:.4f}")
+        c_index = self._concordance_index(y_lower_test, -y_pred, event_observed_test)
+        if not np.isnan(c_index):
+            print(f"\nC-index: {c_index:.4f}")
 
         # Correlation with actual event time
         actual_times = y_lower_test
@@ -233,6 +230,34 @@ class SurvivalXGBPipeline:
             "actual_upper": y_upper_test,
             "event_observed": event_observed_test,
         }
+
+    @staticmethod
+    def _concordance_index(event_times, risk_scores, event_observed):
+        """Compute Harrell's C-index for right-censored data."""
+        n_total = 0
+        n_concordant = 0
+        n_tied = 0
+
+        event_times = np.asarray(event_times)
+        risk_scores = np.asarray(risk_scores)
+        event_observed = np.asarray(event_observed)
+
+        for i in range(len(event_times)):
+            if event_observed[i] != 1:
+                continue
+            for j in range(len(event_times)):
+                if event_times[i] >= event_times[j]:
+                    continue
+                n_total += 1
+                if risk_scores[i] > risk_scores[j]:
+                    n_concordant += 1
+                elif risk_scores[i] == risk_scores[j]:
+                    n_tied += 1
+
+        if n_total == 0:
+            return np.nan
+
+        return (n_concordant + 0.5 * n_tied) / n_total
 
     def plot_feature_importance(self, top_n=30):
         """Plot feature importance"""

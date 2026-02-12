@@ -9,7 +9,6 @@ import numpy as np
 import xgboost as xgb
 from sklearn.model_selection import train_test_split, KFold, StratifiedKFold
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import roc_auc_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
@@ -126,12 +125,8 @@ class AdvancedSurvivalPipeline:
         # RMSE
         metrics["rmse"] = np.sqrt(np.mean((y_pred - y_true) ** 2))
 
-        # AUC (using -pred_time as risk score)
-        if len(np.unique(event_observed)) > 1:
-            risk_scores = -y_pred
-            metrics["auc"] = roc_auc_score(event_observed, risk_scores)
-        else:
-            metrics["auc"] = np.nan
+        # C-index (using -pred_time as risk score)
+        metrics["c_index"] = self._concordance_index(y_true, -y_pred, event_observed)
 
         # Concordance for events only
         event_mask = event_observed == 1
@@ -143,6 +138,34 @@ class AdvancedSurvivalPipeline:
             metrics["event_correlation"] = np.nan
 
         return metrics
+
+    @staticmethod
+    def _concordance_index(event_times, risk_scores, event_observed):
+        """Compute Harrell's C-index for right-censored data."""
+        n_total = 0
+        n_concordant = 0
+        n_tied = 0
+
+        event_times = np.asarray(event_times)
+        risk_scores = np.asarray(risk_scores)
+        event_observed = np.asarray(event_observed)
+
+        for i in range(len(event_times)):
+            if event_observed[i] != 1:
+                continue
+            for j in range(len(event_times)):
+                if event_times[i] >= event_times[j]:
+                    continue
+                n_total += 1
+                if risk_scores[i] > risk_scores[j]:
+                    n_concordant += 1
+                elif risk_scores[i] == risk_scores[j]:
+                    n_tied += 1
+
+        if n_total == 0:
+            return np.nan
+
+        return (n_concordant + 0.5 * n_tied) / n_total
 
     def stratified_cv(
         self, X, y_lower, y_upper, event_observed, n_folds=5, n_boost=200
@@ -203,14 +226,14 @@ class AdvancedSurvivalPipeline:
             fold_results.append(metrics)
 
             print(f"  Correlation: {metrics['correlation']:.4f}")
-            print(f"  AUC: {metrics['auc']:.4f}")
+            print(f"  C-index: {metrics['c_index']:.4f}")
             print(f"  RMSE: {metrics['rmse']:.2f} years\n")
 
         # Summary
         print(f"\n{'=' * 60}")
         print("STRATIFIED CV RESULTS:")
         print(f"{'=' * 60}")
-        for metric in ["correlation", "auc", "rmse", "mae"]:
+        for metric in ["correlation", "c_index", "rmse", "mae"]:
             values = [r[metric] for r in fold_results if not np.isnan(r[metric])]
             if values:
                 print(
@@ -333,10 +356,10 @@ class AdvancedSurvivalPipeline:
 
         fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
-        metrics = ["correlation", "auc", "rmse", "mae"]
+        metrics = ["correlation", "c_index", "rmse", "mae"]
         titles = [
             "Correlation",
-            "AUC (Risk Discrimination)",
+            "C-index (Risk Discrimination)",
             "RMSE (years)",
             "MAE (years)",
         ]
@@ -484,7 +507,7 @@ class AdvancedSurvivalPipeline:
                             for r in self.cv_results
                         ],
                     }
-                    for metric in ["correlation", "auc", "rmse", "mae"]
+                    for metric in ["correlation", "c_index", "rmse", "mae"]
                 },
             }
             with open(cv_path, "w") as f:
