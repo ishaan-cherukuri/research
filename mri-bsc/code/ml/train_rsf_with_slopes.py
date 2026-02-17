@@ -25,10 +25,13 @@ from pathlib import Path
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from sksurv.ensemble import RandomSurvivalForest
 from sksurv.util import Surv
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+from lifelines import KaplanMeierFitter
+from lifelines.statistics import logrank_test
 
 
 def load_and_merge_data(slopes_path: str, survival_path: str):
@@ -164,7 +167,174 @@ def train_rsf_model(X_train, X_test, y_train, y_test, n_estimators=1000):
         print(f"Test RMSE (events, approximate): {test_rmse:.4f} years")
     print(f"{'='*70}")
 
-    return rsf, metrics
+    return rsf, metrics, train_risk, test_risk
+
+
+def create_kaplan_meier_curves(y_train, y_test, train_risk, test_risk, out_dir):
+    """
+    Create Kaplan-Meier survival curves stratified by predicted risk.
+
+    Args:
+        y_train, y_test: DataFrames with 'time_years' and 'event' columns
+        train_risk, test_risk: Predicted risk scores from RSF
+        out_dir: Output directory for plots
+    """
+    print(f"\n{'='*70}")
+    print("CREATING KAPLAN-MEIER CURVES")
+    print(f"{'='*70}")
+
+    # Create figure with 2 subplots
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+    # Plot for both train and test sets
+    for idx, (y_data, risk_scores, title, ax) in enumerate(
+        [
+            (y_train, train_risk, "Training Set", axes[0]),
+            (y_test, test_risk, "Test Set", axes[1]),
+        ]
+    ):
+        # Stratify by risk score (tertiles: high, medium, low risk)
+        risk_tertiles = np.percentile(risk_scores, [33.33, 66.67])
+
+        # High risk = top tertile (highest risk scores)
+        # Low risk = bottom tertile (lowest risk scores)
+        high_risk_mask = risk_scores >= risk_tertiles[1]
+        low_risk_mask = risk_scores <= risk_tertiles[0]
+        medium_risk_mask = ~(high_risk_mask | low_risk_mask)
+
+        # Prepare data
+        time = y_data["time_years"].values
+        event = y_data["event"].values
+
+        # Count events in each group
+        high_events = event[high_risk_mask].sum()
+        medium_events = event[medium_risk_mask].sum()
+        low_events = event[low_risk_mask].sum()
+
+        high_n = high_risk_mask.sum()
+        medium_n = medium_risk_mask.sum()
+        low_n = low_risk_mask.sum()
+
+        print(f"\n{title}:")
+        print(
+            f"  High risk:   {high_n} subjects ({high_events} events, {high_events/high_n*100:.1f}%)"
+        )
+        print(
+            f"  Medium risk: {medium_n} subjects ({medium_events} events, {medium_events/medium_n*100:.1f}%)"
+        )
+        print(
+            f"  Low risk:    {low_n} subjects ({low_events} events, {low_events/low_n*100:.1f}%)"
+        )
+
+        # Fit Kaplan-Meier curves
+        kmf_high = KaplanMeierFitter()
+        kmf_medium = KaplanMeierFitter()
+        kmf_low = KaplanMeierFitter()
+
+        kmf_high.fit(
+            time[high_risk_mask],
+            event[high_risk_mask],
+            label=f"High Risk (n={high_n}, events={high_events})",
+        )
+        kmf_medium.fit(
+            time[medium_risk_mask],
+            event[medium_risk_mask],
+            label=f"Medium Risk (n={medium_n}, events={medium_events})",
+        )
+        kmf_low.fit(
+            time[low_risk_mask],
+            event[low_risk_mask],
+            label=f"Low Risk (n={low_n}, events={low_events})",
+        )
+
+        # Plot curves
+        kmf_high.plot_survival_function(ax=ax, color="red", linewidth=2.5, ci_show=True)
+        kmf_medium.plot_survival_function(
+            ax=ax, color="orange", linewidth=2.5, ci_show=True
+        )
+        kmf_low.plot_survival_function(
+            ax=ax, color="green", linewidth=2.5, ci_show=True
+        )
+
+        # Calculate median survival times
+        try:
+            median_high = kmf_high.median_survival_time_
+            median_medium = kmf_medium.median_survival_time_
+            median_low = kmf_low.median_survival_time_
+            print(f"  Median survival times:")
+            print(
+                f"    High risk:   {median_high:.2f} years"
+                if not np.isnan(median_high)
+                else "    High risk:   Not reached"
+            )
+            print(
+                f"    Medium risk: {median_medium:.2f} years"
+                if not np.isnan(median_medium)
+                else "    Medium risk: Not reached"
+            )
+            print(
+                f"    Low risk:    {median_low:.2f} years"
+                if not np.isnan(median_low)
+                else "    Low risk:    Not reached"
+            )
+        except:
+            pass
+
+        # Log-rank test (high vs low)
+        logrank_result = logrank_test(
+            time[high_risk_mask],
+            time[low_risk_mask],
+            event[high_risk_mask],
+            event[low_risk_mask],
+        )
+
+        print(f"  Log-rank test (High vs Low): p={logrank_result.p_value:.4f}")
+
+        # Formatting
+        ax.set_xlabel("Time (years)", fontsize=12, fontweight="bold")
+        ax.set_ylabel(
+            "Probability of Remaining MCI\n(Not Converting to AD)",
+            fontsize=12,
+            fontweight="bold",
+        )
+        ax.set_title(
+            f"{title}\nKaplan-Meier Survival Curves by Predicted Risk",
+            fontsize=14,
+            fontweight="bold",
+        )
+        ax.grid(True, alpha=0.3, linestyle="--")
+        ax.legend(loc="best", fontsize=10, framealpha=0.9)
+
+        # Add p-value annotation
+        ax.text(
+            0.98,
+            0.02,
+            f"Log-rank p={logrank_result.p_value:.4f}",
+            transform=ax.transAxes,
+            fontsize=10,
+            verticalalignment="bottom",
+            horizontalalignment="right",
+            bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
+        )
+
+        # Set y-axis limits
+        ax.set_ylim(0, 1.05)
+
+    plt.tight_layout()
+
+    # Save figure
+    km_plot_path = out_dir / "kaplan_meier_curves.png"
+    plt.savefig(km_plot_path, dpi=300, bbox_inches="tight")
+    print(f"\n✅ Saved Kaplan-Meier curves: {km_plot_path}")
+
+    # Also save high-res PDF version
+    km_plot_pdf = out_dir / "kaplan_meier_curves.pdf"
+    plt.savefig(km_plot_pdf, bbox_inches="tight")
+    print(f"✅ Saved PDF version: {km_plot_pdf}")
+
+    plt.close()
+
+    print(f"{'='*70}\n")
 
 
 def main():
@@ -217,9 +387,12 @@ def main():
     print(f"Test:  {len(X_test)} subjects ({y_test['event'].sum()} events)")
 
     # Train model
-    model, metrics = train_rsf_model(
+    model, metrics, train_risk, test_risk = train_rsf_model(
         X_train, X_test, y_train, y_test, args.n_estimators
     )
+
+    # Create Kaplan-Meier curves
+    create_kaplan_meier_curves(y_train, y_test, train_risk, test_risk, out_dir)
 
     # Save results
     metrics_path = out_dir / "rsf_slopes_metrics.json"
@@ -239,7 +412,7 @@ def main():
     test_df["subject"] = df.loc[X_test.index, "subject"].values
     test_df["true_time"] = y_test["time_years"].values
     test_df["event"] = y_test["event"].values
-    test_df["predicted_risk"] = model.predict(X_test)
+    test_df["predicted_risk"] = test_risk  # Use the returned risk scores
 
     pred_path = out_dir / "rsf_predictions.csv"
     test_df.to_csv(pred_path, index=False)
