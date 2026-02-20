@@ -39,7 +39,7 @@ echo "==== ADNI BSC LONGITUDINAL SLOPES PIPELINE ===="
 python3 -m code.ml.train_rsf_with_slopes \
   --slopes data/index/bsc_longitudinal_slopes.csv \
   --survival data/ml/survival/time_to_conversion.csv \
-  --out_dir data/ml/results/rsf \
+  --out_dir data/ml/results/rsf_standardized \
   --top_k 20 \
   --n_estimators 1000
 
