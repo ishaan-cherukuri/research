@@ -44,15 +44,15 @@ python3 -m code.ml.train_rsf_with_slopes \
   --n_estimators 1000
 
 echo "==== PIPELINE COMPLETE ===="
-echo ""
-echo "Outputs:"
-echo "  - data/index/bsc_simple_features.csv (1824 scans, 187 features)"
-echo "  - data/index/bsc_longitudinal_slopes.csv (456 subjects, 182 slope features)"
-echo "  - data/ml/survival/time_to_conversion.csv (456 subjects with conversion labels)"
-echo "  - data/ml/results/slopes/ (survival model results with BSC slopes)"
-echo ""
-echo "Key comparison:"
-echo "  Baseline BSC: C-index ~0.24 (FAILED)"
-echo "  BSC Slopes:   Check data/ml/results/slopes/slopes_weibull_metrics.json"
+# echo ""
+# echo "Outputs:"
+# echo "  - data/index/bsc_simple_features.csv (1824 scans, 187 features)"
+# echo "  - data/index/bsc_longitudinal_slopes.csv (456 subjects, 182 slope features)"
+# echo "  - data/ml/survival/time_to_conversion.csv (456 subjects with conversion labels)"
+# echo "  - data/ml/results/slopes/ (survival model results with BSC slopes)"
+# echo ""
+# echo "Key comparison:"
+# echo "  Baseline BSC: C-index ~0.24 (FAILED)"
+# echo "  BSC Slopes:   Check data/ml/results/slopes/slopes_weibull_metrics.json"
 
 
