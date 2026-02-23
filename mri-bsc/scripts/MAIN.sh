@@ -35,13 +35,14 @@ echo "==== ADNI BSC LONGITUDINAL SLOPES PIPELINE ===="
 
 # python3 scripts/extract_paper_statistics.py
 # python3 scripts/diagnose_model_issues.py
-
+  
 python3 -m code.ml.train_rsf_with_slopes \
   --slopes data/index/bsc_longitudinal_slopes.csv \
   --survival data/ml/survival/time_to_conversion.csv \
-  --out_dir data/ml/results/rsf_standardized \
+  --out_dir data/ml/results/rsf \
   --top_k 20 \
-  --n_estimators 1000
+  --penalize_regex nboundary \
+  --penalty_factor 0.1
 
 echo "==== PIPELINE COMPLETE ===="
 # echo ""

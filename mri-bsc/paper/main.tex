@@ -152,6 +152,16 @@ For each subject $s$ with scans at times $t_1, t_2, \ldots, t_n$ (where $n \geq 
 
 where $\beta_1$ represents the annual rate of change (slope). Acquisition dates (not visit codes) were used as the time variable to ensure accurate temporal spacing. For each feature, we extracted the baseline value ($f_{\text{baseline}}$), final value ($f_{\text{final}}$), slope ($\beta_1$, representing change per year), and goodness-of-fit ($R^2$). This resulted in \textbf{4 × 35 = 140 derived features per subject}, plus additional interaction terms, totaling 182 slope-based features.
 
+\subsection{Feature Selection and Preprocessing}
+
+Raw BSC slope features showed extreme variance heterogeneity, with Nboundary\_slope (boundary voxel count rate) having variance several orders of magnitude larger than other features. To prevent this single feature from dominating the Random Survival Forest model while preserving the diverse biological information captured by different slope metrics, we implemented a robust feature selection and preprocessing pipeline.
+
+\textbf{Robust variance ranking:} Feature selection was performed on the training set only to prevent data leakage. Raw slope values were first transformed using a signed logarithmic transform: $\text{sign}(x) \cdot \log(1 + |x|)$, which compresses extreme values while preserving directionality. Outliers were then clipped using winsorization at the 1st and 99th percentiles (limits fitted on training data). Sample variance computed on these robust-transformed features provided a more stable ranking metric than raw variance.
+
+\textbf{Penalization of boundary count features:} To reduce the dominance of Nboundary-related features in the selection ranking, we applied a penalty factor of 0.10 to features matching the pattern ``nboundary'' (case-insensitive). This penalty affected only the selection score used for ranking, not the actual feature values, allowing other biologically relevant slope metrics (sharpness percentiles, directional gradients) to be selected alongside boundary count information.
+
+\textbf{Scaling:} The top 20 features selected by penalized robust variance were then preprocessed using the same signed-log and winsorization transforms (with clipping limits fitted on training data and applied to test data), followed by MinMax scaling to the range [0, 1]. This final scaling was fitted on training data only and applied to test data to prevent leakage. The resulting feature variances in the training set ranged from 0.018 to 0.142 (ratio 7.9:1), compared to the original raw variance ratio exceeding 300,000:1. This preprocessing ensures that all selected features contribute meaningfully to the Random Survival Forest model while maintaining interpretable directionality and preventing any single feature from dominating the ensemble splits.
+
 \subsection{Survival Data Preparation}
 
 Creating survival data required careful definition of time-to-event and censoring patterns. For each subject, we found the first scan where clinical diagnosis reached AD criteria (diagnosis code = 3.0 in ADNI schema), marking the conversion event. Time-to-conversion was calculated as the time between baseline scan date and conversion scan date, divided by 365.25 to get years. Subjects who never reached AD diagnosis during follow-up were treated as censored observations, with censoring time calculated from baseline to last scan. This right-censoring mechanism assumes that future follow-up (if it had happened) would have shown either conversion or continued stability, but we only see up to the last scan date.
@@ -279,29 +289,29 @@ Kaplan-Meier survival curves stratified by predicted risk scores (Figure~\ref{fi
 
 \begin{table}[h!]
 \centering
-\caption{Top 10 BSC slope features selected by variance (Random Survival Forest input)}
+\caption{Top 10 BSC slope features selected by penalized robust variance}
 \label{tab:top-features}
 \begin{tabular}{lc}
 \hline
 \textbf{Feature} & \textbf{Variance} \\
 \hline
-Nboundary\_slope & 3,160,301.22 \\
-bsc\_mag\_p90\_slope & 0.01023 \\
-bsc\_mag\_p75\_slope & 0.00734 \\
-bsc\_dir\_p90\_slope & 0.00665 \\
-bsc\_dir\_p75\_slope & 0.00391 \\
-bsc\_mag\_median\_slope & 0.00354 \\
-bsc\_mag\_p50\_slope & 0.00354 \\
-bsc\_mag\_mean\_slope & 0.00338 \\
-bsc\_dir\_mean\_slope & 0.00162 \\
-bsc\_dir\_p50\_slope & 0.00136 \\
+Nboundary\_slope & 0.142 \\
+bsc\_mag\_p90\_slope & 0.024 \\
+bsc\_mag\_p75\_slope & 0.022 \\
+bsc\_dir\_p90\_slope & 0.020 \\
+bsc\_dir\_p75\_slope & 0.021 \\
+bsc\_mag\_p50\_slope & 0.024 \\
+bsc\_mag\_median\_slope & 0.024 \\
+bsc\_mag\_mean\_slope & 0.024 \\
+bsc\_dir\_mean\_slope & 0.021 \\
+bsc\_dir\_p50\_slope & 0.025 \\
 \hline
 \end{tabular}
 \end{table}
 
-\textit{Note: Features ranked by variance to capture maximal temporal dynamics. Higher variance indicates greater heterogeneity in BSC degradation rates across subjects, providing stronger discriminative power for survival prediction.}
+\textit{Note: Variances shown after robust preprocessing pipeline (signed-log transform, winsorization, penalization, MinMax scaling to [0,1]). Nboundary features were penalized by 0.10 during selection ranking to prevent dominance while retaining complementary information. Final variance range: 0.018--0.142 (ratio 7.9:1), enabling balanced contribution across all features in the Random Survival Forest ensemble.}
 
-The most predictive features were slopes of high-percentile boundary sharpness metrics (p90, p75), suggesting that degradation in the \textit{sharpest} boundary regions is most clinically relevant.
+Following robust preprocessing, the selected features showed balanced variance distribution. Nboundary\_slope (boundary voxel count rate) retained the highest variance (0.142) but no longer dominated, while high-percentile sharpness slopes (bsc\_mag\_p90, bsc\_mag\_p75, bsc\_dir\_p90, bsc\_dir\_p75) showed comparable variances (0.020--0.024). This balanced representation suggests that both the \textit{extent} of boundary loss (voxel count) and the \textit{quality} of remaining boundaries (sharpness in preserved regions) contribute complementary prognostic information.
 
 
 \section{Discussion}
@@ -348,6 +358,8 @@ This study benefits from several design features that boost validity and reprodu
 
 \textbf{Robust preprocessing} standardized MRI data despite scanner heterogeneity (1.5T and 3T, multiple manufacturers). N4 bias correction removes intensity non-uniformity, Atropos segmentation gives consistent tissue classification across subjects, and artifact control (skull stripping, boundary band definition) minimizes including non-brain tissue or partial volume artifacts.
 
+\textbf{Robust feature preprocessing} addressed the extreme variance heterogeneity inherent in BSC slope features. Our pipeline combining signed-log transformation, winsorization, penalized variance ranking, and MinMax scaling successfully prevented single-feature dominance (reducing variance ratio from >300,000:1 to 7.9:1) while preserving complementary biological information from boundary count, sharpness percentiles, and directional gradients. This preprocessing was fitted entirely on training data and applied to test data, preventing leakage while ensuring balanced feature contributions to the ensemble model.
+
 The \textbf{direct comparison} of baseline versus slopes on identical train/test splits and identical feature selection procedures makes sure performance evaluation is fair. Both models used the same 70/30 stratified split, removing the possibility that performance differences come from different evaluation sets. This within-subject comparison design (baseline features vs. slope features from the same individuals) gives a stringent test of our hypothesis.
 
 \subsection{Limitations}
@@ -360,7 +372,7 @@ Third, \textbf{missing data and subject exclusion} may introduce selection bias.
 
 Fourth, \textbf{scanner and sequence heterogeneity} exists within ADNI, which includes scans from both 1.5T and 3T systems across multiple manufacturers (Siemens, GE, Philips) and sites (>50 acquisition centers). While we used N4 bias correction to reduce field inhomogeneity, systematic differences in image contrast, resolution, and signal-to-noise ratio between scanner types may affect BSC measurements. Harmonization methods (ComBat, traveling phantom calibration, deep learning-based harmonization) could reduce this technical variability and improve signal detection.
 
-Fifth, \textbf{feature selection} was done using variance rather than supervised methods. While high-variance features capture subjects with diverse trajectories, variance alone doesn't guarantee association with outcome. Supervised feature selection using univariate Cox regression, LASSO regularization, or recursive feature elimination might find a more parsimonious and predictive feature set. Our approach of picking the top 20 features by variance was pragmatic but not necessarily optimal. Also, we didn't explore feature engineering (interactions, polynomial terms, ratio features) that might improve performance.
+Fifth, \textbf{feature selection} used unsupervised robust variance ranking with heuristic penalization rather than supervised methods. While our preprocessing pipeline (signed-log transform, winsorization, Nboundary penalization) successfully balanced feature contributions and prevented single-feature dominance, the choice of penalty factor (0.10) and winsorization thresholds (1st/99th percentiles) was pragmatic rather than optimized. Supervised feature selection using univariate Cox regression, LASSO regularization, or recursive feature elimination might identify a more parsimonious feature set with stronger outcome associations. We also did not explore feature engineering (interactions, polynomial terms, ratio features) that might capture synergistic biomarker effects.
 
 Sixth, \textbf{overfitting} is evident from the substantial gap between training (C-index 0.84) and testing (C-index 0.63) performance. This 25\% relative drop suggests the Random Forest model memorized training-specific patterns. We did not employ cross-validation during training, did not tune hyperparameters systematically (number of trees, minimum samples per leaf, maximum depth), and did not implement ensemble methods beyond the single Random Forest. Future work should employ nested cross-validation, systematic hyperparameter optimization, and model averaging to improve generalization.
 
