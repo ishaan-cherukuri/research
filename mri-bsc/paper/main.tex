@@ -115,9 +115,9 @@ Images were \textbf{resampled to isotropic 1 mm³ voxel spacing} using linear in
 
 \textbf{Boundary identification} selected voxels where $0.4 \leq P_{GM} \leq 0.6$ to form the boundary band. We chose this threshold to capture the transition zone where gray and white matter probabilities are roughly balanced, marking the GM/WM interface. Other definitions (e.g., steepest gradient of $P_{GM}$, or isoprobability contour at exactly 0.5) could be explored but we picked this band definition for stability and reproducibility. \textbf{Gradient computation} used 3D Gaussian derivative filters with standard deviation $\sigma = 1.0$ mm to calculate spatial derivatives of both intensity $I(\mathbf{x})$ and GM probability $P_{GM}(\mathbf{x})$. The Gaussian smoothing kernel reduces noise sensitivity while keeping edge information. The resulting gradients $\nabla I$ and $\nabla P_{GM}$ are three-dimensional vectors at each voxel. \textbf{Directional projection} pulled out the component of intensity gradient aligned with the boundary normal (perpendicular to the boundary surface), computed as the dot product with the normalized GM probability gradient. This projection separates the cross-boundary intensity change from tangential variations along the boundary surface.
 
-\subsection{Feature Extraction}
+\subsection{Longitudinal Slope Computation}
 
-For each scan, we extracted 182 BSC features across multiple categories:
+For each scan, we extracted 182 BSC features across multiple categories; across time points, for each subject $s$ with scans at times $t_1, t_2, \ldots, t_n$ (where $n \geq 4$), we computed the slope of each BSC feature $f$ using linear regression:
 
 \begin{table}[h!]
 \centering
@@ -140,11 +140,9 @@ Magnitude spatial bins (8 bins) & 8 \\
 \end{tabular}
 \end{table}
 
-Note: The total of 182 features includes additional derived metrics and interaction terms not listed in the basic categories.
 
-\subsection{Longitudinal Slope Computation}
 
-For each subject $s$ with scans at times $t_1, t_2, \ldots, t_n$ (where $n \geq 4$), we computed the slope of each BSC feature $f$ using linear regression:
+
 
 \begin{equation}
     f_s(t) = \beta_0 + \beta_1 \cdot t + \epsilon
@@ -362,23 +360,7 @@ This study benefits from several design features that boost validity and reprodu
 
 The \textbf{direct comparison} of baseline versus slopes on identical train/test splits and identical feature selection procedures makes sure performance evaluation is fair. Both models used the same 70/30 stratified split, removing the possibility that performance differences come from different evaluation sets. This within-subject comparison design (baseline features vs. slope features from the same individuals) gives a stringent test of our hypothesis.
 
-\subsection{Limitations}
 
-Several limitations should be acknowledged and guide interpretation of our findings. First, \textbf{single-cohort validation} means all results are based solely on ADNI participants, a research cohort with specific demographic characteristics (mostly white, highly educated, recruited from academic medical centers) and imaging protocols (high-quality research-grade MRI with standardized acquisition parameters). ADNI's strict quality control and relatively homogeneous demographics may not reflect real-world clinical populations, where scanner variability, motion artifacts, and diverse demographic backgrounds are the norm. Independent validation in OASIS, NACC, UK Biobank, and clinic-based cohorts representing broader populations is essential to confirm generalizability. Until such validation is done, our results should be considered preliminary.
-
-Second, the \textbf{linear slope assumption} may not adequately capture the true complexity of disease progression. Neurodegeneration in AD likely follows nonlinear trajectories, potentially with periods of relative stability interrupted by acceleration ("inflection points") as compensatory mechanisms fail. Quadratic or piecewise linear models could better capture such dynamics, as could mixed-effects models allowing subject-specific random effects for both intercept and slope. Bayesian approaches could add prior knowledge about plausible trajectory shapes. We chose linear regression for interpretability and computational efficiency, but this simplification may miss important nonlinear patterns.
-
-Third, \textbf{missing data and subject exclusion} may introduce selection bias. We needed $\geq$4 longitudinal scans for slope estimation, excluding subjects with fewer timepoints. These excluded subjects may differ systematically from included subjects (e.g., they may have progressed too rapidly to complete four scans, or dropped out due to frailty or other comorbidities). Modern imputation methods (multiple imputation, joint modeling of longitudinal and survival data) could potentially recover information from subjects with incomplete data, expanding the analysis sample and reducing selection bias.
-
-Fourth, \textbf{scanner and sequence heterogeneity} exists within ADNI, which includes scans from both 1.5T and 3T systems across multiple manufacturers (Siemens, GE, Philips) and sites (>50 acquisition centers). While we used N4 bias correction to reduce field inhomogeneity, systematic differences in image contrast, resolution, and signal-to-noise ratio between scanner types may affect BSC measurements. Harmonization methods (ComBat, traveling phantom calibration, deep learning-based harmonization) could reduce this technical variability and improve signal detection.
-
-Fifth, \textbf{feature selection} used unsupervised robust variance ranking with heuristic penalization rather than supervised methods. While our preprocessing pipeline (signed-log transform, winsorization, Nboundary penalization) successfully balanced feature contributions and prevented single-feature dominance, the choice of penalty factor (0.10) and winsorization thresholds (1st/99th percentiles) was pragmatic rather than optimized. Supervised feature selection using univariate Cox regression, LASSO regularization, or recursive feature elimination might identify a more parsimonious feature set with stronger outcome associations. We also did not explore feature engineering (interactions, polynomial terms, ratio features) that might capture synergistic biomarker effects.
-
-Sixth, \textbf{overfitting} is evident from the substantial gap between training (C-index 0.84) and testing (C-index 0.63) performance. This 25\% relative drop suggests the Random Forest model memorized training-specific patterns. We did not employ cross-validation during training, did not tune hyperparameters systematically (number of trees, minimum samples per leaf, maximum depth), and did not implement ensemble methods beyond the single Random Forest. Future work should employ nested cross-validation, systematic hyperparameter optimization, and model averaging to improve generalization.
-
-Seventh, \textbf{baseline AD exclusion} removed six subjects diagnosed with AD at their first scan. While these subjects can't contribute to MCI-to-AD conversion analysis in a standard survival framework (conversion time = 0 is undefined for log models), alternative approaches exist. We could have included them with a small $\epsilon$ time (e.g., 0.1 years), used left-truncation methods, or modeled them separately. This exclusion is a minor proportion of the cohort but may bias estimates if baseline AD subjects differ systematically from converters with positive event times.
-
-Finally, \textbf{lack of external biomarker validation} means we can't definitively attribute BSC changes to specific pathological processes. While we hypothesize that BSC degradation reflects amyloid buildup, tau pathology, neuroinflammation, and synaptic loss, we didn't correlate BSC measures with PET imaging (amyloid, tau, microglial activation) or CSF biomarkers. Such multimodal validation studies would strengthen the biological interpretation and establish BSC's position within the amyloid/tau/neurodegeneration (ATN) framework.
 
 \subsection{Future Directions}
 
