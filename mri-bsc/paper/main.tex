@@ -5,6 +5,8 @@
 \journalname{NeuroImage: Clinical}
 \journalsubtitle{International Journal of Neuroimaging in Clinical Neuroscience}
 \publicationyear{2026}
+% BibLaTeX Vancouver-like numeric refs, but truncate authors to 1 + et al.
+
 
 %% DOI (optional - leave empty if not assigned yet)
 \articledoi{10.1016/j.nicl.2026.xxx}
@@ -16,7 +18,7 @@
 
 \author{%
     \textbf{Ishaan Cherukuri}\textsuperscript{1}\textsuperscript{*}\\[0.2cm]
-    \small\textsuperscript{1}High School North, USA\\
+    \small\textsuperscript{1}Independent Researcher, USA\\
     \small Corresponding: ishaan.cherukuri@gmail.com\\[0.4cm]
     \small\textsuperscript{*}Data used in preparation of this article were obtained from the Alzheimer's Disease Neuroimaging Initiative (ADNI) database (adni.loni.usc.edu). As such, the investigators within the ADNI contributed to the design and implementation of ADNI and/or provided data but did not participate in the analysis or writing of this report. A complete listing of ADNI investigators can be found at: \href{http://adni.loni.usc.edu/wp-content/uploads/how_to_apply/ADNI_Acknowledgement_List.pdf}{adni.loni.usc.edu/how\_to\_apply/ADNI\_Acknowledgement\_List.pdf}
 }
@@ -25,7 +27,7 @@
 
 %% Abstract and keywords must be defined BEFORE \maketitle
 \begin{abstract}
-Alzheimer's disease progression from mild cognitive impairment (MCI) remains difficult to predict, limiting clinical trial enrollment and early therapeutic intervention. The Boundary Sharpness Coefficient (BSC), an MRI-derived biomarker quantifying gray matter-white matter boundary integrity, offers a non-invasive structural measure of neurodegeneration. This study demonstrates that longitudinal BSC changes,specifically annual rates of boundary degradation outperform static baseline measurements for predicting MCI-to-AD conversion. Using 1,824 T1-weighted MRI scans from 450 ADNI subjects (95 converters, 355 stable; mean follow-up: 4.84 years), BSC voxel-wise maps were derived through tissue segmentation at the gray-white matter transition zone. The advent of complex statistical models identifying intricate structures in high-dimensional data such as Convolutional Neural Network (CNN) and Recurrent Neural Network (RNN) have achieved an accuracy of up to 96.0\% for Alzheimer's disease classification and 84.2\% for Mild Cognitive Impairment (MCI) conversion prediction. However, this study has focused on a specific area in the brain namely the gray-white matter interface. This study relies on temporal slope features capturing boundary degradation rates using Random Survival Forest, a non-parametric ensemble method for right-censored survival data. Structural MRI-derived temporal biomarkers offer a cost-effective alternative to PET imaging (\$5,000--\$7,000) or invasive CSF collection for AD risk stratification, with potential applications in trial enrichment and personalized clinical management.
+Alzheimer's disease progression from mild cognitive impairment (MCI) remains difficult to predict, limiting clinical trial enrollment and early therapeutic intervention. The Boundary Sharpness Coefficient (BSC)\cite{olafson2021bsc}, an MRI-derived biomarker quantifying gray matter-white matter boundary integrity, offers a non-invasive structural measure of neurodegeneration. This study demonstrates that longitudinal BSC changes,specifically annual rates of boundary degradation outperform static baseline measurements for predicting MCI-to-AD conversion. Using 1,824 T1-weighted MRI scans from 450 ADNI subjects (95 converters, 355 stable; mean follow-up: 4.84 years), BSC voxel-wise maps were derived through tissue segmentation at the gray-white matter transition zone. The advent of complex statistical models identifying intricate structures in high-dimensional data such as Convolutional Neural Network (CNN) and Recurrent Neural Network (RNN) have achieved an accuracy of up to 96.0\% for Alzheimer's disease classification and 84.2\% for Mild Cognitive Impairment (MCI) conversion prediction. However, this study has focused on a specific area in the brain namely the gray-white matter interface. This study relies on temporal slope features capturing boundary degradation rates using Random Survival Forest, a non-parametric ensemble method for right-censored survival data. Structural MRI-derived temporal biomarkers offer a cost-effective alternative to PET imaging (\$5,000--\$7,000) or invasive CSF collection for AD risk stratification, with potential applications in trial enrichment and personalized clinical management.
 
 \end{abstract}
 
@@ -399,5 +401,6 @@ Generative artificial intelligence (AI) tools were used in the preparation of th
 %% References using BibTeX
 \bibliographystyle{unsrt}
 \bibliography{references}
+
 
 \end{document}
