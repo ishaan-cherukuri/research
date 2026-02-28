@@ -1,0 +1,88 @@
+PMID- 21373993
+OWN - NLM
+STAT- MEDLINE
+DCOM- 20120813
+LR  - 20250529
+IS  - 1559-0089 (Electronic)
+IS  - 1539-2791 (Print)
+IS  - 1539-2791 (Linking)
+VI  - 9
+IP  - 4
+DP  - 2011 Dec
+TI  - An open source multivariate framework for n-tissue segmentation with evaluation 
+      on public data.
+PG  - 381-400
+LID - 10.1007/s12021-011-9109-y [doi]
+AB  - We introduce Atropos, an ITK-based multivariate n-class open source segmentation 
+      algorithm distributed with ANTs ( http://www.picsl.upenn.edu/ANTs). The Bayesian 
+      formulation of the segmentation problem is solved using the Expectation 
+      Maximization (EM) algorithm with the modeling of the class intensities based on 
+      either parametric or non-parametric finite mixtures. Atropos is capable of 
+      incorporating spatial prior probability maps (sparse), prior label maps and/or 
+      Markov Random Field (MRF) modeling. Atropos has also been efficiently implemented 
+      to handle large quantities of possible labelings (in the experimental section, we 
+      use up to 69 classes) with a minimal memory footprint. This work describes the 
+      technical and implementation aspects of Atropos and evaluates its performance on 
+      two different ground-truth datasets. First, we use the BrainWeb dataset from 
+      Montreal Neurological Institute to evaluate three-tissue segmentation performance 
+      via (1) K-means segmentation without use of template data; (2) MRF segmentation 
+      with initialization by prior probability maps derived from a group template; (3) 
+      Prior-based segmentation with use of spatial prior probability maps derived from 
+      a group template. We also evaluate Atropos performance by using spatial priors to 
+      drive a 69-class EM segmentation problem derived from the Hammers atlas from 
+      University College London. These evaluation studies, combined with illustrative 
+      examples that exercise Atropos options, demonstrate both performance and wide 
+      applicability of this new platform-independent open source segmentation tool.
+FAU - Avants, Brian B
+AU  - Avants BB
+AD  - Penn Image Computing and Science Laboratory, University of Pennsylvania, 3600 
+      Market Street, Suite 370, Philadelphia, PA 19104, USA. stnava@gmail.com
+FAU - Tustison, Nicholas J
+AU  - Tustison NJ
+FAU - Wu, Jue
+AU  - Wu J
+FAU - Cook, Philip A
+AU  - Cook PA
+FAU - Gee, James C
+AU  - Gee JC
+LA  - eng
+GR  - R01 NS044266/NS/NINDS NIH HHS/United States
+GR  - R01 AG015116/AG/NIA NIH HHS/United States
+GR  - AG15116/AG/NIA NIH HHS/United States
+GR  - P50 NS053488/NS/NINDS NIH HHS/United States
+GR  - AG17586/AG/NIA NIH HHS/United States
+GR  - NS53488/NS/NINDS NIH HHS/United States
+GR  - NS44266/NS/NINDS NIH HHS/United States
+GR  - P01 AG017586/AG/NIA NIH HHS/United States
+PT  - Evaluation Study
+PT  - Journal Article
+PT  - Research Support, N.I.H., Extramural
+PL  - United States
+TA  - Neuroinformatics
+JT  - Neuroinformatics
+JID - 101142069
+SB  - IM
+MH  - Access to Information
+MH  - *Algorithms
+MH  - Bayes Theorem
+MH  - Databases, Factual/*standards
+MH  - Humans
+MH  - Image Processing, Computer-Assisted/*methods
+MH  - Internet/standards
+MH  - Magnetic Resonance Imaging/*methods
+MH  - Models, Statistical
+MH  - Pattern Recognition, Automated/*methods
+MH  - Software/*standards
+PMC - PMC3297199
+MID - NIHMS357172
+EDAT- 2011/03/05 06:00
+MHDA- 2012/08/14 06:00
+PMCR- 2012/03/08
+CRDT- 2011/03/05 06:00
+PHST- 2011/03/05 06:00 [entrez]
+PHST- 2011/03/05 06:00 [pubmed]
+PHST- 2012/08/14 06:00 [medline]
+PHST- 2012/03/08 00:00 [pmc-release]
+AID - 10.1007/s12021-011-9109-y [doi]
+PST - ppublish
+SO  - Neuroinformatics. 2011 Dec;9(4):381-400. doi: 10.1007/s12021-011-9109-y.
