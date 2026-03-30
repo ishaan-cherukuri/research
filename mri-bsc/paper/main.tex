@@ -8,6 +8,7 @@
 % BibLaTeX Vancouver-like numeric refs, but truncate authors to 1 + et al.
 
 \usepackage{amsmath}
+\usepackage[hyphens]{url}
 \usepackage{dblfloatfix}
 \usepackage{placeins} 
 %% DOI (optional - leave empty if not assigned yet)
@@ -29,7 +30,7 @@
 
 %% Abstract and keywords must be defined BEFORE \maketitle
 \begin{abstract}
-Predicting whether someone with mild cognitive impairment (MCI) will progress to Alzheimer's disease (AD) is crucial in the early stages of neurodegeneration. This uncertainty limits enrollment in clinical trials and delays urgent treatment. The Boundary Sharpness Coefficient (BSC)\cite{olafson2021bsc} measures how well-defined the gray-white matter boundary looks on structural MRI. This study measures how BSC changes over time, namely, how fast the boundary degrades each year works much better than looking at a single baseline scan for predicting MCI-to-AD conversion. This study analyzed 1,824 T1-weighted MRI scans from 450 ADNI subjects (95 converters, 355 stable; mean follow-up: 4.84 years). BSC voxel-wise maps were computed using tissue segmentation at the gray-white matter cortical ribbon. Previous studies have used CNN and RNN models that reached 96.0\% accuracy for AD classification and 84.2\% for MCI conversion~\cite{hafeez2024deep}, but those approaches disregard specific regions within the brain. This study focused specifically on the gray-white matter interface. The approach uses temporal slope features capturing boundary degradation rates, feeding them into Random Survival Forest~\cite{article}, a non-parametric ensemble method for right-censored survival data. The Random Survival Forest trained on BSC slopes achieved a test C-index of 0.63, a \textbf{163\% improvement} over baseline parametric models (test C-index: 0.24). Structural MRI costs a fraction of PET imaging (\$800--\$1,500 vs. \$5,000--\$7,000) and does not require CSF collection. These temporal biomarkers could help with patient-centered safety screening as well as risk assessment.
+Predicting whether someone with mild cognitive impairment (MCI) will progress to Alzheimer's disease (AD) is crucial in the early stages of neurodegeneration. This uncertainty limits enrollment in clinical trials and delays urgent treatment. The Boundary Sharpness Coefficient (BSC)\cite{olafson2021bsc} measures how well-defined the gray-white matter boundary looks on structural MRI. This study measures how BSC changes over time, namely, how fast the boundary degrades each year works much better than looking at a single baseline scan for predicting MCI-to-AD conversion. This study analyzed 1,824 T1-weighted MRI scans from 450 ADNI subjects (95 converters, 355 stable; mean follow-up: 4.84 years). BSC voxel-wise maps were computed using tissue segmentation at the gray-white matter cortical ribbon. Previous studies have used CNN and RNN models that reached 96.0\% accuracy for AD classification and 84.2\% for MCI conversion~\cite{hafeez2024deep}, but those approaches disregard specific regions within the brain. This study focused specifically on the gray-white matter interface. The approach uses temporal slope features capturing boundary degradation rates, feeding them into Random Survival Forest~\cite{ishwaran2008rsf}, a non-parametric ensemble method for right-censored survival data. The Random Survival Forest trained on BSC slopes achieved a test C-index of 0.63, a \textbf{163\% improvement} over baseline parametric models (test C-index: 0.24). Structural MRI costs a fraction of PET imaging (\$800--\$1,500 vs. \$5,000--\$7,000) and does not require CSF collection. These temporal biomarkers could help with patient-centered safety screening as well as risk assessment.
 \end{abstract}
 
 
@@ -42,7 +43,7 @@ Predicting whether someone with mild cognitive impairment (MCI) will progress to
 %% From here, content is in two columns
 \section{Introduction}
 
-Alzheimer's disease (AD) already affects more than 55 million people worldwide, and projections suggest that figure could rise to 131 million by 2050~\cite{hafeez2024deep}. It remains the leading cause of dementia, accounting for roughly 60--80\% of cases, and the economic burden is staggering, now exceeding \$1 trillion globally each year. Numbers like these can start to feel abstract. In practice, though, AD is a disease that gradually strips away memory, judgment, daily independence, and eventually the basic structure of ordinary life. Biologically, that decline is tied to amyloid-$\beta$ plaques, tau tangles, synaptic dysfunction, and progressive brain atrophy.
+Alzheimer's disease (AD) already affects more than 55 million people worldwide, and projections suggest that figure could rise to 131 million by 2050~\cite{hafeez2024deep}. It remains the leading cause of dementia, accounting for roughly 60--80\% of cases, and the economic burden is staggering, now exceeding \$1 trillion globally each year. However, in practice, AD is a disease that gradually removes memory, judgment, daily independence, and eventually the basic structure of ordinary life. Biologically, this decline is related to amyloid plaques $\beta$, tau tangles, synaptic dysfunction, and progressive brain atrophy.
 
 Mild Cognitive Impairment (MCI) sits in a much more uncertain space. It is not normal aging, but it is not yet dementia either. People with MCI often notice memory or thinking problems that matter, though those changes are still not severe enough to fully disrupt independent living. The difficulty is that MCI does not lead everyone down the same path. Annual conversion rates to dementia, especially AD, are often estimated around 10--15\%~\cite{li2021predicting}, yet that average hides a lot. Some individuals remain stable for years. Some even appear to improve. Others decline quickly. That uncertainty is precisely why early risk stratification matters. Treatments and interventions are most likely to help before too much irreversible damage has accumulated.
 
@@ -58,7 +59,7 @@ Single-timepoint neuroimaging has similar limitations. Hafeez et al.~\cite{hafee
 
 \subsection{The Boundary Sharpness Coefficient}
 
-The Boundary Sharpness Coefficient (BSC) measures how sharply gray matter and white matter are separated on structural MRI. That may sound technical, but the intuition is not too complicated. In a healthy brain, the transition between the cortical gray matter and the underlying white matter is usually fairly crisp on a T1-weighted scan. Gray matter tends to appear darker, while white matter is brighter because of its myelin-rich composition. When disease-related processes disrupt that organization, the interface can become less distinct.
+The Boundary Sharpness Coefficient (BSC) measures how sharply gray matter and white matter are separated on structural MRI. In a healthy brain, the transition between the cortical gray matter and the underlying white matter is usually fairly crisp on a T1-weighted scan. Gray matter tends to appear darker, while white matter is brighter because of its myelin-rich composition. When disease-related processes disrupt that organization, the interface can become less distinct.
 
 BSC is therefore different from more familiar measures such as regional volume or cortical thickness. Those metrics tell us how much tissue remains. BSC, instead, captures a boundary property. It is not a direct microscope-like readout of microstructure, and it would be overstating things to claim otherwise. Still, it may reflect biologically meaningful changes at the gray-white matter interface before more obvious atrophy becomes visible. In that sense, it occupies an interesting middle ground between gross anatomy and finer tissue organization.
 
@@ -124,7 +125,7 @@ All images were then \textbf{resampled to 1 mm$^3$ isotropic resolution} using l
 
 \textbf{Tissue segmentation} was performed using Atropos $k$-means clustering~\cite{avants2011atropos} with three classes corresponding to gray matter (GM), white matter (WM), and cerebrospinal fluid (CSF). The choice of $k$-means over alternatives such as Gaussian mixture models or deep learning segmentation was mainly pragmatic. It is fast, deterministic enough for reproducible workflows, and generally adequate for T1-weighted tissue separation in large cohorts. Each voxel was assigned class probabilities summing to 1.0, with $P_{GM}(\mathbf{x})$ denoting the gray matter probability at voxel $\mathbf{x}$.
 
-\textbf{Boundary identification} was based on voxels satisfying $0.4 \leq P_{GM} \leq 0.6$, thereby defining a transition band centered around the gray-white matter interface~\cite{olafson2021bsc}. A single exact contour might seem cleaner in theory, but in practice it can be unstable and highly sensitive to noise. The band-based definition is somewhat less elegant, perhaps, yet more robust.
+\textbf{Boundary identification} was based on voxels satisfying $0.4 \leq P_{GM} \leq 0.6$, thereby defining a transition band centered around the gray-white matter interface~\cite{olafson2021bsc}. A single exact contour might seem cleaner in theory, but in practice it can be unstable and highly sensitive to noise. 
 
 \textbf{Gradient computation} used 3D Gaussian derivative filters with $\sigma = 1.0$ mm to estimate spatial derivatives of both MRI intensity $I(\mathbf{x})$ and gray matter probability $P_{GM}(\mathbf{x})$. The smoothing helps suppress high-frequency noise while preserving edge-related information. This produces gradient vectors $\nabla I$ and $\nabla P_{GM}$ at each voxel. Finally, \textbf{directional projection} extracted the component of the intensity gradient aligned with the boundary normal by taking the dot product with the normalized gray matter probability gradient. In effect, this isolates intensity change across the boundary rather than along it.
 
@@ -132,7 +133,7 @@ All images were then \textbf{resampled to 1 mm$^3$ isotropic resolution} using l
 
 For each scan, 35 BSC summary features were extracted across several categories (Table~\ref{tab:bsc-features}). These included boundary count, directional and magnitude-based summary statistics, percentile measures, and spatial bin summaries. To model longitudinal change, each feature was regressed against time within subject.
 
-\begin{table}[h!]
+\begin{table}[htbp]
 \centering
 \caption{BSC feature categories extracted per scan}
 \label{tab:bsc-features}
@@ -177,7 +178,7 @@ After ranking, the top 20 features were retained. These selected features were p
 
 Survival outcomes were defined using clinical diagnosis trajectories. For each subject, the first scan at which the ADNI diagnosis code reached 3.0 was treated as the conversion event. Time-to-conversion was calculated as the interval between the baseline scan date and the conversion scan date, divided by 365.25 to express time in years.
 
-Subjects who never converted during observed follow-up were treated as right-censored. Their censoring time was defined as the interval from baseline to last available scan. This setup assumes that follow-up ended administratively rather than because of a mechanism tightly linked to future risk, conditional on observed covariates. That assumption cannot be proven directly here, and it is worth acknowledging that any survival analysis quietly depends on it. Still, given ADNI's protocol-driven follow-up schedule, it appears reasonably plausible.
+Subjects who never converted during observed follow-up were treated as right-censored. Their censoring time was defined as the interval from baseline to last available scan. This setup assumes that follow-up ended administratively rather than because of a mechanism tightly linked to future risk, conditional on observed covariates. That assumption cannot be proven directly here, and it is worth acknowledging that any survival analysis quietly depends on it.
 
 Six baseline-AD cases with time-to-conversion equal to zero were excluded, both because parametric accelerated failure time models require positive times and because such cases do not cleanly represent conversion from MCI. The final survival distribution included \textbf{95 conversion events} (event = 1), with mean time to conversion of 1.90$\pm$1.39 years (range: 0.46--12.80 years, median: 1.48 years), and \textbf{355 censored subjects} (event = 0), with mean follow-up of 5.63$\pm$3.84 years (range: 0.50--18.41 years, median: 4.76 years). The longer follow-up among censored subjects is expected, since individuals who do not convert simply continue contributing observation time.
 
@@ -212,7 +213,7 @@ from which the survival function follows as $\hat{S}(t | \mathbf{X}_i) = \exp(-\
 \label{fig:rsf-algorithm}
 \end{figure*}
 
-In this implementation, RSF used 1,000 trees, minimum samples per split of 10, minimum samples per leaf of 15, and max features equal to $\sqrt{20} \approx 4.47 \rightarrow 4$ at each split. These values were chosen based on common practice and computational feasibility rather than exhaustive hyperparameter tuning. That is a limitation, though perhaps not a fatal one for an initial study.
+In this implementation, RSF used 1,000 trees, minimum samples per split of 10, minimum samples per leaf of 15, and max features equal to $\sqrt{20} \approx 4.47 \rightarrow 4$ at each split. These values were chosen based on common practice and computational feasibility rather than hyperparameter tuning. 
 
 For baseline comparison, Weibull, LogNormal, and LogLogistic AFT models were trained with L2 regularization (penalizer = 0.1). AFT models assume:
 
@@ -251,10 +252,10 @@ All analyses were conducted in Python 3.11 using open-source tools. Preprocessin
 \textbf{Characteristic} & \textbf{All} & \textbf{Converters} & \textbf{Stable} \\
  & (N=450) & (N=95) & (N=355) \\
 \hline
-Age (years), mean±SD & 74.4±5.9 & 75.8±5.7 & 73.8±5.8 \\
+Age (years), mean$\pm$SD & 74.4$\pm$5.9 & 75.8$\pm$5.7 & 73.8$\pm$5.8 \\
 Female, n (\%) & 225 (50.0) & 42 (44.2) & 183 (51.5) \\
-Baseline Nboundary & 17,353±5,891 & 13,978±5,634 & 18,733±5,507 \\
-Follow-up (years) & 4.84±3.79 & 1.90±1.39 & 5.63±3.84 \\
+Baseline Nboundary & 17,353$\pm$5,891 & 13,978$\pm$5,634 & 18,733$\pm$5,507 \\
+Follow-up (years) & 4.84$\pm$3.79 & 1.90$\pm$1.39 & 5.63$\pm$3.84 \\
 \hline
 \end{tabular}
 \end{table*}
@@ -294,7 +295,7 @@ Once rates of change were introduced, performance improved sharply. The slope-ba
 
 That said, the model clearly overfit. Training C-index for RSF was 0.84, compared with 0.63 on the test set, yielding a gap of 0.21. A gap that large suggests the model learned patterns that did not fully generalize. Possible explanations include subject-specific noise, scanner-specific artifacts, or chance structure in particular demographic or biological subgroups within the training set. The RMSE of 13.05 years for event-time prediction should therefore be interpreted cautiously. The ranking performance is more informative than the absolute time estimates.
 
-Even with that limitation, a test C-index of 0.63 is still within the range commonly reported for structural MRI-only prediction of MCI conversion. Many single-modality studies land somewhere between 0.60 and 0.70, while multimodal approaches often rise into the 0.75--0.85 range. So the present model is not yet clinically definitive, but it is also not trivial. BSC slopes appear to capture useful temporal information that could plausibly complement more established biomarkers.
+Even with that limitation, a test C-index of 0.63 is still within the range commonly reported for structural MRI-only prediction of MCI conversion. Many single-modality studies land somewhere between 0.60 and 0.70, while multimodal approaches often rise into the 0.75--0.85 range. So the present model is not yet clinically definitive, but it is also not trivial. BSC slopes appear to capture useful temporal information that could complement more established biomarkers.
 
 Kaplan-Meier survival curves stratified by predicted risk (Figure~\ref{fig:km-curves}) showed clear separation among high-, medium-, and low-risk groups, with a significant log-rank result ($p<0.0001$). High-risk subjects had a median conversion time of 2.1 years, compared with 8.5 years in the low-risk group. From a clinical trial perspective, that kind of stratification could be genuinely useful.
 
@@ -307,7 +308,7 @@ Kaplan-Meier survival curves stratified by predicted risk (Figure~\ref{fig:km-cu
 
 \subsection{Feature Importance}
 
-\begin{table}[h!]
+\begin{table}[htbp]
 \centering
 \caption{Top 10 BSC slope features selected by penalized robust variance}
 \label{tab:top-features}
@@ -347,7 +348,7 @@ Taken together, the results support a broader idea that has been gaining tractio
 
 The gray-white matter boundary is a structurally meaningful interface, marking the transition from cortical neuronal cell bodies to underlying myelinated axonal projections. On T1-weighted MRI, that boundary is normally distinct because gray and white matter have different tissue compositions and therefore different signal properties. Gray matter contains dense collections of cell bodies, dendrites, and unmyelinated axons, whereas white matter is dominated by myelinated fiber tracts. A sharp transition on MRI therefore reflects, at least indirectly, preserved tissue organization.
 
-BSC degradation may reflect several converging pathological processes in AD. \textbf{Synaptic loss}, which correlates strongly with cognitive decline, disrupts cortical microarchitecture and may alter the integrity of the neuropil near the cortical boundary. \textbf{Tau pathology} and neuritic plaques distort tissue organization at the cellular level. \textbf{Myelin breakdown} in superficial white matter can reduce contrast across the gray-white interface. \textbf{Neuroinflammation}, including astrocytic and microglial activation, may further change local signal properties. \textbf{Vascular pathology}, which is common in AD, could also contribute through chronic ischemic damage or blood-brain barrier dysfunction. It would be too neat to assign BSC decline to any one mechanism alone. More likely, it reflects a cumulative macrostructural consequence of several overlapping processes.
+BSC degradation may reflect several converging pathological processes in AD. \textbf{Synaptic loss}, which correlates strongly with cognitive decline, disrupts cortical microarchitecture and may alter the integrity of the neuropil near the cortical boundary. \textbf{Tau pathology} and neuritic plaques distort tissue organization at the cellular level. \textbf{Myelin breakdown} in superficial white matter can reduce contrast across the gray-white interface. \textbf{Neuroinflammation}, including astrocytic and microglial activation, may further change local signal properties. \textbf{Vascular pathology}, which is common in AD, could also contribute through chronic ischemic damage or blood-brain barrier dysfunction. It would be incorrect to assign BSC decline to any one mechanism alone. More likely, it reflects a cumulative macrostructural consequence of several overlapping processes.
 
 One particularly interesting result is the prominence of \textit{high-percentile} BSC slope features, especially the 75th and 90th percentiles. These metrics capture the sharpest parts of the remaining boundary. In a way, that is counterintuitive. One might expect the most damaged regions to dominate prediction. Instead, these findings hint that subtle decline in relatively preserved regions may be especially informative. That interpretation fits, at least loosely, with the retrogenesis hypothesis, in which late-myelinating association cortices are more vulnerable early on, while phylogenetically older or more robust regions remain preserved until later stages. If even the sharpest boundaries begin to deteriorate, that may signal a more advanced or more aggressive disease trajectory.
 
@@ -395,7 +396,7 @@ Several next steps seem especially important.
 
 Longitudinal slopes of the Boundary Sharpness Coefficient (BSC), analyzed using Random Survival Forest, outperformed baseline BSC measurements for predicting conversion from MCI to AD. In 450 ADNI subjects with at least four MRI scans each, the slope-based RSF model achieved a test C-index of 0.63, representing a 163\% improvement over the baseline parametric comparison model (C-index: 0.24). The most informative features included boundary voxel count slope (Nboundary\_slope: variance = 0.142), magnitude 90th percentile slope (bsc\_mag\_p90\_slope: variance = 0.024), and magnitude 75th percentile slope (bsc\_mag\_p75\_slope: variance = 0.022). Converters showed faster boundary degradation over time.
 
-These findings support the idea that \textit{temporal biomarker trajectories} capture disease progression more effectively than static measurements alone. Baseline BSC features performed poorly, even worse than chance, whereas longitudinal slopes revealed meaningful prognostic signal. That does not mean BSC slopes are ready to stand alone as a clinical decision tool. The test performance is still moderate, and the training-test gap suggests notable overfitting. Even so, the approach offers a relatively low-cost and non-invasive way to extract additional prognostic information from routine structural MRI.
+These findings support the idea that \textit{temporal biomarker trajectories} capture disease progression more effectively than static measurements alone. Baseline BSC features performed poorly, even worse than chance, whereas longitudinal slopes revealed meaningful prognostic signal. That does not mean BSC slopes are able to represent a clinical decision tool. The test performance is still moderate, and the training-test gap suggests notable overfitting. Even so, the approach offers a relatively low-cost and non-invasive way to extract additional prognostic information from routine structural MRI.
 
 Future work should validate these findings in independent cohorts, combine BSC slopes with cognitive and blood-based biomarkers, explore stronger regularization or ensemble strategies to reduce overfitting, and examine regional or subtype-specific patterns of boundary decline. As AD research moves further toward precision medicine, biomarkers that capture \textit{rates of change} rather than isolated snapshots will likely become increasingly important.
 

@@ -15,10 +15,13 @@ code/ingest/__init__.py
 code/ingest/build_manifest_adni.py
 code/ingest/fix_manifest_chronological.py
 code/io/s3.py
+code/ml/generate_benchmark_table.py
+code/ml/generate_model_comparison_boxplot.py
 code/ml/prepare_survival_data.py
 code/ml/train_aft_model.py
 code/ml/train_diagnosis_classifier.py
 code/ml/train_rsf_with_slopes.py
+code/ml/train_rsf_with_slopes_noscale.py
 code/ml/train_survival_with_slopes.py
 code/pipeline/__init__.py
 code/pipeline/bsc_v2_local.py
