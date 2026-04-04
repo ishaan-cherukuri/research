@@ -1,7 +1,3 @@
-"""
-Batch process all subjects from S3 metadata to extract segmentation and other features.
-Processes 456 subjects directly from S3 locations.
-"""
 
 import pandas as pd
 from features import FeatureExtractor
@@ -9,31 +5,23 @@ from datetime import datetime
 import logging
 from pathlib import Path
 
-
 def setup_logger(output_file: str):
-    """Setup logger with both file and console handlers."""
-    # Create log directory if it doesn't exist
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
 
-    # Create log file name based on output file
     log_filename = Path(output_file).stem + ".log"
     log_file = log_dir / log_filename
 
-    # Create logger
     logger = logging.getLogger("ADNI_Processing")
     logger.setLevel(logging.INFO)
 
-    # Remove existing handlers
     logger.handlers = []
 
-    # File handler
     file_handler = logging.FileHandler(log_file, mode="w")
     file_handler.setLevel(logging.INFO)
     file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(file_formatter)
 
-    # Console handler
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_formatter = logging.Formatter("%(message)s")
@@ -44,7 +32,6 @@ def setup_logger(output_file: str):
 
     return logger, log_file
 
-
 def process_all_subjects(
     metadata_file: str = "data/subject_metadata.tsv",
     output_file: str = "features_with_segmentation.csv",
@@ -53,18 +40,6 @@ def process_all_subjects(
     segmentation_method: str = "simple",
     max_subjects: int | None = None,
 ):
-    """
-    Process all subjects from metadata file.
-
-    Args:
-        metadata_file: Path to subject metadata TSV
-        output_file: Output CSV file for features
-        use_s3: Whether to read from S3
-        enable_segmentation: Whether to extract segmentation features
-        segmentation_method: 'synthseg' or 'simple'
-        max_subjects: Limit number of subjects (None for all)
-    """
-    # Setup logger
     logger, log_file = setup_logger(output_file)
 
     logger.info("=" * 70)
@@ -73,7 +48,6 @@ def process_all_subjects(
     logger.info(f"Log file: {log_file}")
     logger.info("")
 
-    # Read metadata
     logger.info(f"Loading metadata from {metadata_file}...")
     metadata_df = pd.read_csv(metadata_file, sep="\t")
     unique_subjects = metadata_df["subject"].unique()
@@ -87,7 +61,6 @@ def process_all_subjects(
     logger.info(f"   Segmentation method: {segmentation_method}")
     logger.info("")
 
-    # Initialize extractor
     extractor = FeatureExtractor(
         data_dir="data",
         use_s3=use_s3,
@@ -95,7 +68,6 @@ def process_all_subjects(
         segmentation_method=segmentation_method,
     )
 
-    # Process subjects
     all_features = []
     successful = 0
     failed = 0
@@ -111,7 +83,6 @@ def process_all_subjects(
                 all_features.append(features)
                 successful += 1
 
-                # Print key segmentation features if available
                 if enable_segmentation:
                     hippo = features.get("seg_hippocampus_total_mm3_bl")
                     vent = features.get("seg_ventricles_total_mm3_bl")
@@ -122,7 +93,6 @@ def process_all_subjects(
                             f"Vent={vent:.0f if vent else 'N/A'}mm³, BPF={bpf:.3f if bpf else 'N/A'}"
                         )
 
-                # Print conversion status
                 event = features.get("event_observed")
                 event_time = features.get("event_time_years")
                 if event == 1:
@@ -139,7 +109,6 @@ def process_all_subjects(
             failed += 1
             logger.error(f"   Error: {e}")
 
-        # Save intermediate results every 50 subjects
         if len(all_features) > 0 and len(all_features) % 50 == 0:
             df_temp = pd.DataFrame(all_features)
             temp_file = output_file.replace(".csv", f"_temp_{len(all_features)}.csv")
@@ -148,7 +117,6 @@ def process_all_subjects(
 
         logger.info("")
 
-    # Save final results
     if all_features:
         df = pd.DataFrame(all_features)
         df.to_csv(output_file, index=False)
@@ -166,7 +134,6 @@ def process_all_subjects(
         logger.info(f"Time elapsed: {elapsed / 60:.1f} minutes")
         logger.info(f"Average: {elapsed / successful:.1f} seconds per subject")
 
-        # Print feature categories
         logger.info("\nFeature Categories:")
         seg_features = [c for c in df.columns if c.startswith("seg_")]
         qc_features = [c for c in df.columns if c.startswith("qc_")]
@@ -181,7 +148,6 @@ def process_all_subjects(
             f"   Other: {len(df.columns) - len(seg_features) - len(qc_features) - len(long_features) - len(meta_features)}"
         )
 
-        # Print sample statistics
         if "event_observed" in df.columns:
             conversions = df["event_observed"].sum()
             logger.info("\nSample Statistics:")
@@ -206,9 +172,7 @@ def process_all_subjects(
         logger.error("\nNo features extracted successfully")
         return None
 
-
 def main():
-    """Main entry point with command line arguments."""
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -253,7 +217,6 @@ def main():
         segmentation_method=args.method,
         max_subjects=args.max_subjects,
     )
-
 
 if __name__ == "__main__":
     main()

@@ -14,9 +14,7 @@ from code.io.s3 import parse_s3_uri, upload_file, ensure_s3_prefix
 
 s3 = boto3.client("s3")
 
-
 def _read_csv_any(path: str) -> pd.DataFrame:
-    """Read CSV from local path or s3://bucket/key."""
     if path.startswith("s3://"):
         bucket, key = parse_s3_uri(path)
         obj = s3.get_object(Bucket=bucket, Key=key)
@@ -24,33 +22,21 @@ def _read_csv_any(path: str) -> pd.DataFrame:
         return pd.read_csv(io.BytesIO(data))
     return pd.read_csv(path)
 
-
 def _clean_stem(filename: str) -> str:
-    """
-    Make a safe stem for files like *.nii.gz:
-      "scan.nii.gz" -> "scan"
-    """
     name = Path(filename).name
     if name.endswith(".nii.gz"):
         name = name[:-7]
     else:
         name = Path(name).stem
-    # sanitize to safe chars
     name = re.sub(r"[^A-Za-z0-9._-]+", "_", name)
     return name
 
-
 def _make_image_id(row: pd.Series) -> str:
-    """
-    Build a stable id from manifest columns.
-    """
     subject = str(row["subject"])
     visit = str(row["visit_code"])
     acq = str(row["acq_date"])
-    # keep it filesystem + s3-key safe
     raw = f"{subject}_{visit}_{acq}"
     return re.sub(r"[^A-Za-z0-9._-]+", "_", raw)
-
 
 def preprocess_one(
     image_s3_path: str,
@@ -60,26 +46,20 @@ def preprocess_one(
     ensure_s3_prefix(out_s3_dir)
     temp_root.mkdir(parents=True, exist_ok=True)
 
-    # Create temp folder for this image
     bucket, key = parse_s3_uri(image_s3_path)
     image_stem = _clean_stem(key)
     temp_dir = temp_root / f"temp_{image_stem}"
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     try:
-        # --- download ---
         local_nii = temp_dir / Path(key).name
         s3.download_file(bucket, key, str(local_nii))
 
-        # --- load ---
         img = nib.load(str(local_nii))
-        # Avoid get_fdata() default float64 conversion; keep it float32.
         data = np.asanyarray(img.dataobj).astype(np.float32, copy=False)
 
-        # --- normalization ---
         data = (data - float(data.mean())) / (float(data.std()) + 1e-6)
 
-        # --- placeholders ---
         brain_mask = (data > -1).astype(np.uint8)
         gm = np.clip(data, 0, 1).astype(np.float32)
         wm = np.clip(1 - gm, 0, 1).astype(np.float32)
@@ -112,7 +92,6 @@ def preprocess_one(
         if temp_dir.exists():
             shutil.rmtree(temp_dir)
 
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument(
@@ -130,7 +109,6 @@ def main():
 
     df = _read_csv_any(args.manifest)
 
-    # Validate expected manifest columns
     required = {"subject", "visit_code", "acq_date", "path", "diagnosis"}
     missing = required - set(df.columns)
     if missing:
@@ -167,7 +145,6 @@ def main():
 
     pbar.close()
     print("[DONE] All scans preprocessed")
-
 
 if __name__ == "__main__":
     main()

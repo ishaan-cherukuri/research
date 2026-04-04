@@ -1,21 +1,3 @@
-"""
-code.index.build_longitudinal_index
-
-Build a CNN-ready subject index that links each visit to precomputed derivative images.
-
-Expected derivatives per visit directory (Atropos BSC pipeline output):
-  - t1w_preproc.nii.gz
-  - gm_prob.nii.gz
-  - wm_prob.nii.gz
-  - brain_mask.nii.gz
-Optional:
-  - bsc_map.nii.gz (if/when you generate it)
-  - bsc_metrics.json
-  - subject_metrics.csv
-
-Output CSV has one row per subject:
-  subject,label,n_visits,visits_json
-"""
 
 from __future__ import annotations
 
@@ -26,28 +8,22 @@ import pandas as pd
 
 from code.utils.io_any import read_csv_any, write_csv_any, is_s3, exists_any, list_files
 
-
 def _to_dt(s):
     return pd.to_datetime(s, errors="coerce")
-
 
 def _months_between(a, b):
     if pd.isna(a) or pd.isna(b):
         return None
     return float((b - a).days / 30.44)
 
-
 def _join(root: str, child: str) -> str:
     return f"{root.rstrip('/')}/{child.lstrip('/')}"
 
-
 def _dir_of_path(p: str) -> str:
-    # Works for local and s3-like strings
     p = str(p)
     if p.endswith("/"):
         return p.rstrip("/")
     return p.rsplit("/", 1)[0] if "/" in p else ""
-
 
 def _stem_from_nii_path(nii_path: str) -> str:
     name = Path(str(nii_path)).name
@@ -57,16 +33,7 @@ def _stem_from_nii_path(nii_path: str) -> str:
         return name[:-4]
     return Path(name).stem
 
-
 def _find_visit_dir_any(derivatives_root: str, image_id: str, nii_path: str) -> str | None:
-    """
-    Locate visit directory (local dir or S3 prefix) for a manifest row.
-
-    Priority:
-      1) derivatives_root/<image_id>/
-      2) derivatives_root/<nii_stem>/
-      3) scan derivatives_root for any path containing image_id (fallback; can be expensive on huge buckets)
-    """
     candidates: list[str] = []
 
     if image_id:
@@ -77,19 +44,15 @@ def _find_visit_dir_any(derivatives_root: str, image_id: str, nii_path: str) -> 
         if stem:
             candidates.append(_join(derivatives_root, stem))
 
-    # Check direct candidates first
     for c in candidates:
         if c and exists_any(c):
             return c
 
-    # Fallback scan: find any object containing image_id and take its parent as the visit_dir
     if image_id:
         try:
             hits = list_files(derivatives_root)
-            # filter fast in python
             hits = [h for h in hits if str(image_id) in h]
-            # take the deepest "folder" that looks like derivatives_root/<something>/file
-            for h in hits[:50]:  # avoid runaway on huge listings
+            for h in hits[:50]:
                 parent = _dir_of_path(h)
                 if parent and exists_any(parent):
                     return parent
@@ -98,14 +61,12 @@ def _find_visit_dir_any(derivatives_root: str, image_id: str, nii_path: str) -> 
 
     return None
 
-
 def _pick_file_any(visit_dir: str, names: list[str]) -> str | None:
     for n in names:
         p = _join(visit_dir, n)
         if exists_any(p):
             return p
     return None
-
 
 def build_index(
     manifest_csv: str,
@@ -240,7 +201,6 @@ def build_index(
 
     return out_df
 
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--manifest", required=True)
@@ -261,7 +221,6 @@ def main():
         required_modalities=required,
         out_unmatched_csv=(args.out_unmatched_csv or None),
     )
-
 
 if __name__ == "__main__":
     main()

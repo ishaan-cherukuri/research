@@ -17,33 +17,21 @@ from code.io.s3 import (
 
 s3 = boto3.client("s3")
 
-
 def read_csv_any(path: str) -> pd.DataFrame:
-    """Read CSV from local path or s3://bucket/key."""
     if path.startswith("s3://"):
         b, k = parse_s3_uri(path)
         obj = s3.get_object(Bucket=b, Key=k)
         return pd.read_csv(io.BytesIO(obj["Body"].read()))
     return pd.read_csv(path)
 
-
 def make_image_id(row: pd.Series) -> str:
-    """
-    Manifest schema:
-      subject, visit_code, acq_date, path, diagnosis
-    Build stable image id used by preprocess outputs.
-    """
     subject = str(row["subject"])
     visit = str(row["visit_code"])
     acq = str(row["acq_date"])
     raw = f"{subject}_{visit}_{acq}"
     return re.sub(r"[^A-Za-z0-9._-]+", "_", raw)
 
-
 def path_exists(path: str) -> bool:
-    """
-    Return True if path exists (local file or s3://bucket/key).
-    """
     if path.startswith("s3://"):
         bucket, key = parse_s3_uri(path)
         try:
@@ -53,14 +41,11 @@ def path_exists(path: str) -> bool:
             status = e.response.get("ResponseMetadata", {}).get("HTTPStatusCode", None)
             if status == 404:
                 return False
-            # If something else happened (403, 500, etc), surface it
             raise
     else:
-        # Local path
         from pathlib import Path
 
         return Path(path).exists()
-
 
 def copy_preproc_to_bsc(image_id: str, preproc_root: str, bsc_dir: str):
     preproc_root = preproc_root.rstrip("/")
@@ -78,7 +63,6 @@ def copy_preproc_to_bsc(image_id: str, preproc_root: str, bsc_dir: str):
     for name, s3_path in files.items():
         local = download_to_temp(s3_path)
         upload_file(local, f"{bsc_dir}/{name}")
-
 
 def run_batch(
     manifest_csv,
@@ -103,7 +87,6 @@ def run_batch(
     if limit is not None:
         df = df.head(int(limit))
 
-    # Optional clear: safer to NOT delete unless you explicitly ask
     if clear_out:
         if out_root.startswith("s3://"):
             clear_s3_prefix(out_root)
@@ -125,7 +108,6 @@ def run_batch(
             image_id = make_image_id(row)
             out_dir = f"{out_root.rstrip('/')}/{image_id}"
 
-            # ✅ SKIP if already processed (voxel-wise map exists)
             done_flag = f"{out_dir}/bsc_dir_map.nii.gz"
             if path_exists(done_flag):
                 tqdm.write(f"[SKIP] Already done → {image_id}")
@@ -154,7 +136,6 @@ def run_batch(
             subject_id = str(row["subject"])
             out_dir = f"{out_root.rstrip('/')}/{subject_id}"
 
-            # ✅ SKIP if already processed
             done_flag = f"{out_dir}/bsc_dir_map.nii.gz"
             if path_exists(done_flag):
                 tqdm.write(f"[SKIP] Already done → {subject_id}")
@@ -175,7 +156,6 @@ def run_batch(
     else:
         raise ValueError("Unknown engine")
 
-
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--manifest", required=True)
@@ -185,25 +165,21 @@ if __name__ == "__main__":
     ap.add_argument("--limit", type=int)
     ap.add_argument("--skip", type=int, default=0, help="Skip first N rows (0-indexed)")
 
-    # Atropos params
     ap.add_argument("--eps", type=float, default=0.05)
     ap.add_argument("--sigma_mm", type=float, default=1.0)
 
-    # Preproc root (important!)
     ap.add_argument(
         "--preproc_root",
         default="s3://ishaan-research/data/derivatives/preprocess/adni_5",
         help="Root prefix containing <image_id>/t1w_preproc.nii.gz etc.",
     )
 
-    # Safety: don’t wipe outputs unless explicitly requested
     ap.add_argument(
         "--clear_out",
         action="store_true",
         help="DANGEROUS: clear out_root before running",
     )
 
-    # Freesurfer params
     ap.add_argument("--subjects_dir")
     ap.add_argument("--t1_mgz", default="mri/brain.mgz")
     ap.add_argument("--offsets", default="-2,-1,0,1,2")

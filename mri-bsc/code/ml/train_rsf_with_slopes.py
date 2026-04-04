@@ -1,12 +1,3 @@
-"""
-Train Random Survival Forest using BSC SLOPES as predictors.
-
-Key changes:
-- Feature selection happens on TRAIN only (reduces leakage).
-- Robust variance ranking: signed-log transform + winsorization.
-- Optional penalty for Nboundary-like features during ranking so they don't dominate.
-- Final scaling uses MinMax to (0,1) fit on TRAIN only.
-"""
 
 import argparse
 import json
@@ -22,12 +13,7 @@ from sklearn.preprocessing import MinMaxScaler
 from lifelines import KaplanMeierFitter
 from lifelines.statistics import logrank_test
 
-
-# -----------------------------
-# Data loading
-# -----------------------------
 def load_and_merge_data(slopes_path: str, survival_path: str):
-    """Merge slopes with survival labels."""
     print(f"Loading slopes: {slopes_path}")
     slopes = pd.read_csv(slopes_path)
 
@@ -41,30 +27,19 @@ def load_and_merge_data(slopes_path: str, survival_path: str):
     print(f"  Merged: {len(merged)} subjects")
     return merged
 
-
-# -----------------------------
-# Robust transforms + scaling
-# -----------------------------
 def signed_log1p_df(X: pd.DataFrame) -> pd.DataFrame:
-    """Monotonic transform that compresses huge magnitudes but keeps sign."""
     X = X.copy()
     return np.sign(X) * np.log1p(np.abs(X))
 
-
 def fit_winsor_limits(X: pd.DataFrame, lower_q: float, upper_q: float) -> dict:
-    """Fit per-column clipping limits on TRAIN."""
     lower = X.quantile(lower_q)
     upper = X.quantile(upper_q)
     return {"lower": lower, "upper": upper}
 
-
 def apply_winsor_limits(X: pd.DataFrame, limits: dict) -> pd.DataFrame:
-    """Apply per-column clipping limits to any split (TRAIN/TEST)."""
     return X.clip(lower=limits["lower"], upper=limits["upper"], axis=1)
 
-
 def minmax_scale_train_test(X_train: pd.DataFrame, X_test: pd.DataFrame):
-    """Fit MinMaxScaler on TRAIN, transform TRAIN/TEST to (0,1)."""
     scaler = MinMaxScaler(feature_range=(0.0, 1.0))
     X_train_scaled = pd.DataFrame(
         scaler.fit_transform(X_train),
@@ -78,10 +53,6 @@ def minmax_scale_train_test(X_train: pd.DataFrame, X_test: pd.DataFrame):
     )
     return X_train_scaled, X_test_scaled, scaler
 
-
-# -----------------------------
-# Feature selection (penalized)
-# -----------------------------
 def select_slope_features_train_only(
     X_train: pd.DataFrame,
     top_k: int = 20,
@@ -90,21 +61,13 @@ def select_slope_features_train_only(
     winsor_q_low: float = 0.01,
     winsor_q_high: float = 0.99,
 ):
-    """
-    Select top slope features by *robust* variance on TRAIN only,
-    with an optional penalty for features matching penalize_regex.
-
-    The penalty affects only the ranking score (not the actual values).
-    """
-    # Robust variance: signed log + winsorize (fit clipping on train)
     X_log = signed_log1p_df(X_train)
     limits = fit_winsor_limits(X_log, winsor_q_low, winsor_q_high)
     X_robust = apply_winsor_limits(X_log, limits)
 
-    raw_var = X_robust.var()  # sample variance
+    raw_var = X_robust.var()
     score = raw_var.copy()
 
-    # Penalize Nboundary-like features in ranking score
     mask = pd.Series(
         score.index.str.contains(penalize_regex, case=False, regex=True),
         index=score.index,
@@ -129,13 +92,8 @@ def select_slope_features_train_only(
         )
     print(f"{'='*80}")
 
-    # Return features AND the robust winsor limits if you want to reuse them later
     return top_features
 
-
-# -----------------------------
-# RSF training + evaluation
-# -----------------------------
 def train_rsf_model(X_train, X_test, y_train, y_test, n_estimators=1000):
     y_train_surv = Surv.from_dataframe("event", "time_years", y_train)
     y_test_surv = Surv.from_dataframe("event", "time_years", y_test)
@@ -163,7 +121,6 @@ def train_rsf_model(X_train, X_test, y_train, y_test, n_estimators=1000):
     train_risk = rsf.predict(X_train)
     test_risk = rsf.predict(X_test)
 
-    # Approx RMSE on events only (same as your original approach)
     train_events = y_train["event"] == 1
     test_events = y_test["event"] == 1
 
@@ -202,7 +159,6 @@ def train_rsf_model(X_train, X_test, y_train, y_test, n_estimators=1000):
     print(f"{'='*80}")
 
     return rsf, metrics, train_risk, test_risk
-
 
 def create_kaplan_meier_curves(y_train, y_test, train_risk, test_risk, out_dir: Path):
     print(f"\n{'='*70}")
@@ -306,19 +262,15 @@ def create_kaplan_meier_curves(y_train, y_test, train_risk, test_risk, out_dir: 
     plt.tight_layout()
     km_plot_path = out_dir / "kaplan_meier_curves.png"
     plt.savefig(km_plot_path, dpi=300, bbox_inches="tight")
-    print(f"\n✅ Saved Kaplan-Meier curves: {km_plot_path}")
+    print(f"\n Saved Kaplan-Meier curves: {km_plot_path}")
 
     km_plot_pdf = out_dir / "kaplan_meier_curves.pdf"
     plt.savefig(km_plot_pdf, bbox_inches="tight")
-    print(f"✅ Saved PDF version: {km_plot_pdf}")
+    print(f" Saved PDF version: {km_plot_pdf}")
 
     plt.close()
     print(f"{'='*70}\n")
 
-
-# -----------------------------
-# Main
-# -----------------------------
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -337,7 +289,6 @@ def main():
         "--n_estimators", type=int, default=1000, help="Number of trees in forest"
     )
 
-    # New knobs for your exact issue
     parser.add_argument(
         "--penalize_regex",
         type=str,
@@ -370,14 +321,12 @@ def main():
 
     df = load_and_merge_data(args.slopes, args.survival)
 
-    # Identify slope columns early
     slope_cols = [c for c in df.columns if c.endswith("_slope")]
     slope_cols = [c for c in slope_cols if df[c].notna().sum() > len(df) * 0.8]
 
     X_all = df[slope_cols].copy()
     y_all = df[["time_years", "event"]].copy()
 
-    # Handle missing values (median impute)
     X_all = X_all.fillna(X_all.median(numeric_only=True))
 
     print(f"\n{'='*80}")
@@ -399,7 +348,6 @@ def main():
     )
     print(f"{'='*80}")
 
-    # Feature selection on TRAIN ONLY with penalty
     slope_features = select_slope_features_train_only(
         X_train_all,
         top_k=args.top_k,
@@ -409,11 +357,9 @@ def main():
         winsor_q_high=args.winsor_high,
     )
 
-    # Subset to selected features
     X_train = X_train_all[slope_features].copy()
     X_test = X_test_all[slope_features].copy()
 
-    # Robust transform before minmax scaling (fit clipping on train)
     X_train_log = signed_log1p_df(X_train)
     X_test_log = signed_log1p_df(X_test)
 
@@ -421,7 +367,6 @@ def main():
     X_train_robust = apply_winsor_limits(X_train_log, limits)
     X_test_robust = apply_winsor_limits(X_test_log, limits)
 
-    # MinMax scale to (0,1) using TRAIN only
     print(f"\n{'='*80}")
     print("SCALING: Robust transform + MinMax to (0,1), fit on TRAIN only")
     print(f"{'='*80}")
@@ -429,7 +374,6 @@ def main():
         X_train_robust, X_test_robust
     )
 
-    # Debug prints
     post_var = X_train_scaled.var()
     print("Feature ranges AFTER scaling (TRAIN):")
     mins = X_train_scaled.min()
@@ -441,28 +385,23 @@ def main():
     print(f"\nMean variance after minmax: {post_var.mean():.6f}")
     print(f"{'='*80}")
 
-    # Train RSF
     model, metrics, train_risk, test_risk = train_rsf_model(
         X_train_scaled, X_test_scaled, y_train, y_test, args.n_estimators
     )
 
-    # Kaplan-Meier plots
     create_kaplan_meier_curves(y_train, y_test, train_risk, test_risk, out_dir)
 
-    # Save metrics
     metrics_path = out_dir / "rsf_slopes_metrics.json"
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=2)
-    print(f"\n✅ Saved metrics: {metrics_path}")
+    print(f"\n Saved metrics: {metrics_path}")
 
-    # Save features
     features_path = out_dir / "rsf_features.txt"
     with open(features_path, "w") as f:
         for feat in slope_features:
             f.write(f"{feat}\n")
-    print(f"✅ Saved features: {features_path}")
+    print(f" Saved features: {features_path}")
 
-    # Save predictions
     test_df = X_test.copy()
     test_df["subject"] = df.loc[X_test.index, "subject"].values
     test_df["true_time"] = y_test["time_years"].values
@@ -471,9 +410,8 @@ def main():
 
     pred_path = out_dir / "rsf_predictions.csv"
     test_df.to_csv(pred_path, index=False)
-    print(f"✅ Saved predictions: {pred_path}")
+    print(f" Saved predictions: {pred_path}")
 
-    # Summary
     summary_path = out_dir / "rsf_summary.txt"
     with open(summary_path, "w") as f:
         f.write("BSC SLOPES RANDOM SURVIVAL FOREST (ROBUST SELECTION + MINMAX)\n")
@@ -501,19 +439,18 @@ def main():
             f.write(f"  Test RMSE:         {metrics['test_rmse_events']:.4f} years\n")
         f.write("\n" + "=" * 80 + "\n")
 
-    print(f"✅ Saved summary: {summary_path}")
+    print(f" Saved summary: {summary_path}")
 
     print("\n" + "=" * 80)
-    print("✅ DONE! Random Survival Forest training complete")
+    print(" DONE! Random Survival Forest training complete")
     print("=" * 80)
     print(f"\nResults in: {out_dir}")
-    print(f"\n📊 TRAIN C-index: {metrics['train_c_index']:.4f}")
-    print(f"📊 TEST C-index:  {metrics['test_c_index']:.4f}")
+    print(f"\n TRAIN C-index: {metrics['train_c_index']:.4f}")
+    print(f" TEST C-index:  {metrics['test_c_index']:.4f}")
     print(
-        f"📊 Overfitting Gap: {metrics['train_c_index'] - metrics['test_c_index']:.4f}"
+        f" Overfitting Gap: {metrics['train_c_index'] - metrics['test_c_index']:.4f}"
     )
     print("=" * 80)
-
 
 if __name__ == "__main__":
     main()

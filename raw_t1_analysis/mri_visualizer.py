@@ -17,7 +17,6 @@ from vtkmodules.vtkRenderingCore import vtkVolumeProperty
 from vtkmodules.util import numpy_support
 from vtkmodules.vtkInteractionWidgets import vtkSliderWidget, vtkSliderRepresentation2D
 
-
 def create_slider_widget(
     interactor,
     min_value,
@@ -53,17 +52,12 @@ def create_slider_widget(
     slider_widget.SetRepresentation(slider_rep)
     slider_widget.SetAnimationModeToAnimate()
     slider_widget.EnabledOn()
-    slider_widget.AddObserver(16, callback)  # 16 = vtkCommand.InteractionEvent
+    slider_widget.AddObserver(16, callback)
     return slider_widget
 
-
 def visualize_mri_3d(image_path):
-    """
-    Comprehensive 3D MRI visualization with VTK, including window/level, opacity, and slice controls.
-    """
 
     def show_2d_slices(arr):
-        """Show axial, sagittal, and coronal slices in a matplotlib window."""
         mid_z = arr.shape[2] // 2
         mid_y = arr.shape[1] // 2
         mid_x = arr.shape[0] // 2
@@ -79,20 +73,17 @@ def visualize_mri_3d(image_path):
         plt.tight_layout()
         plt.show()
 
-    # Load MRI image using nibabel and dask
     from nibabel.loadsave import load
 
     img = load(image_path)
-    data = img.get_fdata()  # type: ignore
+    data = img.get_fdata()
     dask_data = da.from_array(data, chunks=[64, 64, 64])
     arr = dask_data.compute()
     arr = np.nan_to_num(arr)
     arr = (255 * (arr - arr.min()) / (arr.max() - arr.min())).astype(np.uint8)
 
-    # Show 2D slices in a separate window
     show_2d_slices(arr)
 
-    # Convert numpy array to VTK image
     vtk_data = numpy_support.numpy_to_vtk(
         num_array=arr.ravel(order="F"),
         deep=True,
@@ -100,10 +91,9 @@ def visualize_mri_3d(image_path):
     )
     vtk_img = vtkImageData()
     vtk_img.SetDimensions(arr.shape)
-    vtk_img.SetSpacing(tuple(float(x) for x in img.header.get_zooms()))  # type: ignore
+    vtk_img.SetSpacing(tuple(float(x) for x in img.header.get_zooms()))
     vtk_img.GetPointData().SetScalars(vtk_data)
 
-    # Set up VTK volume rendering
     from vtkmodules.vtkRenderingCore import vtkColorTransferFunction
     from vtkmodules.vtkCommonDataModel import vtkPiecewiseFunction
     from vtkmodules.vtkInteractionStyle import vtkInteractorStyleTrackballCamera
@@ -111,12 +101,10 @@ def visualize_mri_3d(image_path):
     volume_mapper = vtkSmartVolumeMapper()
     volume_mapper.SetInputData(vtk_img)
 
-    # Color transfer function (grayscale)
     color_func = vtkColorTransferFunction()
     color_func.AddRGBPoint(0, 0.0, 0.0, 0.0)
     color_func.AddRGBPoint(255, 1.0, 1.0, 1.0)
 
-    # Opacity transfer function
     opacity_func = vtkPiecewiseFunction()
     opacity_func.AddPoint(0, 0.0)
     opacity_func.AddPoint(10, 0.0)
@@ -136,7 +124,6 @@ def visualize_mri_3d(image_path):
     volume.SetMapper(volume_mapper)
     volume.SetProperty(volume_property)
 
-    # Set up renderer and window
     renderer = vtkRenderer()
     renderer.AddVolume(volume)
     renderer.SetBackground(0.1, 0.1, 0.2)
@@ -148,7 +135,6 @@ def visualize_mri_3d(image_path):
     style = vtkInteractorStyleTrackballCamera()
     interactor.SetInteractorStyle(style)
 
-    # Add text actor for slice info
     text_actor = vtkTextActor()
     text_actor.SetInput(f"Shape: {arr.shape}")
     text_actor.GetTextProperty().SetFontSize(18)
@@ -156,19 +142,16 @@ def visualize_mri_3d(image_path):
     text_actor.SetPosition(10, 10)
     renderer.AddActor2D(text_actor)
 
-    # Opacity slider callback
     def opacity_callback(obj, event):
         value = obj.GetRepresentation().GetValue()
         volume_property.SetScalarOpacityUnitDistance(value)
         render_window.Render()
 
-    # Window/level slider callback
     def window_callback(obj, event):
         value = obj.GetRepresentation().GetValue()
         volume_property.SetColor([0, value / 255.0, 1 - value / 255.0])
         render_window.Render()
 
-    # Slice slider callback (shows a single slice as a 2D image)
     slice_actor = None
 
     def slice_callback(obj, event):
@@ -192,7 +175,6 @@ def visualize_mri_3d(image_path):
         renderer.AddActor(slice_actor)
         render_window.Render()
 
-    # Add sliders
     create_slider_widget(
         interactor,
         0.01,
@@ -230,12 +212,9 @@ def visualize_mri_3d(image_path):
         y2=0.97,
     )
 
-    # Start interaction
     render_window.Render()
     interactor.Start()
 
-
-# Example usage:
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python mri_visualizer.py <path_to_nifti_image>")

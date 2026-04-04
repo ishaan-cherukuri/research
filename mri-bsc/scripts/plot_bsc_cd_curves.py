@@ -1,16 +1,3 @@
-#!/usr/bin/env python3
-"""Create combined Panel C/D BSC figure with both narratives.
-
-Panel C:
-- Intensity profile along boundary normal with sampled offsets.
-- Overlay either sigmoid fit, pipeline tangent (local directional derivative), or both.
-
-Panel D:
-- Variant 1 (pipeline): profile family with |dI/dn| at boundary annotation.
-- Variant 2 (sigmoid): profile family with increasing steepness.
-
-By default, this script renders both overlays in C and both variants in D.
-"""
 
 from __future__ import annotations
 
@@ -28,22 +15,13 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 SLOPES_CSV = ROOT / "data" / "index" / "bsc_longitudinal_slopes.csv"
 SIMPLE_CSV = ROOT / "data" / "index" / "bsc_simple_features.csv"
 
-
 def profile_function(x_mm: np.ndarray, sharpness: float) -> np.ndarray:
-    """Smooth boundary profile used for visualization.
-
-    This is only a display profile. The pipeline-style BSC in this figure is the
-    local directional derivative magnitude at boundary (x=0), not a sigmoid fit.
-    """
     return 0.6 + 0.35 * np.tanh(sharpness * x_mm)
-
 
 def tangent_line(x_mm: np.ndarray, y0: float, slope0: float) -> np.ndarray:
     return y0 + slope0 * x_mm
 
-
 def load_bsc_points() -> np.ndarray:
-    """One BSC point per subject. Falls back to synthetic n=456 if needed."""
     if SLOPES_CSV.exists():
         df = pd.read_csv(SLOPES_CSV)
         if "bsc_dir_mean_baseline" in df.columns:
@@ -67,15 +45,12 @@ def load_bsc_points() -> np.ndarray:
     vals = rng.normal(loc=0.52, scale=0.11, size=456)
     return np.clip(vals, 0.15, 0.95)
 
-
 def bsc_to_sharpness(vals: np.ndarray) -> np.ndarray:
-    """Map BSC values to profile sharpness for plotting."""
     vmin, vmax = float(np.min(vals)), float(np.max(vals))
     if abs(vmax - vmin) < 1e-8:
         return np.full_like(vals, 0.24)
     z = (vals - vmin) / (vmax - vmin)
     return 0.10 + 0.32 * z
-
 
 def panel_c(
     ax: plt.Axes,
@@ -85,7 +60,6 @@ def panel_c(
     show_sigmoid: bool,
     show_pipeline_tangent: bool,
 ) -> None:
-    """Panel C: sampled profile + optional overlays."""
     rng = np.random.default_rng(7)
 
     y = profile_function(x_mm, sharpness)
@@ -131,9 +105,7 @@ def panel_c(
     ax.set_xlim(-2.4, 2.4)
     ax.legend(frameon=False, loc="lower right", fontsize=8)
 
-
 def panel_d_pipeline(ax: plt.Axes, x_mm: np.ndarray, bsc_vals: np.ndarray) -> None:
-    """Panel D Variant 1: pipeline-style mapping to local |dI/dn| at boundary."""
     q = np.percentile(bsc_vals, [10, 30, 50, 70, 90])
     sharp = bsc_to_sharpness(q)
     colors = ["#2563eb", "#22c55e", "#eab308", "#f97316", "#dc2626"]
@@ -156,9 +128,7 @@ def panel_d_pipeline(ax: plt.Axes, x_mm: np.ndarray, bsc_vals: np.ndarray) -> No
     ax.set_ylabel("T1 intensity")
     ax.set_xlim(-2.4, 2.4)
 
-
 def panel_d_sigmoid(ax: plt.Axes, x_mm: np.ndarray, bsc_vals: np.ndarray) -> None:
-    """Panel D Variant 2: sigmoid-style narrative with steepness progression."""
     q = np.percentile(bsc_vals, [10, 30, 50, 70, 90])
     sharp = bsc_to_sharpness(q)
     colors = ["#2563eb", "#22c55e", "#eab308", "#f97316", "#dc2626"]
@@ -175,7 +145,6 @@ def panel_d_sigmoid(ax: plt.Axes, x_mm: np.ndarray, bsc_vals: np.ndarray) -> Non
     ax.set_ylabel("T1 intensity")
     ax.set_xlim(-2.4, 2.4)
     ax.legend(frameon=False, loc="lower right", fontsize=8)
-
 
 def main() -> None:
     ap = argparse.ArgumentParser()
@@ -243,7 +212,6 @@ def main() -> None:
     fig.savefig(out_path, dpi=240)
     print(f"[OK] wrote {out_path}")
     print(f"[INFO] points used: {n_pts}")
-
 
 if __name__ == "__main__":
     main()

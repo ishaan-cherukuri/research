@@ -1,17 +1,3 @@
-"""
-code.index.build_mci_conversion_labels
-
-Build subject-level MCI->AD conversion labels from a longitudinal ADNI manifest.
-
-Labeling (default):
-  - Include subjects with baseline (visit_code == 'bl') diagnosis == 'MCI'
-  - label=1 (converter) if ANY later visit has diagnosis == 'AD' within horizon (optional)
-  - label=0 (non-converter) otherwise
-
-Outputs:
-  - labels CSV: subject,label,bl_date,first_ad_date,conversion_months,n_visits,notes
-  - unmatched CSV (optional): subjects/rows skipped and why
-"""
 
 from __future__ import annotations
 
@@ -20,16 +6,13 @@ import pandas as pd
 
 from code.utils.io_any import read_csv_any, write_csv_any
 
-
 def _to_dt(s):
     return pd.to_datetime(s, errors="coerce")
-
 
 def _months_between(a, b):
     if pd.isna(a) or pd.isna(b):
         return None
     return float((b - a).days / 30.44)
-
 
 def build_labels(
     manifest_csv: str,
@@ -134,7 +117,6 @@ def build_labels(
 
     return out_df
 
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--manifest", required=True)
@@ -164,7 +146,6 @@ def main():
         horizon_months=horizon,
         out_unmatched_csv=(args.out_unmatched_csv or None),
     )
-
 
 if __name__ == "__main__":
     main()

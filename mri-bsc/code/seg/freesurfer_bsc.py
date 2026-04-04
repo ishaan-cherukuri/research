@@ -2,11 +2,8 @@ import os, json, argparse, subprocess, tempfile, numpy as np, nibabel as nib, pa
 from pathlib import Path
 from code.io.s3 import upload_file
 
-
 def _is_s3_path(path: str) -> bool:
-    """Check if a path is an S3 URI."""
     return isinstance(path, str) and path.startswith("s3://")
-
 
 def run_vol2surf_series(fs_subjects_dir, subject_id, hemi, vol_path, offsets_mm):
     env = os.environ.copy()
@@ -41,12 +38,10 @@ def run_vol2surf_series(fs_subjects_dir, subject_id, hemi, vol_path, offsets_mm)
         os.remove(tmp_out)
     return out
 
-
 def central_slope(vals_at_offsets, offsets_mm):
-    offs = np.array(sorted(offsets_mm), dtype=np.float32)  # e.g., [-2,-1,0,1,2]
-    X = np.vstack([offs, np.ones_like(offs)]).T  # [K,2]
+    offs = np.array(sorted(offsets_mm), dtype=np.float32)
+    X = np.vstack([offs, np.ones_like(offs)]).T
     XtX_inv = np.linalg.inv(X.T @ X)
-    # Build Y[K, Nverts]
     N = None
     for k, off in enumerate(offs):
         v = vals_at_offsets[float(off)]
@@ -54,10 +49,9 @@ def central_slope(vals_at_offsets, offsets_mm):
             N = v.shape[0]
             Y = np.zeros((offs.size, N), dtype=np.float32)
         Y[k, :] = v
-    m_b = XtX_inv @ X.T @ Y  # [2, N]
-    slopes = m_b[0, :]  # intensity change per mm along normal
+    m_b = XtX_inv @ X.T @ Y
+    slopes = m_b[0, :]
     return slopes
-
 
 def run_fs_bsc(
     fs_subjects_dir,
@@ -106,7 +100,6 @@ def run_fs_bsc(
         metrics_csv_path, index=False
     )
 
-    # If output was S3, upload files and clean up temp directory
     if is_s3_out:
         for filename in ["bsc_metrics.json", "subject_metrics.csv"]:
             local_file = os.path.join(local_work_dir, filename)
@@ -114,13 +107,11 @@ def run_fs_bsc(
                 s3_path = os.path.join(out_dir, filename)
                 upload_file(Path(local_file), s3_path)
 
-        # Clean up temporary directory
         import shutil
 
         shutil.rmtree(local_work_dir, ignore_errors=True)
 
     return metrics
-
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()

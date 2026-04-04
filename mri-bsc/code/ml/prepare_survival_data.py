@@ -1,23 +1,3 @@
-"""code.ml.prepare_survival_data
-
-Prepare survival analysis datasets from longitudinal BSC features.
-
-Survival analysis for Alzheimer's conversion:
-  - Time-to-event: time from first scan to diagnosis = 3 (AD)
-  - Censoring: subjects who don't reach dx=3 are right-censored
-  - Time-dependent covariates: BSC features change over time
-
-Outputs:
-  1. Time-to-conversion CSV (for Cox regression)
-  2. Landmark dataset (for time-dependent Cox with BSC at specific timepoints)
-  3. Joint model dataset (for joint modeling of longitudinal + survival)
-
-Usage:
-  python3 -m code.ml.prepare_survival_data \
-    --features data/index/bsc_simple_features.csv \
-    --out_dir data/ml/survival
-
-"""
 
 from __future__ import annotations
 
@@ -31,7 +11,6 @@ from typing import Optional
 
 import numpy as np
 
-
 def _parse_date(s: str) -> Optional[datetime]:
     s = (s or "").strip()
     if not s:
@@ -43,10 +22,8 @@ def _parse_date(s: str) -> Optional[datetime]:
             continue
     return None
 
-
 def _years_between(a: datetime, b: datetime) -> float:
     return (b - a).days / 365.25
-
 
 @dataclass
 class ScanRow:
@@ -57,9 +34,7 @@ class ScanRow:
     diagnosis: Optional[float]
     features: dict[str, float]
 
-
 def read_features(csv_path: str) -> tuple[list[str], dict[str, list[ScanRow]]]:
-    """Read scan-level features and group by subject."""
     with open(csv_path, newline="") as f:
         r = csv.DictReader(f)
         if not r.fieldnames:
@@ -103,23 +78,12 @@ def read_features(csv_path: str) -> tuple[list[str], dict[str, list[ScanRow]]]:
                 )
             )
 
-    # Sort by date
     for s in by_subject:
         by_subject[s].sort(key=lambda x: x.dt)
 
     return feat_cols, by_subject
 
-
 def compute_time_to_conversion(by_subject: dict[str, list[ScanRow]]) -> list[dict]:
-    """
-    Compute time-to-conversion for Cox regression.
-
-    Returns list of dicts with:
-      - subject
-      - event: 1 if converted to dx=3, 0 if censored
-      - time_years: years from first scan to conversion or last scan
-      - baseline features (from first scan)
-    """
     results = []
 
     for subj, scans in by_subject.items():
@@ -129,7 +93,6 @@ def compute_time_to_conversion(by_subject: dict[str, list[ScanRow]]) -> list[dic
         t0 = scans[0].dt
         bl_feats = scans[0].features
 
-        # Find first dx=3 visit
         conversion_time = None
         for scan in scans:
             if scan.diagnosis == 3.0:
@@ -149,7 +112,6 @@ def compute_time_to_conversion(by_subject: dict[str, list[ScanRow]]) -> list[dic
             "time_years": time,
         }
 
-        # Add baseline features with _bl suffix
         for k, v in bl_feats.items():
             row[f"{k}_bl"] = v
 
@@ -157,19 +119,9 @@ def compute_time_to_conversion(by_subject: dict[str, list[ScanRow]]) -> list[dic
 
     return results
 
-
 def compute_landmark_dataset(
     by_subject: dict[str, list[ScanRow]], landmark_year: float = 1.0
 ) -> list[dict]:
-    """
-    Create landmark dataset at a specific time point.
-
-    Only includes subjects alive (not converted) at landmark_year.
-    Uses features from scan closest to landmark_year.
-
-    Args:
-        landmark_year: years from baseline to create landmark (e.g., 1.0 = 1 year)
-    """
     results = []
 
     for subj, scans in by_subject.items():
@@ -178,18 +130,15 @@ def compute_landmark_dataset(
 
         t0 = scans[0].dt
 
-        # Find conversion time
         conversion_time = None
         for scan in scans:
             if scan.diagnosis == 3.0:
                 conversion_time = _years_between(t0, scan.dt)
                 break
 
-        # Skip if converted before landmark
         if conversion_time is not None and conversion_time < landmark_year:
             continue
 
-        # Find scan closest to landmark
         closest_scan = None
         min_diff = float("inf")
         for scan in scans:
@@ -203,7 +152,6 @@ def compute_landmark_dataset(
         if closest_scan is None:
             continue
 
-        # Time from landmark to event/censor
         if conversion_time is not None:
             event = 1
             time = conversion_time - landmark_year
@@ -228,16 +176,7 @@ def compute_landmark_dataset(
 
     return results
 
-
 def compute_joint_model_dataset(by_subject: dict[str, list[ScanRow]]) -> list[dict]:
-    """
-    Create dataset for joint longitudinal-survival modeling.
-
-    Each row is one scan with:
-      - time from baseline
-      - features
-      - subject-level event and total follow-up time
-    """
     results = []
 
     for subj, scans in by_subject.items():
@@ -246,7 +185,6 @@ def compute_joint_model_dataset(by_subject: dict[str, list[ScanRow]]) -> list[di
 
         t0 = scans[0].dt
 
-        # Find conversion
         conversion_time = None
         for scan in scans:
             if scan.diagnosis == 3.0:
@@ -278,7 +216,6 @@ def compute_joint_model_dataset(by_subject: dict[str, list[ScanRow]]) -> list[di
 
     return results
 
-
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--features", required=True, help="Scan-level features CSV")
@@ -297,7 +234,6 @@ def main() -> None:
     feat_cols, by_subject = read_features(args.features)
     print(f"[INFO] {len(by_subject)} subjects, {len(feat_cols)} features")
 
-    # 1. Time-to-conversion (baseline Cox)
     print("[INFO] Creating time-to-conversion dataset...")
     ttc = compute_time_to_conversion(by_subject)
     ttc_path = out_dir / "time_to_conversion.csv"
@@ -314,7 +250,6 @@ def main() -> None:
             f"  Subjects: {len(ttc)}, Events: {events}, Censored: {len(ttc) - events}"
         )
 
-    # 2. Landmark datasets
     landmarks = [float(x) for x in args.landmark_years.split(",")]
     for lm in landmarks:
         print(f"[INFO] Creating landmark dataset at {lm} years...")
@@ -331,7 +266,6 @@ def main() -> None:
             print(f"[OK] {lm_path}")
             print(f"  Subjects: {len(lm_data)}, Events: {events}")
 
-    # 3. Joint model dataset
     print("[INFO] Creating joint model dataset...")
     joint = compute_joint_model_dataset(by_subject)
     joint_path = out_dir / "joint_longitudinal_survival.csv"
@@ -347,7 +281,6 @@ def main() -> None:
         print(f"  Unique subjects: {len(set(r['subject'] for r in joint))}")
 
     print("\n[DONE] Survival datasets created in:", out_dir)
-
 
 if __name__ == "__main__":
     main()

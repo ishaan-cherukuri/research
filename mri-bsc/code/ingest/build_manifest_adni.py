@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import argparse
 import io
 import re
@@ -10,10 +9,6 @@ import pandas as pd
 
 s3 = boto3.client("s3")
 
-
-# -------------------------
-# S3 helpers
-# -------------------------
 def parse_s3_uri(uri: str) -> Tuple[str, str]:
     if not uri.startswith("s3://"):
         raise ValueError(f"Not an S3 URI: {uri}")
@@ -21,10 +16,8 @@ def parse_s3_uri(uri: str) -> Tuple[str, str]:
     bucket, _, key = rest.partition("/")
     return bucket, key
 
-
 def ensure_trailing_slash(prefix: str) -> str:
     return prefix if prefix.endswith("/") else prefix + "/"
-
 
 def list_common_prefixes(bucket: str, prefix: str) -> List[str]:
     prefix = ensure_trailing_slash(prefix)
@@ -35,13 +28,11 @@ def list_common_prefixes(bucket: str, prefix: str) -> List[str]:
             out.append(cp["Prefix"])
     return out
 
-
 def list_objects(bucket: str, prefix: str):
     paginator = s3.get_paginator("list_objects_v2")
     for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
         for obj in page.get("Contents", []):
             yield obj
-
 
 def read_csv_any(path: str) -> pd.DataFrame:
     if path.startswith("s3://"):
@@ -50,7 +41,6 @@ def read_csv_any(path: str) -> pd.DataFrame:
         data = obj["Body"].read()
         return pd.read_csv(io.BytesIO(data))
     return pd.read_csv(path)
-
 
 def write_csv_any(df: pd.DataFrame, path: str) -> None:
     if path.startswith("s3://"):
@@ -61,16 +51,11 @@ def write_csv_any(df: pd.DataFrame, path: str) -> None:
     else:
         df.to_csv(path, index=False)
 
-
-# -------------------------
-# Date parsing (folder names)
-# -------------------------
 _DATE_PATTERNS = [
-    "%Y-%m-%d_%H_%M_%S.%f",  # 2012-06-01_13_08_46.0
+    "%Y-%m-%d_%H_%M_%S.%f",
     "%Y-%m-%d_%H_%M_%S",
     "%Y-%m-%d",
 ]
-
 
 def parse_datefolder_name(prefix: str) -> Optional[datetime]:
     base = prefix.strip("/").split("/")[-1]
@@ -81,10 +66,6 @@ def parse_datefolder_name(prefix: str) -> Optional[datetime]:
             pass
     return None
 
-
-# -------------------------
-# Helper loading
-# -------------------------
 def load_helper(helper_csv: str) -> pd.DataFrame:
     df = read_csv_any(helper_csv)
     if "PTID" not in df.columns or "EXAMDATE" not in df.columns:
@@ -92,7 +73,6 @@ def load_helper(helper_csv: str) -> pd.DataFrame:
 
     df["EXAMDATE"] = pd.to_datetime(df["EXAMDATE"], errors="coerce")
 
-    # visit_code
     v2 = df["VISCODE2"].astype(str) if "VISCODE2" in df.columns else pd.Series([""] * len(df))
     v1 = df["VISCODE"].astype(str) if "VISCODE" in df.columns else pd.Series([""] * len(df))
     visit_code = []
@@ -106,15 +86,10 @@ def load_helper(helper_csv: str) -> pd.DataFrame:
     if "DIAGNOSIS" not in df.columns:
         df["DIAGNOSIS"] = ""
 
-    # keep only meaningful rows
     df = df.dropna(subset=["EXAMDATE"])
     df = df[df["visit_code"].astype(str).str.strip() != ""].copy()
     return df
 
-
-# -------------------------
-# Scan inspection
-# -------------------------
 def inspect_datefolder(bucket: str, date_prefix: str) -> Dict:
     has_json = False
     best_nifti_key = None
@@ -135,38 +110,26 @@ def inspect_datefolder(bucket: str, date_prefix: str) -> Dict:
                 best_nifti_key = key
 
         if has_json and has_nii and best_nifti_key is not None:
-            # still keep scanning to maybe find larger nii, but you can early-exit if you want speed
             pass
 
     return {"has_json": has_json, "has_nii": has_nii, "best_key": best_nifti_key}
 
-
-# -------------------------
-# Selection: pick 4 scans spread out in time
-# -------------------------
 def can_add_with_gap(chosen_dts: List[datetime], candidate: datetime, min_gap_days: int) -> bool:
     if not chosen_dts:
         return True
     min_gap = min(abs((candidate - d).days) for d in chosen_dts)
     return min_gap >= min_gap_days
 
-
 def pick_spread_out_scans(scans: List[Dict], k: int = 4, min_gap_days: int = 120) -> List[Dict]:
-    """
-    scans: list of dict with acq_dt
-    Returns up to k scans spread out, relaxing gap if needed.
-    """
     scans = sorted(scans, key=lambda x: x["acq_dt"])
     if len(scans) <= k:
         return scans
 
-    # start with earliest + latest
     chosen = [scans[0], scans[-1]]
     remaining = scans[1:-1]
 
     gap = min_gap_days
     while len(chosen) < k:
-        # pick candidate that maximizes distance to current chosen set
         best = None
         best_score = -1
 
@@ -179,10 +142,8 @@ def pick_spread_out_scans(scans: List[Dict], k: int = 4, min_gap_days: int = 120
                 best = sc
 
         if best is None:
-            # relax the gap until we can fill
             gap = max(0, gap - 30)
             if gap == 0:
-                # no gap constraint: just pick by farthest-point
                 best = max(
                     remaining,
                     key=lambda sc: min(abs((sc["acq_dt"] - c["acq_dt"]).days) for c in chosen),
@@ -195,11 +156,7 @@ def pick_spread_out_scans(scans: List[Dict], k: int = 4, min_gap_days: int = 120
 
     return sorted(chosen, key=lambda x: x["acq_dt"])
 
-
 def nearest_helper_row(helper_rows: List[Dict], acq_dt: datetime) -> Dict:
-    """
-    Assign scan to nearest helper EXAMDATE (no year restriction).
-    """
     best = None
     best_delta = float("inf")
     for hr in helper_rows:
@@ -210,10 +167,6 @@ def nearest_helper_row(helper_rows: List[Dict], acq_dt: datetime) -> Dict:
             best = hr
     return best
 
-
-# -------------------------
-# Main
-# -------------------------
 def build_manifest_less_strict(
     s3_root: str,
     helper_csv: str,
@@ -248,26 +201,23 @@ def build_manifest_less_strict(
             continue
 
         sub_helper = helper_by_ptid[subject_id]
-        # Make python datetimes WITHOUT deprecated dt.to_pydatetime bulk behavior:
         helper_rows = []
         for _, r in sub_helper.iterrows():
-            ts = r["EXAMDATE"]  # pandas Timestamp
+            ts = r["EXAMDATE"]
             if pd.isna(ts):
                 continue
             helper_rows.append(
                 {
-                    "EXAMDATE": ts.to_pydatetime(),  # per-row conversion (no warning)
+                    "EXAMDATE": ts.to_pydatetime(),
                     "visit_code": str(r["visit_code"]),
                     "DIAGNOSIS": str(r.get("DIAGNOSIS", "")),
                 }
             )
 
-        # Expecting 4 helper rows per subject, but we won't hard-crash if not
         if len(helper_rows) < 4:
             report_rows.append({"subject": subject_id, "passed": "no", "reason": f"helper_rows<{len(helper_rows)}"})
             continue
 
-        # List datefolders
         date_prefixes_all = list_common_prefixes(bucket, ensure_trailing_slash(subj_prefix))
 
         scan_infos = []
@@ -290,27 +240,20 @@ def build_manifest_less_strict(
             report_rows.append({"subject": subject_id, "passed": "no", "reason": f"valid_scans<{len(scan_infos)}"})
             continue
 
-        # Pick 4 spread-out scans (less strict)
         chosen_scans = pick_spread_out_scans(scan_infos, k=4, min_gap_days=min_gap_days)
 
-        # Assign each chosen scan to nearest helper row
-        # Ensure each helper visit_code doesn't get duplicated too badly:
-        # We'll do a simple unique assignment by trying to use distinct helper rows when possible.
         unused_helpers = helper_rows.copy()
         assigned = []
 
         for sc in chosen_scans:
             if unused_helpers:
-                # pick nearest among unused helpers first
                 hr = nearest_helper_row(unused_helpers, sc["acq_dt"])
                 unused_helpers.remove(hr)
             else:
-                # fallback (shouldn't happen with 4 scans / 4 helper rows)
                 hr = nearest_helper_row(helper_rows, sc["acq_dt"])
 
             assigned.append((sc, hr))
 
-        # Write manifest rows
         for sc, hr in sorted(assigned, key=lambda t: t[0]["acq_dt"]):
             manifest_rows.append(
                 {
@@ -343,7 +286,6 @@ def build_manifest_less_strict(
     print(f"Wrote manifest: {out_manifest} (rows={len(man_df)})")
     print(f"Wrote report:   {out_report} (subjects={len(rep_df)})")
 
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--s3-root", required=True)
@@ -364,7 +306,6 @@ def main():
         max_subjects=args.max_subjects,
         subject_regex=args.subject_regex,
     )
-
 
 if __name__ == "__main__":
     main()

@@ -1,42 +1,3 @@
-"""Post-process voxel-wise BSC maps in S3 to be non-zero only at the GM/WM boundary.
-
-Why this exists
---------------
-Some downstream tooling/viewers interpret broad boundary bands (or uncertain tissue posteriors)
-so that BSC appears non-zero across much of the brain. This script enforces a *hard mask*
-so that BSC maps are exactly zero outside a boundary mask.
-
-Default behavior
-----------------
-- For each scan folder <out_root>/<image_id>/ in S3:
-  - download bsc_dir_map.nii.gz and bsc_mag_map.nii.gz
-  - build a boundary mask (default: boundary_band_mask.nii.gz)
-  - set map voxels outside the mask to 0
-  - upload (overwrite) the maps back to S3
-
-Mask modes
-----------
-- band: uses boundary_band_mask.nii.gz (already produced by Atropos engine)
-- interface: builds a 1-voxel-ish GM/WM interface from gm_prob + wm_prob (+ optional brain_mask)
-
-Optional FreeSurfer integration
--------------------------------
-If you have FreeSurfer volumes available (e.g., ribbon.mgz + wm.mgz) you can provide
---fs_root to use them as an additional constraint mask.
-
-Example
--------
-python -m code.pipeline.postprocess_mask_bsc_s3 \
-  --manifest s3://ishaan-research/data/manifests/adni_manifest.csv \
-  --out_root  s3://ishaan-research/data/derivatives/bsc/adni/atropos \
-  --temp_root data/splits \
-  --mask_mode interface
-
-Notes
------
-- Uses data/splits/tmp for all temp files (macOS-safe).
-- Shows tqdm with average seconds/scan.
-"""
 
 from __future__ import annotations
 
@@ -62,17 +23,13 @@ from tqdm import tqdm
 
 from code.io.s3 import parse_s3_uri, upload_file
 
-
 s3 = boto3.client("s3")
-
 
 def _is_s3_path(path: str) -> bool:
     return isinstance(path, str) and path.startswith("s3://")
 
-
 def _sanitize_image_id(raw: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "_", raw)
-
 
 def make_image_id(row: pd.Series) -> str:
     subject = str(row["subject"])
@@ -80,14 +37,12 @@ def make_image_id(row: pd.Series) -> str:
     acq = str(row["acq_date"])
     return _sanitize_image_id(f"{subject}_{visit}_{acq}")
 
-
 def read_csv_any(path: str) -> pd.DataFrame:
     if _is_s3_path(path):
         b, k = parse_s3_uri(path)
         obj = s3.get_object(Bucket=b, Key=k)
         return pd.read_csv(io.BytesIO(obj["Body"].read()))
     return pd.read_csv(path)
-
 
 def s3_exists(s3_path: str) -> bool:
     bucket, key = parse_s3_uri(s3_path)
@@ -100,13 +55,11 @@ def s3_exists(s3_path: str) -> bool:
             return False
         raise
 
-
 def download_to(local_path: Path, s3_uri: str) -> Path:
     local_path.parent.mkdir(parents=True, exist_ok=True)
     bucket, key = parse_s3_uri(s3_uri)
     s3.download_file(bucket, key, str(local_path))
     return local_path
-
 
 def _ensure_project_tmp(temp_root: Path) -> Path:
     tmp_dir = (temp_root / "tmp").resolve()
@@ -118,7 +71,6 @@ def _ensure_project_tmp(temp_root: Path) -> Path:
     tempfile.tempdir = str(tmp_dir)
 
     return tmp_dir
-
 
 @dataclass(frozen=True)
 class ScanPaths:
@@ -136,7 +88,6 @@ class ScanPaths:
     metrics_json: str
     metrics_csv: str
 
-
 def build_scan_paths(out_root: str, image_id: str) -> ScanPaths:
     s3_dir = f"{out_root.rstrip('/')}/{image_id}"
     return ScanPaths(
@@ -152,10 +103,8 @@ def build_scan_paths(out_root: str, image_id: str) -> ScanPaths:
         metrics_csv=f"{s3_dir}/subject_metrics.csv",
     )
 
-
 def _load_any_image(path: Path) -> nib.spatialimages.SpatialImage:
     return nib.load(str(path))
-
 
 def _as_bool_mask(
     img: nib.spatialimages.SpatialImage, threshold: float = 0.5
@@ -165,7 +114,6 @@ def _as_bool_mask(
         return data != 0
     return data > threshold
 
-
 def build_mask_band(
     bsc_img: nib.spatialimages.SpatialImage,
     band_mask_path: Path,
@@ -173,7 +121,6 @@ def build_mask_band(
     band_img = _load_any_image(band_mask_path)
     band_res = resample_to_img(band_img, bsc_img, interpolation="nearest")
     return _as_bool_mask(band_res, threshold=0.5)
-
 
 def build_mask_interface(
     bsc_img: nib.spatialimages.SpatialImage,
@@ -190,11 +137,9 @@ def build_mask_interface(
     gm = np.asarray(gm_res.dataobj, dtype=np.float32)
     wm = np.asarray(wm_res.dataobj, dtype=np.float32)
 
-    # Hard labels by max posterior between GM and WM.
     gm_lab = gm >= wm
     wm_lab = wm > gm
 
-    # Thin-ish interface: GM voxels adjacent to WM.
     wm_dil = binary_dilation(wm_lab, iterations=1)
     interface = gm_lab & wm_dil
 
@@ -205,22 +150,14 @@ def build_mask_interface(
 
     return interface
 
-
 def build_mask_fs_cortex(
     bsc_img: nib.spatialimages.SpatialImage,
     aparc_or_aseg_path: Path,
 ) -> np.ndarray:
-    """Build cortex-only mask from FreeSurfer segmentation.
-
-    Uses label IDs:
-      - left cerebral cortex: 3
-      - right cerebral cortex: 42
-    """
     seg_img = _load_any_image(aparc_or_aseg_path)
     seg_res = resample_to_img(seg_img, bsc_img, interpolation="nearest")
     seg = np.asarray(seg_res.dataobj)
     return (seg == 3) | (seg == 42)
-
 
 def write_mask_nifti(
     mask: np.ndarray, ref_img: nib.spatialimages.SpatialImage, out_path: Path
@@ -228,7 +165,6 @@ def write_mask_nifti(
     hdr = ref_img.header.copy()
     hdr.set_data_dtype(np.uint8)
     nib.save(nib.Nifti1Image(mask.astype(np.uint8), ref_img.affine, hdr), str(out_path))
-
 
 def recompute_bsc_metrics_from_maps(
     bsc_dir_img: nib.spatialimages.SpatialImage,
@@ -255,14 +191,12 @@ def recompute_bsc_metrics_from_maps(
         out["BSC_mag"] = float(np.median(vals_mag)) if vals_mag.size else float("nan")
     return out
 
-
 def apply_mask_inplace(
     bsc_map_path: Path,
     mask: np.ndarray,
     outside_value: float = 0.0,
     skip_if_already_masked: bool = True,
 ) -> bool:
-    """Apply mask to a NIfTI map. Returns True if file was modified."""
 
     img = nib.load(str(bsc_map_path))
     data = img.get_fdata(dtype=np.float32)
@@ -272,14 +206,11 @@ def apply_mask_inplace(
 
     if skip_if_already_masked:
         outside = ~mask
-        # If everything outside is already ~0, skip.
         if np.all(np.abs(data[outside]) <= 1e-8):
             return False
 
     data[~mask] = float(outside_value)
 
-    # NOTE: nibabel infers format from filename extension. A name like
-    # "bsc_dir_map.nii.gz.tmp" is not recognized; keep a valid NIfTI suffix.
     name = bsc_map_path.name
     if name.endswith(".nii.gz"):
         tmp_name = name[:-7] + ".tmp.nii.gz"
@@ -294,12 +225,10 @@ def apply_mask_inplace(
     tmp_path.replace(bsc_map_path)
     return True
 
-
 @dataclass(frozen=True)
 class ScanRef:
     image_id: str
     subject: Optional[str] = None
-
 
 def iter_scans_from_manifest(
     manifest: str, limit: Optional[int], skip: int
@@ -317,7 +246,6 @@ def iter_scans_from_manifest(
     for _, row in df.iterrows():
         yield ScanRef(image_id=make_image_id(row), subject=str(row["subject"]))
 
-
 def _parse_image_ids_arg(
     image_id: Optional[str], image_ids: Optional[str]
 ) -> list[str]:
@@ -326,7 +254,6 @@ def _parse_image_ids_arg(
         out.append(image_id.strip().rstrip("/"))
     if image_ids:
         out.extend([x.strip().rstrip("/") for x in image_ids.split(",") if x.strip()])
-    # de-dupe preserving order
     seen: set[str] = set()
     deduped: list[str] = []
     for x in out:
@@ -334,7 +261,6 @@ def _parse_image_ids_arg(
             seen.add(x)
             deduped.append(x)
     return deduped
-
 
 def main(argv: Optional[Iterable[str]] = None) -> int:
     ap = argparse.ArgumentParser()
@@ -387,7 +313,6 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
     ap.add_argument("--limit", type=int)
     ap.add_argument("--skip", type=int, default=0)
 
-    # Optional extra mask from FreeSurfer volumes if you have them (must be specified)
     ap.add_argument(
         "--fs_root",
         default=None,
@@ -442,17 +367,14 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
         sp = build_scan_paths(args.out_root, image_id)
 
-        # Ensure required files exist in S3
         if not s3_exists(sp.bsc_dir):
             pbar.write(f"[SKIP] Missing bsc_dir_map in S3 → {image_id}")
             continue
 
-        # Work dir per scan
         work_dir = tmp_dir / image_id
         work_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            # Download maps
             local_bsc_dir = work_dir / "bsc_dir_map.nii.gz"
             download_to(local_bsc_dir, sp.bsc_dir)
 
@@ -465,7 +387,6 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
             bsc_img = nib.load(str(local_bsc_dir))
 
-            # Build base mask
             if args.mask_mode == "band":
                 if not s3_exists(sp.boundary_band_mask):
                     pbar.write(f"[SKIP] Missing boundary_band_mask in S3 → {image_id}")
@@ -499,7 +420,6 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
             else:
                 raise ValueError("Unknown mask_mode")
 
-            # Optional FreeSurfer constraint
             if args.fs_root:
                 fs_id = image_id if args.fs_id == "image_id" else (scan.subject or "")
                 if not fs_id:
@@ -509,7 +429,6 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                 else:
                     fs_dir = f"{args.fs_root.rstrip('/')}/{fs_id}/mri"
 
-                    # Cortex-only constraint via aparc+aseg/aseg
                     if args.fs_mask in {"cortex", "both"}:
                         fs_aparc = f"{fs_dir}/aparc+aseg.mgz"
                         fs_aseg = f"{fs_dir}/aseg.mgz"
@@ -527,7 +446,6 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                                 f"[WARN] FS aparc+aseg/aseg not found for {fs_id}; skipping cortex mask"
                             )
 
-                    # Interface constraint via ribbon + wm adjacency
                     if args.fs_mask in {"interface", "both"}:
                         fs_ribbon = f"{fs_dir}/ribbon.mgz"
                         fs_wm = f"{fs_dir}/wm.mgz"
@@ -557,7 +475,6 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                                 f"[WARN] FS ribbon/wm not found for {fs_id}; skipping FS interface mask"
                             )
 
-            # Apply mask + upload back
             changed_dir = apply_mask_inplace(
                 local_bsc_dir,
                 mask,
@@ -577,13 +494,11 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                 if changed_mag:
                     upload_file(local_bsc_mag, sp.bsc_mag)
 
-            # Optionally overwrite boundary mask in S3
             if args.write_mask:
                 out_mask_path = work_dir / "boundary_band_mask.nii.gz"
                 write_mask_nifti(mask, bsc_img, out_mask_path)
                 upload_file(out_mask_path, sp.boundary_band_mask)
 
-            # Optionally recompute and overwrite metrics
             if args.write_metrics:
                 bsc_dir_img2 = nib.load(str(local_bsc_dir))
                 bsc_mag_img2 = (
@@ -599,7 +514,6 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                     }
                 )
 
-                # JSON
                 local_metrics_json = work_dir / "bsc_metrics.json"
                 if s3_exists(sp.metrics_json):
                     download_to(local_metrics_json, sp.metrics_json)
@@ -613,7 +527,6 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                 local_metrics_json.write_text(json.dumps(old, indent=2))
                 upload_file(local_metrics_json, sp.metrics_json)
 
-                # CSV
                 local_metrics_csv = work_dir / "subject_metrics.csv"
                 if s3_exists(sp.metrics_csv):
                     download_to(local_metrics_csv, sp.metrics_csv)
@@ -640,7 +553,6 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
                 shutil.rmtree(work_dir, ignore_errors=True)
 
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

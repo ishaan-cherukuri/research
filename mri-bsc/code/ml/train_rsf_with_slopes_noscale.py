@@ -1,19 +1,3 @@
-"""
-Train Random Survival Forest using BSC SLOPES - WITHOUT STANDARDIZATION.
-
-This version:
-1. Log-transforms Nboundary_slope to prevent it from dominating
-2. Selects features by variance on log-transformed data
-3. NO StandardScaler - keeps interpretable raw values
-4. Random Forest is scale-invariant anyway!
-
-Usage:
-    python3 -m code.ml.train_rsf_with_slopes_noscale \
-        --slopes data/index/bsc_longitudinal_slopes.csv \
-        --survival data/ml/survival/time_to_conversion.csv \
-        --out_dir data/ml/results/rsf_noscale \
-        --top_k 20
-"""
 
 import argparse
 import json
@@ -28,9 +12,7 @@ from sklearn.model_selection import train_test_split
 from lifelines import KaplanMeierFitter
 from lifelines.statistics import logrank_test
 
-
 def load_and_merge_data(slopes_path: str, survival_path: str):
-    """Merge slopes with survival labels."""
     print(f"Loading slopes: {slopes_path}")
     slopes = pd.read_csv(slopes_path)
 
@@ -40,25 +22,14 @@ def load_and_merge_data(slopes_path: str, survival_path: str):
     print(f"  Slopes: {len(slopes)} subjects")
     print(f"  Survival: {len(survival)} subjects")
 
-    # Merge on subject
     merged = survival.merge(slopes, on="subject", how="inner")
     print(f"  Merged: {len(merged)} subjects")
 
     return merged
 
-
 def penalize_nboundary_and_select_features(df: pd.DataFrame, top_k: int = 20):
-    """
-    Log-transform Nboundary_slope to bring it to similar scale,
-    then select top features by variance.
-
-    This prevents Nboundary from dominating feature selection while
-    keeping all values interpretable (no z-score normalization).
-    """
-    # Get slope columns
     slope_cols = [c for c in df.columns if c.endswith("_slope")]
 
-    # Filter out columns with too many NaNs
     slope_cols = [c for c in slope_cols if df[c].notna().sum() > len(df) * 0.8]
 
     print(f"\n{'='*80}")
@@ -70,21 +41,18 @@ def penalize_nboundary_and_select_features(df: pd.DataFrame, top_k: int = 20):
     for i, (feat, var) in enumerate(top_10_raw.items(), 1):
         print(f"  {i:2d}. {feat:40s} variance = {var:15.2f}")
 
-    # Log-transform Nboundary_slope
     print(f"\n{'='*80}")
     print(f"STEP 2: LOG-TRANSFORM Nboundary_slope to prevent domination")
     print(f"{'='*80}")
 
     transformed_df = df[slope_cols].copy()
 
-    # Find Nboundary column
     nboundary_col = [c for c in slope_cols if "Nboundary_slope" in c]
 
     if nboundary_col:
         col = nboundary_col[0]
         original_var = transformed_df[col].var()
 
-        # Log-transform: log(|x| + 1) * sign(x) to preserve sign
         values = transformed_df[col].values
         transformed_values = np.sign(values) * np.log(np.abs(values) + 1)
         transformed_df[col] = transformed_values
@@ -96,7 +64,6 @@ def penalize_nboundary_and_select_features(df: pd.DataFrame, top_k: int = 20):
         print(f"    After log-transform:  {new_var:15.2f}")
         print(f"    Reduction factor:     {original_var/new_var:15.2f}x")
 
-    # Now compute variance and select features
     print(f"\n{'='*80}")
     print(
         f"STEP 3: FEATURE SELECTION on log-transformed data (Top {top_k} by variance)"
@@ -117,21 +84,12 @@ def penalize_nboundary_and_select_features(df: pd.DataFrame, top_k: int = 20):
     )
     print(f"{'='*80}")
 
-    # Return transformed data for these features
     return top_features, transformed_df[top_features]
 
-
 def train_rsf_model(X_train, X_test, y_train, y_test, n_estimators=1000):
-    """
-    Train Random Survival Forest WITHOUT STANDARDIZATION.
-
-    Random Forest is inherently scale-invariant, so no standardization needed!
-    """
-    # Convert to structured array format required by scikit-survival
     y_train_surv = Surv.from_dataframe("event", "time_years", y_train)
     y_test_surv = Surv.from_dataframe("event", "time_years", y_test)
 
-    # Initialize Random Survival Forest
     print(f"\nFitting Random Survival Forest (NO STANDARDIZATION)...")
     print(f"  n_estimators: {n_estimators}")
     print(f"  min_samples_split: 10")
@@ -148,18 +106,14 @@ def train_rsf_model(X_train, X_test, y_train, y_test, n_estimators=1000):
         verbose=1,
     )
 
-    # Fit model
     rsf.fit(X_train, y_train_surv)
 
-    # Get concordance index (C-index)
     train_c = rsf.score(X_train, y_train_surv)
     test_c = rsf.score(X_test, y_test_surv)
 
-    # Get risk scores for both sets
     train_risk = rsf.predict(X_train)
     test_risk = rsf.predict(X_test)
 
-    # Compute RMSE on events only
     train_events = y_train["event"] == 1
     test_events = y_test["event"] == 1
 
@@ -212,35 +166,28 @@ def train_rsf_model(X_train, X_test, y_train, y_test, n_estimators=1000):
 
     return rsf, metrics, train_risk, test_risk
 
-
 def create_kaplan_meier_curves(y_train, y_test, train_risk, test_risk, out_dir):
-    """Create Kaplan-Meier survival curves stratified by predicted risk."""
     print(f"\n{'='*70}")
     print("CREATING KAPLAN-MEIER CURVES")
     print(f"{'='*70}")
 
-    # Create figure with 2 subplots
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
-    # Plot for both train and test sets
     for idx, (y_data, risk_scores, title, ax) in enumerate(
         [
             (y_train, train_risk, "Training Set", axes[0]),
             (y_test, test_risk, "Test Set", axes[1]),
         ]
     ):
-        # Stratify by risk score (tertiles)
         risk_tertiles = np.percentile(risk_scores, [33.33, 66.67])
 
         high_risk_mask = risk_scores >= risk_tertiles[1]
         low_risk_mask = risk_scores <= risk_tertiles[0]
         medium_risk_mask = ~(high_risk_mask | low_risk_mask)
 
-        # Prepare data
         time = y_data["time_years"].values
         event = y_data["event"].values
 
-        # Count events in each group
         high_events = event[high_risk_mask].sum()
         medium_events = event[medium_risk_mask].sum()
         low_events = event[low_risk_mask].sum()
@@ -249,7 +196,6 @@ def create_kaplan_meier_curves(y_train, y_test, train_risk, test_risk, out_dir):
         medium_n = medium_risk_mask.sum()
         low_n = low_risk_mask.sum()
 
-        # Fit Kaplan-Meier curves
         kmf_high = KaplanMeierFitter()
         kmf_medium = KaplanMeierFitter()
         kmf_low = KaplanMeierFitter()
@@ -270,14 +216,12 @@ def create_kaplan_meier_curves(y_train, y_test, train_risk, test_risk, out_dir):
             label=f"Low Risk (n={low_n}, events={low_events})",
         )
 
-        # Plot curves
         kmf_high.plot_survival_function(ax=ax, ci_show=True, color="red", linewidth=2)
         kmf_medium.plot_survival_function(
             ax=ax, ci_show=True, color="orange", linewidth=2
         )
         kmf_low.plot_survival_function(ax=ax, ci_show=True, color="green", linewidth=2)
 
-        # Styling
         ax.set_title(title, fontsize=14, fontweight="bold")
         ax.set_xlabel("Time (years)", fontsize=12)
         ax.set_ylabel("Probability of Remaining MCI", fontsize=12)
@@ -285,7 +229,6 @@ def create_kaplan_meier_curves(y_train, y_test, train_risk, test_risk, out_dir):
         ax.legend(loc="lower left", fontsize=10)
         ax.set_ylim([0, 1.05])
 
-        # Log-rank test
         results = logrank_test(
             time[high_risk_mask],
             time[low_risk_mask],
@@ -308,8 +251,7 @@ def create_kaplan_meier_curves(y_train, y_test, train_risk, test_risk, out_dir):
     plt.savefig(plot_path, dpi=300, bbox_inches="tight")
     plt.close()
 
-    print(f"✅ Saved plot: {plot_path}")
-
+    print(f" Saved plot: {plot_path}")
 
 def main():
     parser = argparse.ArgumentParser(
@@ -345,22 +287,17 @@ def main():
 
     args = parser.parse_args()
 
-    # Create output directory
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load data
     df = load_and_merge_data(args.slopes, args.survival)
 
-    # Penalize Nboundary and select features
     slope_features, X_transformed = penalize_nboundary_and_select_features(
         df, args.top_k
     )
 
-    # Prepare target
     y = df[["time_years", "event"]].copy()
 
-    # Split data
     print(f"\n{'='*80}")
     print(f"DATA SPLIT: Subject-level split (NO DATA LEAKAGE)")
     print(f"{'='*80}")
@@ -374,7 +311,6 @@ def main():
     print(f"Train: {len(X_train)} subjects ({y_train['event'].sum()} events)")
     print(f"Test:  {len(X_test)} subjects ({y_test['event'].sum()} events)")
 
-    # Print variance in train set (should be diverse, not all 1.0!)
     print(f"\n{'='*80}")
     print(f"FEATURE VARIANCES IN TRAINING SET (log-transformed, NO standardization)")
     print(f"{'='*80}")
@@ -387,21 +323,17 @@ def main():
     print(f"Ratio (max/min): {train_variances.max() / train_variances.min():.2f}x")
     print(f"{'='*80}")
 
-    # Train model
     model, metrics, train_risk, test_risk = train_rsf_model(
         X_train, X_test, y_train, y_test, args.n_estimators
     )
 
-    # Create Kaplan-Meier curves
     create_kaplan_meier_curves(y_train, y_test, train_risk, test_risk, out_dir)
 
-    # Save results
     metrics_path = out_dir / "rsf_noscale_metrics.json"
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=2)
-    print(f"\n✅ Saved metrics: {metrics_path}")
+    print(f"\n Saved metrics: {metrics_path}")
 
-    # Save feature list with variances
     features_path = out_dir / "rsf_noscale_features.txt"
     train_variances = X_train.var()
     with open(features_path, "w") as f:
@@ -410,9 +342,8 @@ def main():
         )
         for i, feat in enumerate(slope_features, 1):
             f.write(f"{i:2d}. {feat:40s} variance = {train_variances[feat]:15.6f}\n")
-    print(f"✅ Saved features: {features_path}")
+    print(f" Saved features: {features_path}")
 
-    # Summary
     summary_path = out_dir / "rsf_noscale_summary.txt"
     with open(summary_path, "w") as f:
         f.write(f"BSC SLOPES RANDOM SURVIVAL FOREST (NO STANDARDIZATION)\n")
@@ -437,11 +368,10 @@ def main():
         if metrics["test_rmse_events"]:
             f.write(f"  Test RMSE:         {metrics['test_rmse_events']:.4f} years\n")
 
-    print(f"✅ Saved summary: {summary_path}")
+    print(f" Saved summary: {summary_path}")
     print("\n" + "=" * 80)
-    print("✅ DONE! Random Survival Forest (no standardization) complete")
+    print(" DONE! Random Survival Forest (no standardization) complete")
     print("=" * 80)
-
 
 if __name__ == "__main__":
     main()

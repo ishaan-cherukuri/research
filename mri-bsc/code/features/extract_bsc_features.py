@@ -1,24 +1,3 @@
-"""code.features.extract_bsc_features
-
-Extract ML-ready features from boundary-only BSC maps.
-
-Outputs a scan-level CSV (one row per scan / image_id) with:
-  - global boundary distribution stats for bsc_dir and bsc_mag
-  - optional coarse spatial-bin means (pseudo-ROIs) to add regional signal without atlas
-
-Assumptions:
-  <bsc_root>/<image_id>/bsc_dir_map.nii.gz
-  <bsc_root>/<image_id>/bsc_mag_map.nii.gz (optional)
-  <bsc_root>/<image_id>/boundary_band_mask.nii.gz  (we treat this as the final mask)
-
-Usage:
-  python3 -m code.features.extract_bsc_features \
-    --manifest /Users/ishu/Downloads/adni_manifest.csv \
-    --bsc_root /Volumes/YAAGL/derivatives/bsc/adni/atropos_v2 \
-    --out_csv  /Users/ishu/research/mri-bsc/code/index/bsc_scan_features_v2.csv \
-    --bins 2,2,2
-
-"""
 
 from __future__ import annotations
 
@@ -31,7 +10,6 @@ from typing import Optional
 
 import numpy as np
 import nibabel as nib
-
 
 def _parse_date(s: str) -> Optional[datetime]:
     s = (s or "").strip()
@@ -47,14 +25,11 @@ def _parse_date(s: str) -> Optional[datetime]:
     except Exception:
         return None
 
-
 def _image_id(subject: str, visit_code: str, acq_date: str) -> str:
     return f"{subject}_{visit_code}_{acq_date}"
 
-
 def _load(path: Path) -> np.ndarray:
     return np.asanyarray(nib.load(str(path)).dataobj)
-
 
 def _stats(x: np.ndarray, percentiles: list[float]) -> dict[str, float]:
     x = x[np.isfinite(x)]
@@ -74,11 +49,9 @@ def _stats(x: np.ndarray, percentiles: list[float]) -> dict[str, float]:
         out[f"p{int(p)}"] = float(q)
     return out
 
-
 def _bin_means(
     values: np.ndarray, mask: np.ndarray, bins: tuple[int, int, int]
 ) -> dict[str, float]:
-    """Compute mean of values within each spatial bin, restricted to mask."""
     bx, by, bz = bins
     shape = mask.shape
 
@@ -86,7 +59,6 @@ def _bin_means(
     if idx.size == 0:
         return {f"bin_{i}_mean": float("nan") for i in range(bx * by * bz)}
 
-    # bin index per voxel
     xs = np.clip((idx[:, 0] * bx) // shape[0], 0, bx - 1)
     ys = np.clip((idx[:, 1] * by) // shape[1], 0, by - 1)
     zs = np.clip((idx[:, 2] * bz) // shape[2], 0, bz - 1)
@@ -104,7 +76,6 @@ def _bin_means(
             out[f"bin_{i}_mean"] = float(np.mean(v)) if v.size else float("nan")
     return out
 
-
 @dataclass(frozen=True)
 class Row:
     subject: str
@@ -112,7 +83,6 @@ class Row:
     acq_date: str
     diagnosis: Optional[float]
     dt: datetime
-
 
 def read_manifest(manifest_csv: str) -> list[Row]:
     with open(manifest_csv, newline="") as f:
@@ -143,7 +113,6 @@ def read_manifest(manifest_csv: str) -> list[Row]:
     rows.sort(key=lambda x: (x.subject, x.dt))
     return rows
 
-
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--manifest", required=True)
@@ -163,7 +132,6 @@ def main() -> None:
 
     rows = read_manifest(args.manifest)
 
-    # subject filter
     counts: dict[str, int] = {}
     for r in rows:
         counts[r.subject] = counts.get(r.subject, 0) + 1
@@ -172,7 +140,6 @@ def main() -> None:
     out_path = Path(args.out_csv)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Determine all output columns
     base_cols = ["subject", "visit_code", "acq_date", "image_id", "diagnosis"]
 
     def stat_cols(prefix: str) -> list[str]:
@@ -215,7 +182,6 @@ def main() -> None:
             vals_dir = _load(bdir_p).astype(np.float32)
             vals_dir = vals_dir[mask > 0]
 
-            # Filter to non-zero BSC voxels only for stats (BSC is legitimately 0 outside tight interface)
             vals_dir_nonzero = vals_dir[vals_dir != 0]
 
             row_out: dict[str, object] = {
@@ -226,7 +192,7 @@ def main() -> None:
                 "diagnosis": "" if r.diagnosis is None else r.diagnosis,
                 "Nboundary": int(
                     np.count_nonzero(vals_dir_nonzero)
-                ),  # count only non-zero
+                ),
             }
 
             sdir = _stats(vals_dir_nonzero, percentiles)
@@ -236,7 +202,7 @@ def main() -> None:
             if bmag_p.exists():
                 vals_mag = _load(bmag_p).astype(np.float32)
                 vals_mag = vals_mag[mask > 0]
-                vals_mag_nonzero = vals_mag[vals_mag != 0]  # filter to non-zero
+                vals_mag_nonzero = vals_mag[vals_mag != 0]
                 smag = _stats(vals_mag_nonzero, percentiles)
                 for k, v in smag.items():
                     row_out[f"bsc_mag_{k}"] = v
@@ -270,7 +236,6 @@ def main() -> None:
     print("[OK] wrote:", str(out_path))
     print("  rows:", wrote)
     print("  skipped (missing files):", skipped)
-
 
 if __name__ == "__main__":
     main()

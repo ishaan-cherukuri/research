@@ -1,29 +1,3 @@
-"""code.index.build_bsc_file_index
-
-Build a scan-level CSV index pointing to BSC derivative files, plus a subject-level label.
-
-Label rule (as requested):
-  label = 1 if the subject's manifest contains diagnosis == 3 at ANY timepoint, else 0.
-
-This script is intentionally lightweight: it can run without pandas (stdlib CSV).
-If pandas is available, it will use it for convenience.
-
-Output columns (one row per scan/visit in manifest):
-  subject,visit_code,acq_date,image_id,diagnosis,label,
-  bsc_dir_map,bsc_mag_map,boundary_band_mask,bsc_metrics,
-  t1w_preproc,gm_prob,wm_prob,brain_mask
-
-Typical BSC folder layout assumed:
-  <bsc_root>/<image_id>/bsc_dir_map.nii.gz
-  <bsc_root>/<image_id>/bsc_mag_map.nii.gz
-  ... and related files.
-
-Example:
-  python3 -m code.index.build_bsc_file_index \
-    --manifest /path/to/adni_manifest.csv \
-    --bsc_root s3://ishaan-research/data/derivatives/bsc/adni/atropos \
-    --out_csv code/index/bsc_file_index.csv
-"""
 
 from __future__ import annotations
 
@@ -33,19 +7,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-
 def _join(root: str, *parts: str) -> str:
     root = str(root).rstrip("/")
     tail = "/".join(str(p).strip("/") for p in parts if p is not None)
     return f"{root}/{tail}" if tail else root
-
 
 def _as_str(x: Any) -> str:
     if x is None:
         return ""
     s = str(x)
     return "" if s.lower() in {"nan", "none"} else s
-
 
 def _as_float(x: Any) -> float | None:
     try:
@@ -58,11 +29,9 @@ def _as_float(x: Any) -> float | None:
     except Exception:
         return None
 
-
 def _is_dx3(x: Any) -> bool:
     v = _as_float(x)
     return v is not None and int(round(v)) == 3
-
 
 @dataclass(frozen=True)
 class ManifestRow:
@@ -72,13 +41,10 @@ class ManifestRow:
     path: str
     diagnosis: float | None
 
-
 def _read_manifest_rows(manifest_csv: str) -> list[ManifestRow]:
-    """Read the manifest using pandas if available, otherwise stdlib CSV."""
 
-    # Try pandas first (fast/robust), but don't require it.
     try:
-        import pandas as pd  # type: ignore
+        import pandas as pd
 
         df = pd.read_csv(manifest_csv)
         required = {"subject", "visit_code", "acq_date", "path", "diagnosis"}
@@ -101,7 +67,6 @@ def _read_manifest_rows(manifest_csv: str) -> list[ManifestRow]:
     except ModuleNotFoundError:
         pass
 
-    # Fallback: stdlib CSV
     with open(manifest_csv, newline="") as f:
         reader = csv.DictReader(f)
         required = {"subject", "visit_code", "acq_date", "path", "diagnosis"}
@@ -124,7 +89,6 @@ def _read_manifest_rows(manifest_csv: str) -> list[ManifestRow]:
             )
         return rows
 
-
 def build_bsc_file_index(
     manifest_csv: str,
     bsc_root: str,
@@ -133,7 +97,6 @@ def build_bsc_file_index(
 ) -> None:
     rows = _read_manifest_rows(manifest_csv)
 
-    # Subject label: ever hit diagnosis==3 at any timepoint
     label_by_subject: dict[str, int] = {}
     visit_count: dict[str, int] = {}
     for r in rows:
@@ -209,7 +172,6 @@ def build_bsc_file_index(
         sum(1 for s, lab in label_by_subject.items() if lab == 1),
     )
 
-
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--manifest", required=True, help="Manifest CSV (local or S3)")
@@ -237,7 +199,6 @@ def main() -> None:
         out_csv=args.out_csv,
         min_visits_per_subject=args.min_visits_per_subject,
     )
-
 
 if __name__ == "__main__":
     main()

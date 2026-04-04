@@ -1,25 +1,3 @@
-"""code.preprocess.check_manifest_vs_preproc
-
-Check that every scan referenced in a manifest exists in a local preproc folder.
-
-For each manifest row, we compute:
-  image_id = <subject>_<visit_code>_<acq_date>
-
-We then verify the folder exists under:
-  <preproc_root>/<image_id>/
-
-If missing, we print:
-  subject,visit_code,acq_date
-
-Usage:
-  python3 -m code.preprocess.check_manifest_vs_preproc \
-    --manifest /path/to/adni_manifest.csv \
-    --preproc_root /Volumes/YAAGL/derivatives/preprocess/adni_5
-
-Notes:
-- `acq_date` is normalized to YYYY-MM-DD to match folder naming.
-- Requires manifest columns: subject, visit_code, acq_date.
-"""
 
 from __future__ import annotations
 
@@ -28,7 +6,6 @@ import csv
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-
 
 def _parse_date(s: str) -> Optional[datetime]:
     s = (s or "").strip()
@@ -44,10 +21,8 @@ def _parse_date(s: str) -> Optional[datetime]:
     except Exception:
         return None
 
-
 def _image_id(subject: str, visit_code: str, acq_date_yyyy_mm_dd: str) -> str:
     return f"{subject}_{visit_code}_{acq_date_yyyy_mm_dd}"
-
 
 def main() -> None:
     ap = argparse.ArgumentParser()
@@ -111,7 +86,6 @@ def main() -> None:
                 print(f"{subject},{visit_code},{acq_date}")
 
     print(f"[SUMMARY] total_checked={total} missing={missing}")
-
 
 if __name__ == "__main__":
     main()

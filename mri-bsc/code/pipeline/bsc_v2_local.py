@@ -1,26 +1,3 @@
-"""code.pipeline.bsc_v2_local
-
-Local-first BSC v2 pipeline:
-
-- Runs Atropos-based BSC on preprocessed T1s.
-- Builds a tight GM/WM interface mask from GM/WM posteriors.
-- Optionally intersects with FreeSurfer cortex labels.
-- Hard-zeros BSC maps outside the final mask.
-
-This is intended for local datasets (e.g., /Volumes/YAAGL).
-
-Inputs:
-  <preproc_root>/<image_id>/t1w_preproc.nii.gz
-
-Outputs:
-  <out_root>/<image_id>/bsc_dir_map.nii.gz
-  <out_root>/<image_id>/bsc_mag_map.nii.gz
-  <out_root>/<image_id>/bsc_metrics.json
-  <out_root>/<image_id>/boundary_band_mask.nii.gz  (optionally overwritten to final interface mask)
-
-Optional FreeSurfer (SUBJECTS_DIR):
-  <fs_subjects_dir>/<image_id>/mri/aparc+aseg.mgz or aseg.mgz
-"""
 
 from __future__ import annotations
 
@@ -50,7 +27,6 @@ except ModuleNotFoundError as e:
 
 from code.seg.atropos_bsc import run_atropos_bsc
 
-
 def _parse_date(s: str) -> Optional[datetime]:
     s = (s or "").strip()
     if not s:
@@ -65,13 +41,10 @@ def _parse_date(s: str) -> Optional[datetime]:
     except Exception:
         return None
 
-
 def _image_id(subject: str, visit_code: str, acq_date: str) -> str:
     return f"{subject}_{visit_code}_{acq_date}"
 
-
 def _parse_image_id(image_id: str) -> tuple[str, str, str]:
-    """Return (subject, visit_code, acq_date) from <subject>_<visit_code>_<acq_date>."""
     parts = image_id.split("_")
     if len(parts) < 3:
         raise ValueError(f"Invalid image_id: {image_id}")
@@ -80,11 +53,9 @@ def _parse_image_id(image_id: str) -> tuple[str, str, str]:
     subject = "_".join(parts[:-2])
     return subject, visit_code, acq_date
 
-
 def _load_nii(path: Path) -> tuple[np.ndarray, np.ndarray, nib.Nifti1Header]:
     img = nib.load(str(path))
     return np.asanyarray(img.dataobj), img.affine, img.header
-
 
 def _save_like(
     path: Path, data: np.ndarray, affine: np.ndarray, header: nib.Nifti1Header
@@ -94,15 +65,13 @@ def _save_like(
     nib.save(nib.Nifti1Image(data, affine, header=header), str(tmp))
     tmp.replace(path)
 
-
 def _binary_dilation(mask: np.ndarray, iterations: int = 1) -> np.ndarray:
     try:
-        from scipy.ndimage import binary_dilation  # type: ignore
+        from scipy.ndimage import binary_dilation
 
         return binary_dilation(mask, iterations=iterations)
     except Exception:
         return mask
-
 
 def build_interface_mask(
     gm_prob: np.ndarray, wm_prob: np.ndarray, brain_mask: np.ndarray
@@ -116,7 +85,6 @@ def build_interface_mask(
         interface = interface & (brain_mask > 0)
     return interface.astype(np.uint8)
 
-
 def load_fs_seg(fs_subjects_dir: Path, image_id: str) -> Optional[Path]:
     base = fs_subjects_dir / image_id / "mri"
     for name in ("aparc+aseg.mgz", "aseg.mgz"):
@@ -125,19 +93,16 @@ def load_fs_seg(fs_subjects_dir: Path, image_id: str) -> Optional[Path]:
             return p
     return None
 
-
 def _resample_nearest_to_target(
     src_img: nib.spatialimages.SpatialImage, target_img: nib.spatialimages.SpatialImage
 ) -> np.ndarray:
     try:
-        from nibabel.processing import resample_from_to  # type: ignore
+        from nibabel.processing import resample_from_to
 
         res = resample_from_to(src_img, target_img, order=0)
         return np.asanyarray(res.dataobj)
     except Exception:
-        # If resampling is unavailable, return raw data (may misalign if grids differ)
         return np.asanyarray(src_img.dataobj)
-
 
 def fs_cortex_mask_in_target_space(
     fs_seg_path: Path, target_nii_path: Path
@@ -151,14 +116,12 @@ def fs_cortex_mask_in_target_space(
     )
     return (cortex_rs > 0).astype(np.uint8)
 
-
 @dataclass(frozen=True)
 class Visit:
     subject: str
     visit_code: str
     acq_date: str
     dt: datetime
-
 
 def read_visits(manifest_csv: str) -> list[Visit]:
     with open(manifest_csv, newline="") as f:
@@ -178,7 +141,6 @@ def read_visits(manifest_csv: str) -> list[Visit]:
             dt = _parse_date(acq_date_raw)
             if not subject or not visit_code or not acq_date_raw or dt is None:
                 continue
-            # Canonicalize to match local folder naming.
             acq_date = dt.strftime("%Y-%m-%d")
             out.append(
                 Visit(subject=subject, visit_code=visit_code, acq_date=acq_date, dt=dt)
@@ -187,12 +149,10 @@ def read_visits(manifest_csv: str) -> list[Visit]:
     out.sort(key=lambda x: (x.subject, x.dt))
     return out
 
-
 def is_done(out_dir: Path) -> bool:
     return (out_dir / "bsc_dir_map.nii.gz").exists() and (
         out_dir / "bsc_metrics.json"
     ).exists()
-
 
 def run_one(
     image_id: str,
@@ -223,8 +183,6 @@ def run_one(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     scan_work = Path(tempfile.mkdtemp(dir=str(work_root)))
-    # Force temp usage into per-scan folder to avoid system temp blowups and
-    # to keep work_root empty after each scan.
     prev_tmpdir = os.environ.get("TMPDIR")
     prev_tmp = os.environ.get("TMP")
     prev_temp = os.environ.get("TEMP")
@@ -240,7 +198,6 @@ def run_one(
         wm_p = out_dir / "wm_prob.nii.gz"
         brain_p = out_dir / "brain_mask.nii.gz"
 
-        # Retry once if outputs are corrupted (e.g., truncated .nii.gz -> EOFError)
         for attempt in (1, 2):
             run_atropos_bsc(
                 t1_path=str(t1),
@@ -291,7 +248,6 @@ def run_one(
                 hdr_b,
             )
     finally:
-        # Restore prior temp settings
         if prev_tmpdir is None:
             os.environ.pop("TMPDIR", None)
         else:
@@ -308,7 +264,6 @@ def run_one(
         shutil.rmtree(scan_work, ignore_errors=True)
 
     return True
-
 
 def main() -> None:
     ap = argparse.ArgumentParser()
@@ -363,11 +318,9 @@ def main() -> None:
 
     plan: list[str] = []
     if args.plan_from == "preproc":
-        # Process exactly what's present locally.
         for p in sorted(preproc_root.iterdir()):
             if p.is_dir():
                 plan.append(p.name)
-        # Apply >= min visits filter based on folder names.
         counts: dict[str, int] = {}
         for image_id in plan:
             subject, _, _ = _parse_image_id(image_id)
@@ -430,7 +383,6 @@ def main() -> None:
     print("[DONE] ran:", ran)
     print("[DONE] skipped_missing:", skipped_missing)
     print("[DONE] skipped_error:", skipped_error)
-
 
 if __name__ == "__main__":
     main()

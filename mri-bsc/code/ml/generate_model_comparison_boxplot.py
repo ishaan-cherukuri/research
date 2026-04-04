@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-"""
-Generate box plot comparing different model variants.
-
-Similar to the Kaplan-Meier visualization style, creates box plots showing
-performance distributions across different model configurations.
-"""
 
 import argparse
 import json
@@ -20,18 +13,9 @@ from lifelines.utils import concordance_index
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, KFold
 
-
 def run_cross_validation(slopes_df, survival_df, model_type, top_k, n_folds=5):
-    """
-    Run k-fold cross-validation for a model variant.
-
-    Returns:
-        list of dicts with metrics for each fold
-    """
-    # Merge data
     df = survival_df.merge(slopes_df, on="subject", how="inner")
 
-    # Select features
     slope_cols = [c for c in df.columns if c.endswith("_slope")]
     slope_cols = [c for c in slope_cols if df[c].notna().sum() > len(df) * 0.8]
     variances = df[slope_cols].var()
@@ -41,11 +25,9 @@ def run_cross_validation(slopes_df, survival_df, model_type, top_k, n_folds=5):
     else:
         top_features = variances.nlargest(top_k).index.tolist()
 
-    # Prepare features
     X = df[top_features].copy().fillna(df[top_features].median())
     y = df[["time_years", "event"]].copy()
 
-    # K-fold cross-validation
     kf = KFold(n_splits=n_folds, shuffle=True, random_state=42)
     fold_results = []
 
@@ -53,7 +35,6 @@ def run_cross_validation(slopes_df, survival_df, model_type, top_k, n_folds=5):
         X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
-        # Standardize
         scaler = StandardScaler()
         X_train_scaled = pd.DataFrame(
             scaler.fit_transform(X_train), columns=X_train.columns, index=X_train.index
@@ -62,14 +43,13 @@ def run_cross_validation(slopes_df, survival_df, model_type, top_k, n_folds=5):
             scaler.transform(X_test), columns=X_test.columns, index=X_test.index
         )
 
-        # Train model
         try:
             if model_type == "rsf":
                 y_train_surv = Surv.from_dataframe("event", "time_years", y_train)
                 y_test_surv = Surv.from_dataframe("event", "time_years", y_test)
 
                 model = RandomSurvivalForest(
-                    n_estimators=500,  # Reduced for speed in cross-validation
+                    n_estimators=500,
                     min_samples_split=10,
                     min_samples_leaf=15,
                     max_features="sqrt",
@@ -129,9 +109,7 @@ def run_cross_validation(slopes_df, survival_df, model_type, top_k, n_folds=5):
 
     return fold_results
 
-
 def generate_comparison_data(slopes_path, survival_path):
-    """Generate performance data for all model variants via cross-validation."""
     print("=" * 80)
     print("GENERATING MODEL COMPARISON DATA (5-Fold Cross-Validation)")
     print("=" * 80)
@@ -139,7 +117,6 @@ def generate_comparison_data(slopes_path, survival_path):
     slopes = pd.read_csv(slopes_path)
     survival = pd.read_csv(survival_path)
 
-    # Model configurations
     configs = [
         ("rsf", 10, "RSF-10"),
         ("rsf", 15, "RSF-15"),
@@ -170,20 +147,15 @@ def generate_comparison_data(slopes_path, survival_path):
 
     return pd.DataFrame(all_results)
 
-
 def create_comparison_boxplots(df, out_dir):
-    """Create box plots comparing model performance."""
     print("\n" + "=" * 80)
     print("CREATING MODEL COMPARISON BOX PLOTS")
     print("=" * 80)
 
-    # Set style similar to KM curves
     plt.style.use("seaborn-v0_8-darkgrid")
 
-    # Create figure with 3 subplots
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
-    # Prepare data - separate by model type
     rsf_models = [m for m in df["model"].unique() if "RSF" in m]
     aft_models = [m for m in df["model"].unique() if "RSF" not in m]
     all_models = sorted(df["model"].unique())
@@ -195,7 +167,6 @@ def create_comparison_boxplots(df, out_dir):
     ]
 
     for metric, title, ax in metrics:
-        # Prepare data for box plot
         data_to_plot = []
         labels = []
         colors = []
@@ -205,19 +176,17 @@ def create_comparison_boxplots(df, out_dir):
             data_to_plot.append(model_data)
             labels.append(model)
 
-            # Color by model type
             if "RSF" in model:
-                colors.append("#2E86AB")  # Blue for RSF
+                colors.append("#2E86AB")
             elif "Weibull" in model:
-                colors.append("#A23B72")  # Purple for Weibull
+                colors.append("#A23B72")
             elif "LogNormal" in model:
-                colors.append("#F18F01")  # Orange for LogNormal
+                colors.append("#F18F01")
             elif "LogLogistic" in model:
-                colors.append("#C73E1D")  # Red for LogLogistic
+                colors.append("#C73E1D")
             else:
-                colors.append("#6A994E")  # Green for others
+                colors.append("#6A994E")
 
-        # Create box plot
         bp = ax.boxplot(
             data_to_plot,
             labels=labels,
@@ -227,18 +196,15 @@ def create_comparison_boxplots(df, out_dir):
             meanprops=dict(marker="D", markerfacecolor="red", markersize=6),
         )
 
-        # Color the boxes
         for patch, color in zip(bp["boxes"], colors):
             patch.set_facecolor(color)
             patch.set_alpha(0.7)
 
-        # Formatting
         ax.set_ylabel(title, fontsize=13, fontweight="bold")
         ax.set_xlabel("Model Configuration", fontsize=13, fontweight="bold")
         ax.tick_params(axis="x", rotation=45)
         ax.grid(True, alpha=0.3, linestyle="--", axis="y")
 
-        # Add horizontal line at optimal values
         if metric == "test_c":
             ax.axhline(
                 y=0.5, color="gray", linestyle="--", alpha=0.5, label="Random (0.5)"
@@ -263,18 +229,16 @@ def create_comparison_boxplots(df, out_dir):
     )
     plt.tight_layout()
 
-    # Save
     plot_path = out_dir / "model_comparison_boxplot.png"
     plt.savefig(plot_path, dpi=300, bbox_inches="tight")
-    print(f"✅ Saved box plot: {plot_path}")
+    print(f" Saved box plot: {plot_path}")
 
     plot_pdf = out_dir / "model_comparison_boxplot.pdf"
     plt.savefig(plot_pdf, bbox_inches="tight")
-    print(f"✅ Saved PDF: {plot_pdf}")
+    print(f" Saved PDF: {plot_pdf}")
 
     plt.close()
 
-    # Print summary statistics
     print("\nSummary Statistics:")
     print("=" * 80)
     summary = df.groupby("model")[["test_c", "train_c", "overfit_gap"]].agg(
@@ -282,7 +246,6 @@ def create_comparison_boxplots(df, out_dir):
     )
     print(summary.round(4))
     print("=" * 80)
-
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -295,22 +258,18 @@ def main():
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Generate comparison data
     df = generate_comparison_data(args.slopes, args.survival)
 
-    # Save raw results
     csv_path = out_dir / "model_comparison_cv_results.csv"
     df.to_csv(csv_path, index=False)
-    print(f"\n✅ Saved cross-validation results: {csv_path}")
+    print(f"\n Saved cross-validation results: {csv_path}")
 
-    # Create box plots
     create_comparison_boxplots(df, out_dir)
 
     print("\n" + "=" * 80)
-    print("✅ Model comparison box plots generated!")
+    print(" Model comparison box plots generated!")
     print(f"Results saved to: {out_dir}")
     print("=" * 80)
-
 
 if __name__ == "__main__":
     main()

@@ -10,7 +10,6 @@ from pydantic import BaseModel
 
 from nibabel.loadsave import load
 
-
 class SessionMeta(BaseModel):
     visit_code: str
     image_path: Optional[str] = None
@@ -18,18 +17,16 @@ class SessionMeta(BaseModel):
     acq_date: Optional[str] = None
     s3_path: Optional[str] = None
 
-
 class SubjectMeta(BaseModel):
     subject: str
     sessions: List[SessionMeta]
     labels: List[Optional[int]]
 
-
 class SubjectData:
     def __init__(self):
-        self.sessions: List[str] = []  # List of session names
-        self.session_data: List[SessionMeta] = []  # List of SessionMeta
-        self.labels: List[Optional[int]] = []  # Label for each session (from CSV)
+        self.sessions: List[str] = []
+        self.session_data: List[SessionMeta] = []
+        self.labels: List[Optional[int]] = []
 
     @staticmethod
     def load(
@@ -40,9 +37,7 @@ class SubjectData:
     ) -> "SubjectData":
         fs = s3fs.S3FileSystem(anon=False)
         subject = SubjectData()
-        # Load label CSV with tab delimiter
         label_df = pd.read_csv(label_csv, delimiter="\t")
-        # Columns: subject, visit_code, acq_date, path, diagnosis
         subject_rows = label_df[label_df["subject"] == subject_id]
         for _, row in subject_rows.iterrows():
             visit_code = str(row["visit_code"])
@@ -88,7 +83,6 @@ class SubjectData:
         return subject
 
     def load_image(self, session_idx: int):
-        """Load the NIfTI image for a session using nibabel. Returns the image object or None."""
         image_path = self.session_data[session_idx].image_path
         if image_path:
             try:
@@ -109,12 +103,10 @@ class SubjectData:
                 print(f"Error loading image {image_path}: {e}")
         return None
 
-
-# Example usage:
 if __name__ == "__main__":
     data_folder = "data"
     subject_id = "002_S_0782"
-    label_csv = "subject_metadata.csv"  # Path to your CSV
+    label_csv = "subject_metadata.csv"
     subject = SubjectData.load(data_folder, subject_id, label_csv)
     print("Sessions:", subject.sessions)
     print(
@@ -123,10 +115,9 @@ if __name__ == "__main__":
     )
     print("Labels:", subject.labels)
     img = subject.load_image(0)
-    # Use get_fdata().shape to get the shape of the image data
     if img is not None:
         try:
-            shape = img.get_fdata().shape  # type: ignore
+            shape = img.get_fdata().shape
         except Exception as e:
             print(f"Error getting image shape: {e}")
             shape = None

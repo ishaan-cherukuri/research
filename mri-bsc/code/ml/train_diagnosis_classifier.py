@@ -1,20 +1,3 @@
-"""code.ml.train_diagnosis_classifier
-
-Train simple classifier to predict diagnosis (CN/MCI/AD) from BSC features.
-
-This is a better approach than survival analysis because:
-  - BSC measures current disease state, not future conversion risk
-  - Boundary sharpness degrades with AD progression (CN > MCI > AD)
-  - Classification uses cross-sectional features at each timepoint
-
-Usage:
-  python3 -m code.ml.train_diagnosis_classifier \
-    --features data/index/bsc_simple_features.csv \
-    --manifest data/manifests/adni_manifest.csv \
-    --out_dir data/ml/results/classification \
-    --top_k 30
-
-"""
 
 from __future__ import annotations
 
@@ -39,18 +22,13 @@ from sklearn.metrics import (
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
 def load_and_merge_data(features_csv: str, manifest_csv: str) -> pd.DataFrame:
-    """Load features and merge with diagnosis labels."""
 
-    # Load features
     features = pd.read_csv(features_csv)
     print(f"[INFO] Loaded {len(features)} scans with features")
 
-    # Load manifest for diagnosis
     manifest = pd.read_csv(manifest_csv)
 
-    # Merge on subject + visit + date
     df = features.merge(
         manifest[["subject", "visit_code", "acq_date", "diagnosis"]],
         left_on=["subject", "visit_code", "acq_date"],
@@ -58,7 +36,6 @@ def load_and_merge_data(features_csv: str, manifest_csv: str) -> pd.DataFrame:
         how="left",
     )
 
-    # Drop rows with missing diagnosis
     df = df[df["diagnosis"].notna()].copy()
 
     print(f"\n[INFO] After merge: {len(df)} scans with diagnosis")
@@ -68,29 +45,23 @@ def load_and_merge_data(features_csv: str, manifest_csv: str) -> pd.DataFrame:
 
     return df
 
-
 def map_diagnosis_to_classes(df: pd.DataFrame, task: str = "3class") -> pd.DataFrame:
-    """Map diagnosis codes to class labels."""
 
     if task == "3class":
-        # CN (0) vs MCI (1-2) vs AD (3)
         df["class"] = df["diagnosis"].map({0: "CN", 1: "MCI", 2: "MCI", 3: "AD"})
         print(f"\n[INFO] 3-class problem: CN vs MCI vs AD")
 
     elif task == "2class":
-        # CN+MCI (0-2) vs AD (3)
         df["class"] = df["diagnosis"].map(
             {0: "CN/MCI", 1: "CN/MCI", 2: "CN/MCI", 3: "AD"}
         )
         print(f"\n[INFO] 2-class problem: CN/MCI vs AD")
 
     elif task == "binary_cn_ad":
-        # CN (0) vs AD (3) only
         df = df[df["diagnosis"].isin([0, 3])].copy()
         df["class"] = df["diagnosis"].map({0: "CN", 3: "AD"})
         print(f"\n[INFO] Binary problem: CN vs AD only")
 
-    # Drop rows with unmapped classes
     df = df[df["class"].notna()].copy()
 
     print(f"  Final class distribution:")
@@ -99,11 +70,9 @@ def map_diagnosis_to_classes(df: pd.DataFrame, task: str = "3class") -> pd.DataF
 
     return df
 
-
 def select_features(
     df: pd.DataFrame, exclude_cols: set[str], top_k: Optional[int] = None
 ) -> list[str]:
-    """Select feature columns by variance."""
 
     feat_cols = [c for c in df.columns if c not in exclude_cols]
 
@@ -116,15 +85,12 @@ def select_features(
 
     return feat_cols
 
-
 def prepare_data(
     df: pd.DataFrame, feat_cols: list[str]
 ) -> tuple[pd.DataFrame, StandardScaler]:
-    """Prepare features for training."""
 
     df_clean = df.copy()
 
-    # Handle missing/infinite
     for col in feat_cols:
         if df_clean[col].isna().any() or np.isinf(df_clean[col]).any():
             median = df_clean[col].replace([np.inf, -np.inf], np.nan).median()
@@ -132,13 +98,11 @@ def prepare_data(
                 df_clean[col].replace([np.inf, -np.inf], np.nan).fillna(median)
             )
 
-    # Standardize
     scaler = StandardScaler()
     df_clean[feat_cols] = scaler.fit_transform(df_clean[feat_cols])
     print("[INFO] Features standardized")
 
     return df_clean, scaler
-
 
 def train_logistic_regression(
     X_train: np.ndarray,
@@ -147,26 +111,22 @@ def train_logistic_regression(
     y_test: np.ndarray,
     class_names: list[str],
 ) -> dict:
-    """Train logistic regression classifier."""
 
     print("\n[INFO] Training Logistic Regression...")
 
-    # Multi-class logistic regression
     model = LogisticRegression(
         multi_class="multinomial",
         solver="lbfgs",
         max_iter=1000,
         random_state=42,
-        class_weight="balanced",  # Handle class imbalance
+        class_weight="balanced",
     )
 
     model.fit(X_train, y_train)
 
-    # Predictions
     y_pred_train = model.predict(X_train)
     y_pred_test = model.predict(X_test)
 
-    # Metrics
     train_acc = accuracy_score(y_train, y_pred_train)
     test_acc = accuracy_score(y_test, y_pred_test)
     train_bal_acc = balanced_accuracy_score(y_train, y_pred_train)
@@ -177,11 +137,9 @@ def train_logistic_regression(
     print(f"  Train Balanced Accuracy: {train_bal_acc:.4f}")
     print(f"  Test Balanced Accuracy: {test_bal_acc:.4f}")
 
-    # Classification report
     print("\n  Test Set Classification Report:")
     print(classification_report(y_test, y_pred_test, target_names=class_names))
 
-    # Confusion matrix
     cm = confusion_matrix(y_test, y_pred_test)
 
     return {
@@ -194,7 +152,6 @@ def train_logistic_regression(
         "y_pred_test": y_pred_test,
     }
 
-
 def train_random_forest(
     X_train: np.ndarray,
     y_train: np.ndarray,
@@ -202,7 +159,6 @@ def train_random_forest(
     y_test: np.ndarray,
     class_names: list[str],
 ) -> dict:
-    """Train random forest classifier."""
 
     print("\n[INFO] Training Random Forest...")
 
@@ -218,11 +174,9 @@ def train_random_forest(
 
     model.fit(X_train, y_train)
 
-    # Predictions
     y_pred_train = model.predict(X_train)
     y_pred_test = model.predict(X_test)
 
-    # Metrics
     train_acc = accuracy_score(y_train, y_pred_train)
     test_acc = accuracy_score(y_test, y_pred_test)
     train_bal_acc = balanced_accuracy_score(y_train, y_pred_train)
@@ -233,14 +187,11 @@ def train_random_forest(
     print(f"  Train Balanced Accuracy: {train_bal_acc:.4f}")
     print(f"  Test Balanced Accuracy: {test_bal_acc:.4f}")
 
-    # Classification report
     print("\n  Test Set Classification Report:")
     print(classification_report(y_test, y_pred_test, target_names=class_names))
 
-    # Confusion matrix
     cm = confusion_matrix(y_test, y_pred_test)
 
-    # Feature importance
     feat_imp = model.feature_importances_
 
     return {
@@ -254,11 +205,9 @@ def train_random_forest(
         "feature_importance": feat_imp,
     }
 
-
 def cross_validate_model(
     X: np.ndarray, y: np.ndarray, model_type: str = "logistic"
 ) -> dict:
-    """Perform stratified k-fold cross-validation."""
 
     print(f"\n[INFO] Running 5-fold cross-validation ({model_type})...")
 
@@ -290,9 +239,7 @@ def cross_validate_model(
 
     return {"cv_mean": cv_scores.mean(), "cv_std": cv_scores.std()}
 
-
 def plot_confusion_matrix(cm: np.ndarray, class_names: list[str], out_path: Path):
-    """Plot confusion matrix."""
 
     plt.figure(figsize=(8, 6))
     sns.heatmap(
@@ -309,7 +256,6 @@ def plot_confusion_matrix(cm: np.ndarray, class_names: list[str], out_path: Path
     plt.tight_layout()
     plt.savefig(out_path, dpi=150)
     print(f"[OK] Confusion matrix saved: {out_path}")
-
 
 def main() -> None:
     ap = argparse.ArgumentParser()
@@ -333,26 +279,20 @@ def main() -> None:
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load and merge data
     df = load_and_merge_data(args.features, args.manifest)
 
-    # Map diagnosis to classes
     df = map_diagnosis_to_classes(df, args.task)
 
-    # Select features
     exclude = {"subject", "visit_code", "acq_date", "image_id", "diagnosis", "class"}
     feat_cols = select_features(df, exclude, args.top_k)
     print(f"\n[INFO] Using {len(feat_cols)} features")
 
-    # Prepare data
     df_clean, scaler = prepare_data(df, feat_cols)
 
-    # Encode labels
     le = LabelEncoder()
     y = le.fit_transform(df_clean["class"])
     class_names = le.classes_.tolist()
 
-    # Split train/test
     X = df_clean[feat_cols].values
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -361,19 +301,15 @@ def main() -> None:
 
     print(f"\n[INFO] Train: {len(X_train)}, Test: {len(X_test)}")
 
-    # Train logistic regression
     lr_results = train_logistic_regression(
         X_train, y_train, X_test, y_test, class_names
     )
 
-    # Train random forest
     rf_results = train_random_forest(X_train, y_train, X_test, y_test, class_names)
 
-    # Cross-validation
     lr_cv = cross_validate_model(X, y, "logistic")
     rf_cv = cross_validate_model(X, y, "random_forest")
 
-    # Save results
     results = {
         "task": args.task,
         "n_features": len(feat_cols),
@@ -403,7 +339,6 @@ def main() -> None:
         json.dump(results, f, indent=2)
     print(f"\n[OK] Results saved: {results_path}")
 
-    # Plot confusion matrices
     plot_confusion_matrix(
         lr_results["confusion_matrix"],
         class_names,
@@ -415,7 +350,6 @@ def main() -> None:
         out_dir / "confusion_matrix_rf.png",
     )
 
-    # Save feature importance (RF)
     if "feature_importance" in rf_results:
         feat_imp_df = pd.DataFrame(
             {"feature": feat_cols, "importance": rf_results["feature_importance"]}
@@ -430,7 +364,6 @@ def main() -> None:
         print(f"{'='*80}")
         print(feat_imp_df.head(20).to_string(index=False))
 
-    # Final summary
     print(f"\n{'='*80}")
     print("FINAL RESULTS")
     print(f"{'='*80}")
@@ -444,7 +377,6 @@ def main() -> None:
     print(f"Random Forest:")
     print(f"  Test Balanced Accuracy: {rf_results['test_bal_acc']:.4f}")
     print(f"  CV Balanced Accuracy: {rf_cv['cv_mean']:.4f} ± {rf_cv['cv_std']:.4f}")
-
 
 if __name__ == "__main__":
     main()

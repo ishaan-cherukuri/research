@@ -3,22 +3,15 @@ from pathlib import Path
 from bsc.bsc_core import load_img, wm_zscore, directional_bsc
 from code.io.s3 import upload_file
 
-
 def _is_s3_path(path: str) -> bool:
-    """Check if a path is an S3 URI."""
     return isinstance(path, str) and path.startswith("s3://")
-
 
 def load_posteriors_stack(post_path):
     nii = nib.load(post_path)
     arr = nii.get_fdata(dtype=np.float32)
     return arr, nii
 
-
 def combine_gm_wm_from_posteriors(post_arr, label_map=None):
-    """
-    Combine posterior channels into GM and WM. label_map is a dict {label_id: "GM"/"WM"}.
-    """
     if label_map is None:
         raise ValueError(
             "Provide gm_prob_path/wm_prob_path or a label_map for posteriors."
@@ -41,7 +34,6 @@ def combine_gm_wm_from_posteriors(post_arr, label_map=None):
     gm_prob = np.clip(np.sum(gm_list, axis=0), 0, 1)
     wm_prob = np.clip(np.sum(wm_list, axis=0), 0, 1)
     return gm_prob, wm_prob
-
 
 def run_synthseg_bsc(
     t1_path,
@@ -113,7 +105,6 @@ def run_synthseg_bsc(
         metrics_csv_path, index=False
     )
 
-    # If output was S3, upload all files and clean up temp directory
     if is_s3_out:
         for filename in [
             "gm_prob.nii.gz",
@@ -126,13 +117,11 @@ def run_synthseg_bsc(
                 s3_path = os.path.join(out_dir, filename)
                 upload_file(Path(local_file), s3_path)
 
-        # Clean up temporary directory
         import shutil
 
         shutil.rmtree(local_work_dir, ignore_errors=True)
 
     return metrics
-
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()

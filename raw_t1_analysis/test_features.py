@@ -1,23 +1,17 @@
-"""
-Quick test of the enhanced feature extraction.
-"""
 
 from features import FeatureExtractor
 import json
 
-# Test with a single subject
 extractor = FeatureExtractor(data_dir="data", use_s3=False)
 
-# Extract features for one subject
 subject_id = "002_S_0729"
 print(f"Testing feature extraction for {subject_id}...")
 features = extractor.extract_subject_features(subject_id)
 
 if features:
-    print(f"\n✓ Successfully extracted features for {subject_id}")
+    print(f"\n Successfully extracted features for {subject_id}")
     print(f"\nTotal features: {len(features)}")
 
-    # Print key features
     print("\n=== Survival Labels ===")
     print(f"  baseline_diagnosis: {features.get('baseline_diagnosis')}")
     print(f"  event_observed: {features.get('event_observed')}")
@@ -40,4 +34,4 @@ if features:
     for key, value in sorted(features.items()):
         print(f"  {key}: {value}")
 else:
-    print(f"✗ Failed to extract features for {subject_id}")
+    print(f" Failed to extract features for {subject_id}")

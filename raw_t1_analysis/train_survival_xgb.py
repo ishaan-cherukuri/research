@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-XGBoost Survival Analysis Training Pipeline
-Using AFT (Accelerated Failure Time) objective for MCI→AD conversion prediction
-"""
 
 import pandas as pd
 import numpy as np
@@ -18,28 +13,23 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-
 class SurvivalXGBPipeline:
-    """XGBoost AFT Survival Analysis Pipeline for ADNI MCI→AD conversion"""
 
     def __init__(self, data_path="features_all_456.csv", output_dir="survival_models"):
         self.data_path = data_path
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
 
-        # Model artifacts
         self.model = None
         self.scaler = StandardScaler()
         self.feature_names = None
         self.config = {}
 
     def load_and_prepare_data(self):
-        """Load features and prepare for survival modeling"""
         print(f"Loading data from {self.data_path}...")
         df = pd.read_csv(self.data_path)
         print(f"Loaded {len(df)} subjects")
 
-        # Basic info
         print(f"\nEvent distribution:")
         print(df["event_observed"].value_counts())
         print(f"\nMean follow-up time: {df['event_time_years'].mean():.2f} years")
@@ -47,10 +37,8 @@ class SurvivalXGBPipeline:
         return df
 
     def engineer_features(self, df):
-        """Feature engineering and selection"""
         print("\n=== Feature Engineering ===")
 
-        # Identify feature columns (exclude metadata and target columns)
         exclude_cols = [
             "subject_id",
             "mci_bl_datetime",
@@ -66,10 +54,8 @@ class SurvivalXGBPipeline:
         feature_cols = [col for col in df.columns if col not in exclude_cols]
         print(f"Total features: {len(feature_cols)}")
 
-        # Create feature matrix
         X = df[feature_cols].copy()
 
-        # Handle categorical variables
         categorical_cols = X.select_dtypes(include=["object"]).columns.tolist()
         if categorical_cols:
             print(
@@ -77,7 +63,6 @@ class SurvivalXGBPipeline:
             )
             X = pd.get_dummies(X, columns=categorical_cols, drop_first=True)
 
-        # Handle missing values
         missing_before = X.isnull().sum().sum()
         if missing_before > 0:
             print(f"Filling {missing_before} missing values with median")
@@ -88,15 +73,10 @@ class SurvivalXGBPipeline:
         return X, feature_cols
 
     def prepare_aft_targets(self, df):
-        """Prepare AFT-specific targets (lower and upper bounds)"""
-        # For AFT objective in XGBoost, we need:
-        # - y_lower: lower bound (event_time_years for all)
-        # - y_upper: upper bound (event_time_years if event, +inf if censored)
 
         y_lower = df["aft_y_lower"].values
         y_upper = df["aft_y_upper"].values
 
-        # Replace string 'inf' with np.inf if needed
         y_upper = np.where(y_upper == "inf", np.inf, y_upper.astype(float))
 
         print(f"\n=== AFT Targets ===")
@@ -112,7 +92,6 @@ class SurvivalXGBPipeline:
         return y_lower, y_upper
 
     def split_data(self, X, y_lower, y_upper, test_size=0.2, random_state=42):
-        """Split data into train and test sets"""
         print(f"\n=== Data Split ===")
 
         X_train, X_test, y_lower_train, y_lower_test, y_upper_train, y_upper_test = (
@@ -132,7 +111,6 @@ class SurvivalXGBPipeline:
         return X_train, X_test, y_lower_train, y_lower_test, y_upper_train, y_upper_test
 
     def scale_features(self, X_train, X_test):
-        """Standardize features"""
         print("\n=== Feature Scaling ===")
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled = self.scaler.transform(X_test)
@@ -142,14 +120,12 @@ class SurvivalXGBPipeline:
         return X_train_scaled, X_test_scaled
 
     def train_aft_model(self, X_train, y_lower_train, y_upper_train, params=None):
-        """Train XGBoost AFT survival model"""
         print("\n=== Training XGBoost AFT Model ===")
 
-        # Default AFT parameters
         default_params = {
             "objective": "survival:aft",
             "eval_metric": "aft-nloglik",
-            "aft_loss_distribution": "normal",  # Options: 'normal', 'logistic', 'extreme'
+            "aft_loss_distribution": "normal",
             "aft_loss_distribution_scale": 1.0,
             "tree_method": "hist",
             "max_depth": 4,
@@ -169,12 +145,10 @@ class SurvivalXGBPipeline:
 
         self.config = default_params.copy()
 
-        # Create DMatrix with AFT labels
         dtrain = xgb.DMatrix(X_train)
         dtrain.set_float_info("label_lower_bound", y_lower_train)
         dtrain.set_float_info("label_upper_bound", y_upper_train)
 
-        # Train model
         print(f"Training with parameters:")
         for k, v in default_params.items():
             print(f"  {k}: {v}")
@@ -190,7 +164,6 @@ class SurvivalXGBPipeline:
         return self.model
 
     def predict(self, X):
-        """Predict survival time (AFT gives predicted log survival time)"""
         if self.model is None:
             raise ValueError("Model not trained yet!")
 
@@ -200,26 +173,20 @@ class SurvivalXGBPipeline:
         return predictions
 
     def evaluate_model(self, X_test, y_lower_test, y_upper_test, event_observed_test):
-        """Evaluate model performance"""
         print("\n=== Model Evaluation ===")
 
-        # Predict on test set
         y_pred = self.predict(X_test)
 
-        # Metrics
         print(f"\nPredicted survival time statistics:")
         print(f"  Mean: {np.mean(y_pred):.3f}")
         print(f"  Std: {np.std(y_pred):.3f}")
         print(f"  Min: {np.min(y_pred):.3f}")
         print(f"  Max: {np.max(y_pred):.3f}")
 
-        # Concordance index (C-index) for right-censored survival data
-        # Lower predicted time should correspond to higher risk (events)
         c_index = self._concordance_index(y_lower_test, -y_pred, event_observed_test)
         if not np.isnan(c_index):
             print(f"\nC-index: {c_index:.4f}")
 
-        # Correlation with actual event time
         actual_times = y_lower_test
         corr = np.corrcoef(y_pred, actual_times)[0, 1]
         print(f"Correlation with actual time: {corr:.4f}")
@@ -233,7 +200,6 @@ class SurvivalXGBPipeline:
 
     @staticmethod
     def _concordance_index(event_times, risk_scores, event_observed):
-        """Compute Harrell's C-index for right-censored data."""
         n_total = 0
         n_concordant = 0
         n_tied = 0
@@ -260,7 +226,6 @@ class SurvivalXGBPipeline:
         return (n_concordant + 0.5 * n_tied) / n_total
 
     def plot_feature_importance(self, top_n=30):
-        """Plot feature importance"""
         print("\n=== Feature Importance ===")
 
         importance = self.model.get_score(importance_type="gain")
@@ -271,7 +236,6 @@ class SurvivalXGBPipeline:
         print(f"\nTop {top_n} features:")
         print(importance_df.head(top_n).to_string(index=False))
 
-        # Plot
         plt.figure(figsize=(10, 12))
         top_features = importance_df.head(top_n)
         plt.barh(range(len(top_features)), top_features["importance"])
@@ -289,7 +253,6 @@ class SurvivalXGBPipeline:
         return importance_df
 
     def plot_survival_predictions(self, results):
-        """Visualize survival predictions"""
         print("\n=== Plotting Results ===")
 
         y_pred = results["predictions"]
@@ -298,7 +261,6 @@ class SurvivalXGBPipeline:
 
         fig, axes = plt.subplots(2, 2, figsize=(14, 12))
 
-        # 1. Predicted vs Actual
         ax = axes[0, 0]
         scatter = ax.scatter(y_actual, y_pred, c=events, cmap="RdYlBu_r", alpha=0.6)
         ax.plot(
@@ -313,7 +275,6 @@ class SurvivalXGBPipeline:
         ax.set_title("Predicted vs Actual Survival Time")
         plt.colorbar(scatter, ax=ax, label="Event (1=AD, 0=Censored)")
 
-        # 2. Distribution by event status
         ax = axes[0, 1]
         event_mask = events == 1
         ax.hist(
@@ -329,7 +290,6 @@ class SurvivalXGBPipeline:
         ax.set_title("Predicted Time Distribution by Event Status")
         ax.legend()
 
-        # 3. Residuals
         ax = axes[1, 0]
         residuals = y_actual - y_pred
         ax.scatter(y_pred, residuals, c=events, cmap="RdYlBu_r", alpha=0.6)
@@ -338,7 +298,6 @@ class SurvivalXGBPipeline:
         ax.set_ylabel("Residual (Actual - Predicted)")
         ax.set_title("Residual Plot")
 
-        # 4. Q-Q plot
         ax = axes[1, 1]
         from scipy import stats
 
@@ -352,15 +311,12 @@ class SurvivalXGBPipeline:
         plt.close()
 
     def save_model(self, model_name="xgb_aft_model"):
-        """Save trained model and artifacts"""
         print("\n=== Saving Model ===")
 
-        # Save XGBoost model
         model_path = self.output_dir / f"{model_name}.json"
         self.model.save_model(str(model_path))
         print(f"Saved model to {model_path}")
 
-        # Save scaler
         import pickle
 
         scaler_path = self.output_dir / "scaler.pkl"
@@ -368,13 +324,11 @@ class SurvivalXGBPipeline:
             pickle.dump(self.scaler, f)
         print(f"Saved scaler to {scaler_path}")
 
-        # Save config
         config_path = self.output_dir / "config.json"
         with open(config_path, "w") as f:
             json.dump(self.config, f, indent=2)
         print(f"Saved config to {config_path}")
 
-        # Save metadata
         metadata = {
             "train_date": datetime.now().isoformat(),
             "data_path": str(self.data_path),
@@ -389,7 +343,6 @@ class SurvivalXGBPipeline:
         print(f"Saved metadata to {metadata_path}")
 
     def cross_validate(self, X, y_lower, y_upper, n_folds=5):
-        """Perform k-fold cross-validation"""
         print(f"\n=== {n_folds}-Fold Cross-Validation ===")
 
         kf = KFold(n_splits=n_folds, shuffle=True, random_state=42)
@@ -405,12 +358,10 @@ class SurvivalXGBPipeline:
             y_upper_train_fold = y_upper[train_idx]
             y_upper_val_fold = y_upper[val_idx]
 
-            # Scale
             scaler_fold = StandardScaler()
             X_train_fold = scaler_fold.fit_transform(X_train_fold)
             X_val_fold = scaler_fold.transform(X_val_fold)
 
-            # Train
             dtrain = xgb.DMatrix(X_train_fold)
             dtrain.set_float_info("label_lower_bound", y_lower_train_fold)
             dtrain.set_float_info("label_upper_bound", y_upper_train_fold)
@@ -427,7 +378,6 @@ class SurvivalXGBPipeline:
                 verbose_eval=False,
             )
 
-            # Predict and evaluate
             y_pred_val = model_fold.predict(dval)
             corr = np.corrcoef(y_pred_val, y_lower_val_fold)[0, 1]
 
@@ -441,56 +391,41 @@ class SurvivalXGBPipeline:
 
         return fold_scores
 
-
 def main():
-    """Main training pipeline"""
     print("=" * 60)
     print("XGBoost AFT Survival Analysis Pipeline")
     print("MCI to AD Conversion Prediction")
     print("=" * 60)
 
-    # Initialize pipeline
     pipeline = SurvivalXGBPipeline(data_path="features_all_456.csv")
 
-    # Load data
     df = pipeline.load_and_prepare_data()
 
-    # Engineer features
     X, feature_cols = pipeline.engineer_features(df)
 
-    # Prepare AFT targets
     y_lower, y_upper = pipeline.prepare_aft_targets(df)
 
-    # Split data
     X_train, X_test, y_lower_train, y_lower_test, y_upper_train, y_upper_test = (
         pipeline.split_data(X, y_lower, y_upper, test_size=0.2)
     )
 
-    # Get event_observed for test set
     test_indices = X_test.index
     event_observed_test = df.loc[test_indices, "event_observed"].values
 
-    # Scale features
     X_train_scaled, X_test_scaled = pipeline.scale_features(X_train, X_test)
 
-    # Train model
     pipeline.train_aft_model(X_train_scaled, y_lower_train, y_upper_train)
 
-    # Evaluate
     results = pipeline.evaluate_model(
         X_test_scaled, y_lower_test, y_upper_test, event_observed_test
     )
 
-    # Feature importance
     importance_df = pipeline.plot_feature_importance(top_n=30)
 
-    # Visualizations
     pipeline.plot_survival_predictions(results)
 
-    # Save model
     pipeline.save_model()
 
-    # Optional: Cross-validation
     print("\n" + "=" * 60)
     cv_option = input("Run cross-validation? (y/n): ").strip().lower()
     if cv_option == "y":
@@ -501,7 +436,6 @@ def main():
     print("Pipeline Complete!")
     print(f"Model saved to: {pipeline.output_dir}")
     print("=" * 60)
-
 
 if __name__ == "__main__":
     main()

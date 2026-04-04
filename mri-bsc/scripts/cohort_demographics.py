@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-"""Compute cohort demographic/statistical summary from local project CSVs.
-
-Outputs printed:
-- subjects, scans, visits per subject
-- follow-up time summary
-- event/censoring counts
-- diagnosis distribution (all scans and baseline)
-- age/sex availability check
-"""
 
 from __future__ import annotations
 
@@ -16,13 +6,11 @@ from pathlib import Path
 
 import pandas as pd
 
-
 def _mean_sd(series: pd.Series, digits: int = 2) -> str:
     vals = pd.to_numeric(series, errors="coerce").dropna()
     if len(vals) == 0:
         return "N/A"
     return f"{vals.mean():.{digits}f} ± {vals.std():.{digits}f}"
-
 
 def _median_iqr(series: pd.Series, digits: int = 2) -> str:
     vals = pd.to_numeric(series, errors="coerce").dropna()
@@ -33,13 +21,11 @@ def _median_iqr(series: pd.Series, digits: int = 2) -> str:
     q3 = vals.quantile(0.75)
     return f"{med:.{digits}f} ({q1:.{digits}f}-{q3:.{digits}f})"
 
-
 def _fmt_int(x: float | int) -> str:
     try:
         return f"{int(x):,}"
     except Exception:
         return "N/A"
-
 
 def _female_cell(df: pd.DataFrame) -> str:
     sex_cols = ["PTGENDER", "ptgender", "gender", "Gender", "sex", "Sex"]
@@ -48,11 +34,10 @@ def _female_cell(df: pd.DataFrame) -> str:
         return "N/A"
 
     sx = df[sex_col].astype(str).str.strip().str.lower()
-    female = sx.isin(["female", "f", "2", "0"])  # handle common codings
+    female = sx.isin(["female", "f", "2", "0"])
     n = int(female.sum())
     pct = 100.0 * n / len(df) if len(df) else 0.0
     return f"{n} ({pct:.1f}%)"
-
 
 def summarize(manifest_csv: Path, survival_csv: Path) -> None:
     m = pd.read_csv(manifest_csv)
@@ -63,11 +48,9 @@ def summarize(manifest_csv: Path, survival_csv: Path) -> None:
     if not {"subject", "event", "time_years"}.issubset(s.columns):
         raise ValueError("Survival CSV must contain 'subject', 'event', 'time_years'")
 
-    # Keep only subjects with survival labels for grouped cohort stats.
     surv_subjects = set(s["subject"].astype(str))
     m2 = m[m["subject"].astype(str).isin(surv_subjects)].copy()
 
-    # Define groups from survival table.
     s_all = s.copy()
     s_conv = s[s["event"] == 1].copy()
     s_stable = s[s["event"] == 0].copy()
@@ -155,7 +138,6 @@ def summarize(manifest_csv: Path, survival_csv: Path) -> None:
             "Add merged ADNI metadata (e.g., AGE/PTGENDER) to compute those demographics."
         )
 
-    # Poster-ready cell values (All / Converters / Stable)
     visits_all = m_all.groupby("subject").size()
     visits_conv = m_conv.groupby("subject").size()
     visits_stable = m_stable.groupby("subject").size()
@@ -218,7 +200,6 @@ def summarize(manifest_csv: Path, survival_csv: Path) -> None:
     for row, all_v, conv_v, st_v in cells:
         print(f"{row:20s} | {all_v:28s} | {conv_v:22s} | {st_v}")
 
-
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Compute cohort demographic statistics"
@@ -236,7 +217,6 @@ def main() -> None:
     args = parser.parse_args()
 
     summarize(Path(args.manifest), Path(args.survival))
-
 
 if __name__ == "__main__":
     main()

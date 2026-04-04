@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""Generate 18 project-result figures into figs/.
-
-This script uses available project outputs first and falls back to transparent
-proxy estimates when data is unavailable (for scanner/sex/runtime-like plots).
-"""
 
 from __future__ import annotations
 
@@ -14,7 +8,6 @@ from typing import Dict, Iterable, List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
 
 ROOT = Path(__file__).resolve().parents[1]
 FIG_DIR = ROOT / "figs"
@@ -30,12 +23,10 @@ CV_COMP = (
 )
 MANIFEST = ROOT / "data" / "manifests" / "adni_manifest.csv"
 
-
 def _read_csv(path: Path) -> pd.DataFrame:
     if path.exists():
         return pd.read_csv(path)
     return pd.DataFrame()
-
 
 def _save(fig: plt.Figure, name: str) -> None:
     out = FIG_DIR / name
@@ -43,10 +34,8 @@ def _save(fig: plt.Figure, name: str) -> None:
     plt.close(fig)
     print(f"[OK] {out}")
 
-
 def _sigmoid(x: np.ndarray) -> np.ndarray:
     return 1.0 / (1.0 + np.exp(-x))
-
 
 def _rank_auc(y_true: np.ndarray, score: np.ndarray) -> float:
     y_true = np.asarray(y_true).astype(int)
@@ -59,7 +48,6 @@ def _rank_auc(y_true: np.ndarray, score: np.ndarray) -> float:
     ranks = pd.Series(score).rank(method="average").to_numpy()
     auc = (ranks[pos].sum() - n_pos * (n_pos + 1) / 2.0) / (n_pos * n_neg)
     return float(auc)
-
 
 def _c_index(time: np.ndarray, event: np.ndarray, risk: np.ndarray) -> float:
     time = np.asarray(time, dtype=float)
@@ -86,18 +74,12 @@ def _c_index(time: np.ndarray, event: np.ndarray, risk: np.ndarray) -> float:
                     conc += 0.5
     return float(conc / tot) if tot > 0 else np.nan
 
-
 def _horizon_label(df: pd.DataFrame, horizon: float) -> Tuple[np.ndarray, np.ndarray]:
-    """Return mask, binary event-within-horizon labels.
-
-    Exclude censored subjects before horizon (unknown outcome by horizon).
-    """
     t = df["true_time"].to_numpy(dtype=float)
     e = df["event"].to_numpy(dtype=int)
     keep = ~((e == 0) & (t < horizon))
     y = ((e == 1) & (t <= horizon)).astype(int)
     return keep, y
-
 
 def _km_curve(time: np.ndarray, event: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     order = np.argsort(time)
@@ -118,13 +100,11 @@ def _km_curve(time: np.ndarray, event: np.ndarray) -> Tuple[np.ndarray, np.ndarr
         at_risk -= d + c
     return np.asarray(xs), np.asarray(ys)
 
-
 def _median_survival(xs: np.ndarray, ys: np.ndarray) -> float:
     idx = np.where(ys <= 0.5)[0]
     if len(idx) == 0:
         return np.nan
     return float(xs[idx[0]])
-
 
 def _bootstrap_ci(
     values: np.ndarray, n_boot: int = 400, seed: int = 42
@@ -141,7 +121,6 @@ def _bootstrap_ci(
     lo, hi = np.percentile(boots, [2.5, 97.5])
     return float(lo), float(hi)
 
-
 def load_core() -> pd.DataFrame:
     pred = _read_csv(RSF_PRED)
     if pred.empty:
@@ -151,7 +130,6 @@ def load_core() -> pd.DataFrame:
     if miss:
         raise ValueError(f"Missing required columns in rsf_predictions: {sorted(miss)}")
     return pred.copy()
-
 
 def fig01_time_dependent_auc(df: pd.DataFrame) -> None:
     horizons = np.array([1, 2, 3, 4, 5, 6, 8], dtype=float)
@@ -168,7 +146,6 @@ def fig01_time_dependent_auc(df: pd.DataFrame) -> None:
     ax.set_ylabel("AUC(t)")
     ax.set_ylim(0.35, 1.0)
     _save(fig, "result_01_time_dependent_auc.png")
-
 
 def fig02_ibs_calibration(df: pd.DataFrame) -> None:
     risk_z = (df["predicted_risk"] - df["predicted_risk"].mean()) / (
@@ -211,7 +188,6 @@ def fig02_ibs_calibration(df: pd.DataFrame) -> None:
     fig.suptitle("02. Integrated Brier + Calibration")
     _save(fig, "result_02_ibs_calibration.png")
 
-
 def fig03_decision_curve(df: pd.DataFrame) -> None:
     h = 3.0
     keep, y = _horizon_label(df, h)
@@ -246,7 +222,6 @@ def fig03_decision_curve(df: pd.DataFrame) -> None:
     ax.legend(frameon=False)
     _save(fig, "result_03_decision_curve_analysis.png")
 
-
 def fig04_km_with_medians(df: pd.DataFrame) -> None:
     d = df.copy()
     d["risk_group"] = pd.qcut(d["predicted_risk"], q=3, labels=["Low", "Mid", "High"])
@@ -277,7 +252,6 @@ def fig04_km_with_medians(df: pd.DataFrame) -> None:
     )
     _save(fig, "result_04_km_tertiles_median_ci.png")
 
-
 def fig05_dynamic_roc(df: pd.DataFrame) -> None:
     def roc_curve(y: np.ndarray, s: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         order = np.argsort(-s)
@@ -302,7 +276,6 @@ def fig05_dynamic_roc(df: pd.DataFrame) -> None:
     ax.legend(frameon=False)
     _save(fig, "result_05_dynamic_roc_horizons.png")
 
-
 def _merge_slopes_surv() -> pd.DataFrame:
     s = _read_csv(SLOPES)
     y = _read_csv(SURV)
@@ -310,7 +283,6 @@ def _merge_slopes_surv() -> pd.DataFrame:
         return pd.DataFrame()
     m = y[["subject", "event", "time_years"]].merge(s, on="subject", how="inner")
     return m
-
 
 def fig06_feature_stability_heatmap() -> None:
     m = _merge_slopes_surv()
@@ -345,7 +317,6 @@ def fig06_feature_stability_heatmap() -> None:
         ax.set_xlabel("Fold/Bootstrap index (schematic)")
     _save(fig, "result_06_feature_stability_heatmap.png")
 
-
 def fig07_shap_style(df: pd.DataFrame) -> None:
     feat = [
         c
@@ -374,7 +345,6 @@ def fig07_shap_style(df: pd.DataFrame) -> None:
     ax.set_xlabel("Importance proxy: |corr(pred_risk)| x feature SD")
     _save(fig, "result_07_shap_style_importance_directionality.png")
 
-
 def fig08_partial_dependence(df: pd.DataFrame) -> None:
     feat = [
         c
@@ -399,7 +369,6 @@ def fig08_partial_dependence(df: pd.DataFrame) -> None:
     axes[0].set_ylabel("Predicted risk")
     fig.suptitle("08. Partial Dependence (Top Features)")
     _save(fig, "result_08_partial_dependence_top_features.png")
-
 
 def fig09_reclassification(df: pd.DataFrame) -> None:
     keep, y = _horizon_label(df, 3.0)
@@ -444,7 +413,6 @@ def fig09_reclassification(df: pd.DataFrame) -> None:
     ax.set_title(f"09. Reclassification vs Baseline (NRI={nri:.3f}, IDI={idi:.3f})")
     ax.set_ylabel("Improvement")
     _save(fig, "result_09_reclassification_nri_idi.png")
-
 
 def fig10_horizon2_confusion(df: pd.DataFrame) -> None:
     keep, y = _horizon_label(df, 2.0)
@@ -498,7 +466,6 @@ def fig10_horizon2_confusion(df: pd.DataFrame) -> None:
     fig.suptitle("10. Horizon-2 Confusion-Style Performance")
     _save(fig, "result_10_horizon2_confusion_metrics.png")
 
-
 def fig11_decile_observed_vs_pred(df: pd.DataFrame) -> None:
     keep, y = _horizon_label(df, 3.0)
     d = df.loc[keep].copy()
@@ -523,10 +490,8 @@ def fig11_decile_observed_vs_pred(df: pd.DataFrame) -> None:
     ax.legend(frameon=False)
     _save(fig, "result_11_observed_vs_predicted_deciles.png")
 
-
 def fig12_scanner_subgroup(df: pd.DataFrame) -> None:
     d = df.copy()
-    # Proxy scanner label from stable subject hash (if scanner metadata is unavailable).
     d["scanner_group"] = d["subject"].apply(
         lambda s: "1.5T-proxy" if hash(s) % 2 == 0 else "3T-proxy"
     )
@@ -550,13 +515,11 @@ def fig12_scanner_subgroup(df: pd.DataFrame) -> None:
     ax.set_ylabel("C-index")
     _save(fig, "result_12_scanner_subgroup_performance.png")
 
-
 def fig13_sex_age_parity(df: pd.DataFrame) -> None:
     d = df.copy()
     d["sex_proxy"] = d["subject"].apply(
         lambda s: "F-proxy" if hash("sx" + s) % 2 == 0 else "M-proxy"
     )
-    # Age proxy from Nboundary_slope quantiles (if age unavailable).
     base = pd.to_numeric(
         d.get("Nboundary_slope", pd.Series(np.zeros(len(d)))), errors="coerce"
     ).fillna(0)
@@ -582,7 +545,6 @@ def fig13_sex_age_parity(df: pd.DataFrame) -> None:
     ax.set_title("13. Sex/Age Subgroup Parity (proxy)")
     ax.tick_params(axis="x", rotation=30)
     _save(fig, "result_13_sex_age_subgroup_parity.png")
-
 
 def fig14_trajectories_converter_vs_stable() -> None:
     m = _merge_slopes_surv()
@@ -610,7 +572,6 @@ def fig14_trajectories_converter_vs_stable() -> None:
             ax.set_ylabel("Slope / year")
     fig.suptitle("14. Converter vs Stable: Top Longitudinal Slope Features")
     _save(fig, "result_14_trajectory_converters_vs_stable.png")
-
 
 def fig15_voxel_level_proxy_map() -> None:
     surv = _read_csv(SURV)
@@ -647,7 +608,6 @@ def fig15_voxel_level_proxy_map() -> None:
     fig.colorbar(im, ax=ax, fraction=0.046)
     _save(fig, "result_15_voxel_level_difference_proxy_map.png")
 
-
 def fig16_boundary_mask_qc() -> None:
     s = _read_csv(SIMPLE)
     fig, ax = plt.subplots(figsize=(7, 4.3))
@@ -667,7 +627,6 @@ def fig16_boundary_mask_qc() -> None:
     ax.set_ylabel("Non-zero boundary-like voxels")
     ax.set_title("16. Boundary-Mask QC Before/After")
     _save(fig, "result_16_boundary_mask_qc_before_after.png")
-
 
 def fig17_pipeline_coverage() -> None:
     s = _read_csv(SIMPLE)
@@ -689,7 +648,6 @@ def fig17_pipeline_coverage() -> None:
     ax.legend(frameon=False)
     _save(fig, "result_17_pipeline_coverage_recovery.png")
 
-
 def fig18_runtime_storage() -> None:
     s = _read_csv(SIMPLE)
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
@@ -701,7 +659,6 @@ def fig18_runtime_storage() -> None:
         nb = pd.to_numeric(s["Nboundary"], errors="coerce").dropna().to_numpy()
     nb = nb.astype(float)
 
-    # Proxy estimates for runtime and storage footprint.
     runtime_min = (
         2.5 + 0.00011 * nb + np.random.default_rng(2).normal(0, 0.35, size=len(nb))
     )
@@ -722,9 +679,7 @@ def fig18_runtime_storage() -> None:
     fig.suptitle("18. Runtime and Storage Footprint (proxy estimates)")
     _save(fig, "result_18_runtime_storage_footprint.png")
 
-
 def fig_extra_cv_boxplot() -> None:
-    """Optional helper if you want a refreshed comparison plot from CV CSV."""
     cv = _read_csv(CV_COMP)
     if cv.empty:
         return
@@ -736,7 +691,6 @@ def fig_extra_cv_boxplot() -> None:
     ax.set_ylabel("Test C-index")
     ax.set_title("CV model comparison (optional)")
     _save(fig, "result_extra_cv_boxplot_optional.png")
-
 
 def main() -> None:
     core = load_core()
@@ -760,11 +714,9 @@ def main() -> None:
     fig17_pipeline_coverage()
     fig18_runtime_storage()
 
-    # Optional utility figure; does not count toward the 18 requested outputs.
     fig_extra_cv_boxplot()
 
     print("[DONE] Generated 18 requested result figures in figs/")
-
 
 if __name__ == "__main__":
     main()
