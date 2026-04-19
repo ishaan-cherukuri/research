@@ -9,9 +9,21 @@
 \usepackage{amsmath}
 \usepackage[hyphens]{url}
 \usepackage{dblfloatfix}
-\usepackage{placeins} 
+\usepackage{placeins}
+\usepackage{afterpage}
 \usepackage{lineno}
 \linenumbers
+% Float placement tuning: prevent large gaps from held-back wide floats
+\setcounter{topnumber}{4}
+\setcounter{dbltopnumber}{4}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{6}
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\dbltopfraction}{0.95}
+\renewcommand{\bottomfraction}{0.5}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.8}
+\renewcommand{\dblfloatpagefraction}{0.8}
 %% DOI (optional - leave empty if not assigned yet)
 
 %% Article information
@@ -68,7 +80,7 @@ Several pathological processes in AD could plausibly blur this boundary. Amyloid
 
 BSC computation in this study followed a multi-step pipeline (Figure~\ref{fig:pipeline}). First, Atropos k-means clustering~\cite{avants2011atropos} assigned each voxel a probability of belonging to gray matter, white matter, or cerebrospinal fluid. Next, boundary voxels were defined as those where gray matter probability fell between 0.4 and 0.6, which captures a transition band rather than forcing the analysis onto an unstable single-voxel contour. Gradient filters then measured how rapidly MRI intensity changed across that boundary, and the gradient was projected along the direction perpendicular to the interface. For each boundary voxel $\mathbf{x}$, the directional BSC was computed as follows:
 
-\begin{figure*}[t!]
+\begin{figure*}[!htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{figs/arch.png}
 \caption{Complete BSC slope-based MCI-to-AD conversion prediction pipeline. Longitudinal T1-weighted MRI scans from four time points (baseline, m12, m24, m36) undergo preprocessing (N4 bias correction, skull stripping, resampling), Atropos segmentation to derive GM/WM probability maps, and BSC computation at the gray-white matter boundary. Per-scan features (35 total) are extracted from each time point, then organized into per-subject longitudinal sequences. Linear regression across time points yields 182 slope-based features per subject capturing annual rates of boundary degradation. The top 20 most variable slopes are selected and input to a Random Survival Forest model, which outputs individual risk scores, Kaplan-Meier survival curves stratified by risk group, and performance metrics (C-index: 0.63).}
@@ -113,6 +125,31 @@ All data were obtained from the Alzheimer's Disease Neuroimaging Initiative (ADN
 Subjects were included if they met four criteria: baseline diagnosis of MCI, at least 4 longitudinal T1-weighted MRI scans acquired on different dates, chronologically ordered scans with valid visit labels (bl, m12, m24, m36, and beyond), and complete clinical metadata including diagnosis at each visit. After correcting the imaging manifest for visit order and label inconsistencies, 456 subjects met these criteria.
 
 Among them, \textbf{101 converters} progressed from MCI to AD during follow-up, while \textbf{355 stable subjects} remained classified as MCI or reverted to cognitively normal status without ever receiving an AD diagnosis code of 3.0. Six subjects were excluded because they were already labeled as AD at baseline, which yields a time-to-conversion of zero years. Those cases likely reflect labeling problems or pre-baseline progression and are also incompatible with parametric accelerated failure time models that require positive event times. The final cohort therefore included \textbf{450 subjects}.
+
+\afterpage{%
+\begin{table*}[!t]
+\centering
+\caption{Demographic and clinical characteristics of the study cohort}
+\label{tab:demographics}
+\begin{tabular}{lccc}
+\hline
+\textbf{Characteristic} & \textbf{All} & \textbf{Converters} & \textbf{Stable} \\
+ & (N=450) & (N=95) & (N=355) \\
+\hline
+Age (years), mean$\pm$SD & 74.4$\pm$5.9 & 75.8$\pm$5.7 & 73.8$\pm$5.8 \\
+Female, n (\%) & 225 (50.0) & 42 (44.2) & 183 (51.5) \\
+Baseline Nboundary & 17,353$\pm$5,891 & 13,978$\pm$5,634 & 18,733$\pm$5,507 \\
+Follow-up (years) & 4.84$\pm$3.79 & 1.90$\pm$1.39 & 5.63$\pm$3.84 \\
+\hline
+\end{tabular}
+\end{table*}
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.95\textwidth]{figs/sample_overview.png}
+\caption{Cohort demographic and longitudinal sampling structure. \textbf{Left:} Cross-sectional age distribution at baseline, stratified by sex (salmon = Female, teal = Male); hatched bars indicate converters (MCI$\to$AD). \textbf{Right:} Longitudinal follow-up span for each of the 456 subjects, sorted by baseline age to reveal the S-shaped enrollment structure. Each horizontal line spans from baseline age to last available scan. Color indicates sex; line style and end marker distinguish stable subjects (solid line, circle) from converters (dashed line, $\times$). Converters are distributed across the full age range but cluster at shorter follow-up intervals, consistent with earlier event occurrence.}
+\label{fig:sample-overview}
+\end{figure*}
+}
 
 \subsection{MRI Acquisition and Preprocessing}
 
@@ -207,7 +244,7 @@ where $d_j$ is the number of events at time $t_j$ in the terminal node and $n_j$
 
 from which the survival function follows as $\hat{S}(t | \mathbf{X}_i) = \exp(-\hat{H}(t | \mathbf{X}_i))$.
 
-\begin{figure*}[t!]
+\begin{figure*}[!htbp]
 \centering
 \includegraphics[width=\textwidth]{figs/RSF.png}
 \caption{Random Survival Forest algorithm schematic. The original training data is repeatedly bootstrap sampled (typically 63\% of subjects with replacement, leaving 37\% as out-of-bag samples). For each bootstrap sample, a survival tree is grown by recursively splitting nodes using randomly selected candidate variables that maximize survival differences between daughter branches (measured by log-rank statistics). This process generates an ensemble of diverse trees (Ntree = 1,000 in this implementation). For prediction, each tree gives a cumulative hazard estimate based on which terminal node the subject falls into, and the final ensemble prediction averages across all trees. The out-of-bag (OOB) data gives internal validation for calculating error rates and variable importance without needing a separate validation set.}
@@ -242,30 +279,9 @@ All analyses were conducted in Python 3.11 using open-source tools. Preprocessin
 
 \section{Results}
 
-\subsection{Cohort Characteristics}
-
-\begin{table*}[t!]
-\centering
-\caption{Demographic and clinical characteristics of the study cohort}
-\label{tab:demographics}
-\begin{tabular}{lccc}
-\hline
-\textbf{Characteristic} & \textbf{All} & \textbf{Converters} & \textbf{Stable} \\
- & (N=450) & (N=95) & (N=355) \\
-\hline
-Age (years), mean$\pm$SD & 74.4$\pm$5.9 & 75.8$\pm$5.7 & 73.8$\pm$5.8 \\
-Female, n (\%) & 225 (50.0) & 42 (44.2) & 183 (51.5) \\
-Baseline Nboundary & 17,353$\pm$5,891 & 13,978$\pm$5,634 & 18,733$\pm$5,507 \\
-Follow-up (years) & 4.84$\pm$3.79 & 1.90$\pm$1.39 & 5.63$\pm$3.84 \\
-\hline
-\end{tabular}
-\end{table*}
-
-Converters were modestly older at baseline than stable subjects (75.8 vs. 73.8 years, $p=0.003$ by Welch's $t$-test), which is consistent with age as a major AD risk factor. They also showed lower baseline boundary voxel counts (13,978 vs. 18,733, $p<0.001$), suggesting that some structural differences were already present at study entry. Even so, those baseline differences alone were not sufficient for useful prediction, as later model results make clear. Sex distribution was relatively balanced across groups (44\% female in converters vs. 52\% in stable subjects, $p=0.18$ by $\chi^2$ test), which argues against a strong sex effect in this particular cohort, even though sex-related differences in AD risk have been reported elsewhere. The much shorter follow-up among converters reflects the nature of event-based observation: once conversion occurs, subjects no longer remain in the at-risk pool.
-
 \subsection{Survival Model Performance}
 
-\begin{table*}[t!]
+\begin{table*}[!htbp]
 \centering
 \caption{Survival model performance comparison: Baseline BSC vs. Longitudinal Slopes}
 \label{tab:model-performance}
@@ -283,7 +299,7 @@ Weibull AFT & Slopes (top 20) & 0.34 & 0.61 & 34.56 & 20 \\
 
 The Random Survival Forest trained on longitudinal BSC slopes achieved a test C-index of 0.63, representing a \textbf{163\% improvement} over the baseline parametric model, which reached only 0.24. Figure~\ref{fig:model-comparison} shows this pattern across cross-validated model variants. However one slices it, slope-based models consistently outperformed models built from baseline features alone.
 
-\begin{figure*}[t!]
+\begin{figure*}[!htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{figs/model_comparison_boxplot.png}
 \caption{Cross-validation performance comparison across 8 model variants. Box plots show C-index distributions from 5-fold cross-validation for training (left), test (middle), and overfitting gap (right) sets. RSF models with different feature counts (10, 15, 20, 25, 30) and parametric AFT models (Weibull, LogNormal, LogLogistic) all using top-variance slope features. RSF-20 hits the best balance: median training C-index of 0.82, test of 0.63, though substantial overfitting remains (gap: 0.19). Parametric models show more stable train-test gaps but lower overall performance.}
@@ -300,7 +316,7 @@ Even with that limitation, a test C-index of 0.63 is still within the range comm
 
 Kaplan-Meier survival curves stratified by predicted risk (Figure~\ref{fig:km-curves}) showed clear separation among high-, medium-, and low-risk groups, with a significant log-rank result ($p<0.0001$). High-risk subjects had a median conversion time of 2.1 years, compared with 8.5 years in the low-risk group. From a clinical trial perspective, that kind of stratification could be genuinely useful.
 
-\begin{figure*}[t!]
+\begin{figure*}[!htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{figs/kaplan_meier_curves.png}
 \caption{Kaplan-Meier survival curves stratified by Random Survival Forest predicted risk scores. Training set (left) and test set (right) show probability of remaining MCI (not converting to AD) over time for three risk groups defined by risk score tertiles. High-risk subjects (red, top tertile) show rapid conversion with median survival 2.1 years. Medium-risk subjects (orange) exhibit intermediate progression rates. Low-risk subjects (green, bottom tertile) show slow conversion with median survival 8.5 years. Shaded regions indicate 95\% confidence intervals. Event counts per group shown in legend demonstrate adequate statistical power for hazard estimation.}
@@ -334,6 +350,7 @@ bsc\_dir\_p50\_slope & 0.025 \\
 \textit{Note: Variances shown after robust preprocessing pipeline (signed-log transform, winsorization, penalization, MinMax scaling to [0,1]). Nboundary features were penalized by 0.10 during selection ranking to prevent dominance while retaining complementary information. Final variance range: 0.018--0.142 (ratio 7.9:1), enabling balanced contribution across all features in the Random Survival Forest ensemble.}
 
 After preprocessing, the selected features showed a much more balanced variance structure. Nboundary\_slope retained the largest variance at 0.142, but it no longer overwhelmed the feature set. Several high-percentile sharpness slopes, including bsc\_mag\_p90\_slope, bsc\_mag\_p75\_slope, bsc\_dir\_p90\_slope, and bsc\_dir\_p75\_slope, clustered in a similar range between 0.020 and 0.024. That pattern suggests prediction is not driven by only one aspect of boundary degradation. Rather, the \textit{extent} of boundary loss and the \textit{quality} of the remaining sharpest boundaries may both contribute meaningful information.
+
 
 \section{Discussion}
 
