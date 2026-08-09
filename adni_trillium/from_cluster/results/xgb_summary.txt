@@ -1,0 +1,26 @@
+XGBoost AFT Survival -- BSC Slopes Only (Trillium cohort)
+================================================================================
+
+Subjects: 657  |  converters: 251
+BSC slope features selected: 20
+
+XGBoost params:
+  objective: survival:aft
+  eval_metric: aft-nloglik
+  aft_loss_distribution: normal
+  aft_loss_distribution_scale: 1.2
+  max_depth: 4
+  learning_rate: 0.05
+  subsample: 0.8
+  colsample_bytree: 0.8
+  min_child_weight: 10
+  reg_alpha: 0.1
+  reg_lambda: 1.0
+  seed: 42
+  n_estimators: 500
+
+METRICS:
+  Train C-index : 0.9665
+  Test  C-index : 0.6126
+  Overfitting   : 0.3539
+  5-fold CV mean test C-index: 0.6430 +/- 0.0428

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adni-trillium"
+version = "0.1.0"
+description = "BSC + XGBoost survival pipeline on the Trillium ADNI BIDS cohort"
+requires-python = ">=3.9"
+
+dependencies = [
+  "numpy",
+  "pandas",
+  "nibabel",
+  "scipy",
+  "tqdm",
+  "antspyx; platform_system == 'Linux' or platform_system == 'Darwin'",
+  "lifelines>=0.30.0",
+  "xgboost>=2.1.4",
+  "scikit-survival>=0.23.1",
+  "scikit-learn",
+  "matplotlib",
+  "mri-bsc",
+]
+
+[tool.uv.sources]
+mri-bsc = { path = "../mri-bsc", editable = true }
+
+[tool.setuptools.packages.find]
+where = ["."]

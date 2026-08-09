@@ -1,0 +1,53 @@
+{
+  "xgb_split_metrics": {
+    "train_c_index": 0.9895423300628635,
+    "test_c_index": 0.8473333333333334,
+    "overfitting_gap": 0.1422,
+    "n_features": 59,
+    "n_estimators": 500
+  },
+  "km": {
+    "Training Set": {
+      "logrank_p": 1.2077710470678347e-32,
+      "chi2": 141.56963231936143,
+      "medians": {
+        "high": [
+          105,
+          67,
+          2.078028747433265
+        ],
+        "mid": [
+          105,
+          0,
+          null
+        ],
+        "low": [
+          105,
+          0,
+          null
+        ]
+      }
+    },
+    "Test Set": {
+      "logrank_p": 2.224772462767118e-07,
+      "chi2": 26.827256442422975,
+      "medians": {
+        "high": [
+          45,
+          20,
+          3.1813826146475015
+        ],
+        "mid": [
+          45,
+          6,
+          null
+        ],
+        "low": [
+          45,
+          2,
+          null
+        ]
+      }
+    }
+  }
+}

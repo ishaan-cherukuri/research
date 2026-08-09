@@ -1,0 +1,7 @@
+{
+  "external_cohort": "OASIS-3",
+  "n_subjects": 79,
+  "n_events": 18,
+  "c_index": 0.6226708074534162,
+  "n_features": 57
+}

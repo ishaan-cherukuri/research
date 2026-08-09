@@ -27,9 +27,9 @@
 %% DOI (optional - leave empty if not assigned yet)
 
 %% Article information
-\title{Longitudinal Boundary Sharpness Coefficient Slopes Predict Time to Alzheimer's Disease Conversion in Mild Cognitive Impairment:\\[8pt]A Survival Analysis Using the ADNI Cohort}
+\title{Longitudinal Boundary Sharpness Coefficient Slopes and T1 Morphometry Predict Time to Alzheimer's Disease Conversion in Mild Cognitive Impairment:\\[8pt]A Survival Analysis Using the ADNI Cohort}
 
-\shorttitle{BSC Slopes Predict MCI-to-AD Conversion}  % Short title for page headers
+\shorttitle{BSC Slopes and T1 Morphometry Predict MCI-to-AD Conversion}  % Short title for page headers
 \shortauthor{Cherukuri}  % Short author names for page headers
 
 \author{%
@@ -43,12 +43,12 @@
 
 %% Abstract and keywords must be defined BEFORE \maketitle
 \begin{abstract}
-Predicting whether someone with mild cognitive impairment (MCI) will progress to Alzheimer's disease (AD) is crucial in the early stages of neurodegeneration. This uncertainty limits enrollment in clinical trials and delays urgent treatment. The Boundary Sharpness Coefficient (BSC)\cite{olafson2021bsc} measures how well-defined the gray-white matter boundary looks on structural MRI. This study measures how BSC changes over time, namely, how fast the boundary degrades each year works much better than looking at a single baseline scan for predicting MCI-to-AD conversion. This study analyzed 1,824 T1-weighted MRI scans from 450 ADNI subjects (95 converters, 355 stable; mean follow-up: 4.84 years). BSC voxel-wise maps were computed using tissue segmentation at the gray-white matter cortical ribbon. Previous studies have used CNN and RNN models that reached 96.0\% accuracy for AD classification and 84.2\% for MCI conversion~\cite{hafeez2024deep}, but those approaches disregard specific regions within the brain. This study focused specifically on the gray-white matter interface. The approach uses temporal slope features capturing boundary degradation rates, feeding them into Random Survival Forest~\cite{ishwaran2008rsf}, a non-parametric ensemble method for right-censored survival data. The Random Survival Forest trained on BSC slopes achieved a test C-index of 0.63, a \textbf{163\% improvement} over baseline parametric models (test C-index: 0.24). Structural MRI costs a fraction of PET imaging (\$800--\$1,500 vs. \$5,000--\$7,000) and does not require CSF collection. These temporal biomarkers could help with patient-centered safety screening as well as risk assessment.
+Predicting whether someone with mild cognitive impairment (MCI) will progress to Alzheimer's disease (AD) is crucial in the early stages of neurodegeneration. This uncertainty limits enrollment in clinical trials and delays urgent treatment. The Boundary Sharpness Coefficient (BSC)\cite{olafson2021bsc} measures how well-defined the gray-white matter boundary looks on structural MRI. This study measures how BSC changes over time, namely, how fast the boundary degrades each year works much better than looking at a single baseline scan for predicting MCI-to-AD conversion. This study analyzed 1,824 T1-weighted MRI scans from 450 ADNI subjects (95 converters, 355 stable; mean follow-up: 4.84 years). BSC voxel-wise maps were computed using tissue segmentation at the gray-white matter cortical ribbon. Previous studies have used CNN and RNN models that reached 96.0\% accuracy for AD classification and 84.2\% for MCI conversion~\cite{hafeez2024deep}, but those approaches disregard specific regions within the brain. This study focused specifically on the gray-white matter interface. The approach uses temporal slope features capturing boundary degradation rates, then adds 39 T1-derived morphometry and longitudinal imaging measures from the same scan series, giving a 59-feature input. Three model families were compared on the same split. A Random Survival Forest~\cite{ishwaran2008rsf} trained on BSC slopes alone reached a test C-index of 0.63. Adding the T1 features raised that to 0.85$\pm$0.01 under 5-fold cross-validation, and an XGBoost model with an accelerated failure time objective~\cite{chen2016xgboost} on the same 59 features reached 0.89$\pm$0.03, a \textbf{271\% improvement} over the baseline parametric model (test C-index: 0.24). Gain analysis showed that most of the added discrimination comes from the T1 morphometry block rather than the boundary slopes, so the two feature families are better read as complementary than as competing. Structural MRI costs a fraction of PET imaging (\$800--\$1,500 vs. \$5,000--\$7,000) and does not require CSF collection. These temporal biomarkers could help with patient-centered safety screening as well as risk assessment.
 \end{abstract}
 
 
 
-\keywords{Alzheimer's disease; mild cognitive impairment; boundary sharpness coefficient; longitudinal MRI; Random Survival Forest; gray-white matter boundary; temporal biomarkers; MCI-to-AD conversion; neurodegeneration; tissue segmentation; ADNI}
+\keywords{Alzheimer's disease; mild cognitive impairment; boundary sharpness coefficient; longitudinal MRI; Random Survival Forest; gradient boosting; XGBoost; T1 morphometry; gray-white matter boundary; temporal biomarkers; MCI-to-AD conversion; neurodegeneration; tissue segmentation; ADNI}
 
 %% Maketitle creates full-width header with abstract and keywords, then starts two-column layout
 \maketitle
@@ -83,7 +83,7 @@ BSC computation in this study followed a multi-step pipeline (Figure~\ref{fig:pi
 \begin{figure*}[!htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{figs/arch.png}
-\caption{Complete BSC slope-based MCI-to-AD conversion prediction pipeline. Longitudinal T1-weighted MRI scans from four time points (baseline, m12, m24, m36) undergo preprocessing (N4 bias correction, skull stripping, resampling), Atropos segmentation to derive GM/WM probability maps, and BSC computation at the gray-white matter boundary. Per-scan features (35 total) are extracted from each time point, then organized into per-subject longitudinal sequences. Linear regression across time points yields 182 slope-based features per subject capturing annual rates of boundary degradation. The top 20 most variable slopes are selected and input to a Random Survival Forest model, which outputs individual risk scores, Kaplan-Meier survival curves stratified by risk group, and performance metrics (C-index: 0.63).}
+\caption{Complete BSC slope-based MCI-to-AD conversion prediction pipeline. Longitudinal T1-weighted MRI scans from four time points (baseline, m12, m24, m36) undergo preprocessing (N4 bias correction, skull stripping, resampling), Atropos segmentation to derive GM/WM probability maps, and BSC computation at the gray-white matter boundary. Per-scan features (35 total) are extracted from each time point, then organized into per-subject longitudinal sequences. Linear regression across time points yields 182 slope-based features per subject capturing annual rates of boundary degradation. The top 20 most variable slopes are selected and concatenated with 39 T1 morphometry and longitudinal imaging features (tissue volumes, brain volume and signal trajectories, quality metrics, scanner covariates) to give a 59-feature matrix. This matrix is passed to two survival models trained on the same split, a Random Survival Forest and an XGBoost model with an accelerated failure time objective, each of which outputs individual risk scores, Kaplan-Meier survival curves stratified by risk group, and performance metrics (5-fold cross-validated test C-index: 0.85 and 0.89 respectively).}
 \label{fig:pipeline}
 \end{figure*}
 
@@ -105,13 +105,14 @@ That is why rates of change are so appealing. A declining trajectory can reveal 
 
 \subsection{Study Objectives}
 
-This study was guided by four main aims:
+This study was guided by five main aims:
 
 \begin{enumerate}
     \item Compute longitudinal BSC slopes for 450 ADNI subjects with at least 4 MRI scans each
-    \item Train Random Survival Forest (RSF) models to predict time-to-AD-conversion using those slopes
-    \item Compare performance against baseline BSC features and parametric AFT models
-    \item Identify which BSC slope features are most informative for prediction
+    \item Extract complementary T1 morphometry and longitudinal imaging features from the same scan series
+    \item Train Random Survival Forest (RSF) and XGBoost accelerated failure time models on the combined feature set to predict time-to-AD-conversion
+    \item Compare performance against baseline BSC features, slope-only models, and parametric AFT models
+    \item Identify which features drive prediction, and how much of that signal comes from boundary sharpness rather than from global morphometry
 \end{enumerate}
 
 \section{Materials and Methods}
@@ -212,6 +213,16 @@ Because Nboundary-derived measures still tended to overwhelm the ranking, a \tex
 
 After ranking, the top 20 features were retained. These selected features were passed through the same signed-log and winsorization steps, followed by MinMax scaling to the range [0, 1]. All transformation parameters were estimated on the training set alone and then transferred to the test set. After preprocessing, feature variances in the training data ranged from 0.018 to 0.142, a ratio of 7.9:1, compared with an original raw variance ratio above 300{,}000:1. That reduction substantially improved numerical balance across inputs while keeping directional interpretation intact.
 
+\subsection{T1 Morphometry and Longitudinal Imaging Features}
+
+BSC describes one property of one interface. It says nothing about how much tissue is left, and nothing about whether the brain as a whole is shrinking. To cover that gap, 39 additional features were extracted from the same T1 scan series and appended to the 20 selected slopes.
+
+Eight of them are baseline morphometry: cerebrospinal fluid volume, total gray matter volume, total white matter volume, total brain volume, total intracranial volume (TIV), brain parenchymal fraction (BPF, computed as [GM + WM] / TIV), total ventricular volume, and ventricular volume normalized by TIV. These come from the same Atropos segmentation used for the boundary maps, so no separate pipeline was required.
+
+Twenty-four features describe how four scan-level quantities move over time. For brain volume, mean brain signal intensity, signal-to-noise ratio, and the brain-to-background intensity ratio, six summaries were computed each: the value at the last available scan, the absolute change from baseline, the percent change, the annual slope fit by the same linear regression used for the BSC features, the mean across scans, and the standard deviation across scans. Five further features are baseline image quality measures (brain mask volume, mean brain intensity, intensity standard deviation, SNR, and brain-to-background ratio). The last two record scanner field strength, once as the modal value across a subject's scans and once at baseline. Field strength was included because ADNI spans 1.5T and 3T acquisitions and the intensity-derived features are sensitive to that difference; whether including it helps or simply lets the model learn site structure is taken up in the limitations.
+
+The 39 T1 features were concatenated with the 20 selected BSC slopes to give a 59-dimensional matrix. No selection was applied within the T1 block, so all 39 entered the model. The same preprocessing chain used for the slopes (signed-log transform, winsorization at the 1st and 99th percentiles, MinMax scaling to [0, 1]) was applied to the full matrix, with every transformation parameter estimated on the training fold and then applied unchanged to the held-out data.
+
 \subsection{Survival Data Preparation}
 
 Survival outcomes were defined using clinical diagnosis trajectories. For each subject, the first scan at which the ADNI diagnosis code reached 3.0 was treated as the conversion event. Time-to-conversion was calculated as the interval between the baseline scan date and the conversion scan date, divided by 365.25 to express time in years.
@@ -224,7 +235,7 @@ Six baseline-AD cases with time-to-conversion equal to zero were excluded, both 
 
 \subsubsection{Survival Modeling}
 
-\textbf{Random Survival Forest (RSF)} served as the primary modeling framework, with parametric accelerated failure time (AFT) models used for comparison. That choice deserves explanation, especially since Cox proportional hazards models are often the default in survival analysis.
+Three model families were fit on the same data. \textbf{XGBoost} with an accelerated failure time objective~\cite{chen2016xgboost,barnwal2022survivalxgb} is the primary model and gave the best held-out discrimination. \textbf{Random Survival Forest (RSF)}~\cite{ishwaran2008rsf} is reported alongside it as a second ensemble on the identical feature matrix, which matters because the two methods overfit differently and agreeing on the ranking is more convincing than either result alone. Parametric AFT models are the weak baseline. Cox proportional hazards models are the usual default in survival analysis and are not used here, since neither ensemble requires the proportional hazards assumption and there is no obvious reason to expect it to hold across a cohort this heterogeneous.
 
 RSF extends the Random Forest framework to right-censored time-to-event data. Unlike parametric survival models, which impose a specific distribution on survival times, or Cox models~\cite{cox1972}, which rely on proportional hazards assumptions, RSF is \textit{non-parametric}. It does not require a prespecified hazard shape and is well suited to settings where the underlying relationships may be nonlinear or heterogeneous. For AD progression, that flexibility is attractive. Patients do not all decline in the same way, and it would be optimistic to assume a single hazard structure fits everyone cleanly.
 
@@ -251,7 +262,19 @@ from which the survival function follows as $\hat{S}(t | \mathbf{X}_i) = \exp(-\
 \label{fig:rsf-algorithm}
 \end{figure*}
 
-In this implementation, RSF used 1,000 trees, minimum samples per split of 10, minimum samples per leaf of 15, and max features equal to $\sqrt{20} \approx 4.47 \rightarrow 4$ at each split. These values were chosen based on common practice and computational feasibility rather than hyperparameter tuning. 
+In this implementation, RSF used 1,000 trees, minimum samples per split of 10, minimum samples per leaf of 15, and max features equal to $\sqrt{59} \approx 7.68 \rightarrow 7$ at each split on the combined feature set. These values were chosen based on common practice and computational feasibility rather than hyperparameter tuning.
+
+\textbf{XGBoost} builds its ensemble differently. Where RSF grows independent trees on bootstrap samples and averages them, gradient boosting~\cite{chen2016xgboost} adds trees sequentially, each one fit to the residual error of the ensemble so far. That makes it more expressive than bagging on the same data, and correspondingly easier to overfit, which is the tradeoff visible in the results below.
+
+Censoring was handled through XGBoost's \texttt{survival:aft} objective~\cite{barnwal2022survivalxgb}, which represents each subject as an interval rather than a point. A converter observed at time $t_i$ contributes the degenerate interval $[t_i, t_i]$; a censored subject last seen at $t_i$ contributes $[t_i, \infty)$. The model minimizes the negative log-likelihood of those intervals under a location-scale error model,
+
+\begin{equation}
+    \mathcal{L} = -\sum_{i=1}^{n} \log \left[ F\!\left(\frac{\log u_i - \hat{y}_i}{\sigma}\right) - F\!\left(\frac{\log l_i - \hat{y}_i}{\sigma}\right) \right]
+\end{equation}
+
+where $[l_i, u_i]$ is the observed interval for subject $i$, $\hat{y}_i$ is the ensemble's prediction of $\log T$, $F$ is the cumulative distribution of the assumed error term, and $\sigma$ is a fixed scale. A normal error distribution with $\sigma = 1.2$ was used. Because $\hat{y}$ predicts log survival time, higher predictions mean lower risk, and the concordance index was computed on $-\hat{y}$.
+
+The model used 500 boosting rounds at a learning rate of 0.05, with maximum tree depth 4, minimum child weight 10, row subsampling 0.8, column subsampling 0.8, $L1$ penalty 0.1, $L2$ penalty 1.0, and seed 42. These settings lean heavily toward regularization: shallow trees, a large minimum child weight, and subsampling in both directions. They were fixed in advance rather than tuned, so no hyperparameter search was run against the test set.
 
 For baseline comparison, Weibull, LogNormal, and LogLogistic AFT models were trained with L2 regularization (penalizer = 0.1). AFT models assume:
 
@@ -265,17 +288,19 @@ where $T$ is survival time, $\beta_i$ are feature coefficients, $\sigma$ is a sc
 
 The cohort was divided into training (70\%) and test (30\%) sets using stratification by event status. Parametric models were trained using maximum likelihood with L2 regularization (penalizer = 0.1). Performance was evaluated primarily with the \textbf{concordance index (C-index)}~\cite{uno2011cstat}, where 0.5 corresponds to random ranking and 1.0 indicates perfect discrimination. Additional metrics included \textbf{log-likelihood} and \textbf{Wald test} $p$-values for coefficient significance in the parametric models.
 
+A single 70/30 split gives one number and no sense of how much that number moves. For the two combined-feature models, 5-fold cross-validation stratified by event status was therefore also run, with feature selection, winsorization limits, and scaling refit inside each fold. The cross-validated mean is the estimate to quote; the single-split value is reported for continuity with the slope-only models, which were only ever evaluated that way.
+
 \subsubsection{Comparison Groups}
 
-Two model families were compared directly: \textbf{Baseline BSC} models built only from features extracted at the first scan, and \textbf{Longitudinal Slopes} models built from multi-timepoint derived features. This comparison isolates the added value of temporal information.
+Four model configurations were compared, forming an ablation ladder. \textbf{Baseline BSC} uses only features extracted at the first scan. \textbf{Longitudinal Slopes} uses the multi-timepoint derived slope features, isolating the value of temporal information. \textbf{Slopes + T1 (RSF)} and \textbf{Slopes + T1 (XGBoost)} both use the full 59-feature matrix and differ only in the learning algorithm, which separates the contribution of the added features from the contribution of the model class.
 
 \subsection{Statistical Power and Sample Size Considerations}
 
-With 450 subjects and 95 events, the study had 80\% power to detect hazard ratios $\geq 1.35$ at $\alpha = 0.05$ for a continuous predictor with standard deviation equal to 1.0. Still, the events-per-predictor ratio deserves some caution. Using 20 selected features with 95 events yields roughly 4.75 events per feature, which is lower than some traditional recommendations for stable survival model development. Ensemble methods can be somewhat more forgiving than classical regression in this respect, but the possibility of instability remains part of the story and should not be ignored.
+With 450 subjects and 95 events, the study had 80\% power to detect hazard ratios $\geq 1.35$ at $\alpha = 0.05$ for a continuous predictor with standard deviation equal to 1.0. The events-per-predictor ratio is a bigger problem, and expanding the feature set made it worse. Twenty slope features against 95 events gives roughly 4.75 events per feature, already below the conventional rule of ten. Fifty-nine features gives 1.6, which is far below it. Ensemble methods with strong regularization tolerate this better than classical regression, and the cross-validated results are stable across folds, but the ratio is low enough that it should be read as a real constraint on how much confidence the coefficient-level and importance-level findings deserve. It is also the most likely source of the training-test gaps reported below.
 
 \subsection{Software and Reproducibility}
 
-All analyses were conducted in Python 3.11 using open-source tools. Preprocessing was performed with Advanced Normalization Tools (ANTs)~\cite{avants2011ants}, while survival modeling used scikit-survival~\cite{polsterl2020sksurv} for RSF and lifelines~\cite{davidson-pilon2019lifelines} for parametric AFT models. Code for the full pipeline is available at \texttt{github.com/ishaan-cherukuri/research/tree/main/mri-bsc} and is intended to be made public upon acceptance.
+All analyses were conducted in Python 3.11 using open-source tools. Preprocessing was performed with Advanced Normalization Tools (ANTs)~\cite{avants2011ants}, while survival modeling used scikit-survival~\cite{polsterl2020sksurv} for RSF, XGBoost~\cite{chen2016xgboost} for the gradient-boosted AFT model, and lifelines~\cite{davidson-pilon2019lifelines} for the parametric AFT models and Kaplan-Meier estimation. Code for the full pipeline is available at \texttt{github.com/ishaan-cherukuri/research/tree/main/mri-bsc} and is intended to be made public upon acceptance.
 
 \section{Results}
 
@@ -283,51 +308,58 @@ All analyses were conducted in Python 3.11 using open-source tools. Preprocessin
 
 \begin{table*}[!htbp]
 \centering
-\caption{Survival model performance comparison: Baseline BSC vs. Longitudinal Slopes}
+\caption{Survival model performance: baseline BSC, longitudinal slopes, and the combined slopes plus T1 feature set}
 \label{tab:model-performance}
-\begin{tabular}{llcccc}
+\begin{tabular}{llccccc}
 \hline
-\textbf{Model} & \textbf{Features} & \textbf{C-index (Train)} & \textbf{C-index (Test)} & \textbf{RMSE (years)} & \textbf{N Features} \\
+\textbf{Model} & \textbf{Features} & \textbf{N Feat.} & \textbf{C (Train)} & \textbf{C (Test, split)} & \textbf{C (Test, 5-fold CV)} & \textbf{Gap} \\
 \hline
-Weibull AFT & Baseline BSC (all) & 0.34 & 0.24 & 11.80 & 8 \\
-Weibull AFT & Slopes (top 20) & 0.34 & 0.61 & 34.56 & 20 \\
+Weibull AFT & Baseline BSC & 8 & 0.34 & 0.24 & n/a & n/a \\
+Weibull AFT & Slopes & 20 & 0.34 & 0.61 & 0.72$\pm$0.05 & 0.05 \\
+Random Survival Forest & Slopes & 20 & 0.84 & 0.63 & 0.69$\pm$0.06 & 0.20 \\
+Random Survival Forest & Slopes + T1 & 59 & 0.93 & 0.82 & 0.85$\pm$0.01 & 0.07 \\
 \hline
-\textbf{Random Survival Forest} & \textbf{Slopes (top 20)} & \textbf{0.84} & \textbf{0.63} & \textbf{13.05} & \textbf{20} \\
+\textbf{XGBoost AFT} & \textbf{Slopes + T1} & \textbf{59} & \textbf{0.99} & \textbf{0.85} & \textbf{0.89$\pm$0.03} & \textbf{0.10} \\
 \hline
+\multicolumn{7}{p{0.95\textwidth}}{\footnotesize Train and single-split test columns come from one stratified 70/30 partition; the CV column and Gap are means over 5 stratified folds with all preprocessing refit inside each fold. The two estimates disagree most for the slope-only models, where cross-validation is the more favourable and more trustworthy of the two, so comparisons in the text are made CV-to-CV wherever both models have a CV estimate. The baseline-BSC configuration was only ever run on the single split. RMSE is omitted: parametric event-time estimates land on a wildly different scale from the ensembles (11.80 to 34.56 years), so the values are not comparable across rows, and discrimination rather than calibrated time is what these models are being asked for.} \\
 \end{tabular}
 \end{table*}
 
-The Random Survival Forest trained on longitudinal BSC slopes achieved a test C-index of 0.63, representing a \textbf{163\% improvement} over the baseline parametric model, which reached only 0.24. Figure~\ref{fig:model-comparison} shows this pattern across cross-validated model variants. However one slices it, slope-based models consistently outperformed models built from baseline features alone.
+Performance climbed in four steps. The baseline-BSC Weibull model reached a test C-index of 0.24. Adding temporal information lifted the same model class to 0.61 on the single split and 0.72$\pm$0.05 under cross-validation, and an RSF on those slopes reached 0.63 and 0.69$\pm$0.06 respectively. Adding the 39 T1 features to the 20 slopes moved the RSF to a cross-validated 0.85$\pm$0.01, and the XGBoost AFT model on that same matrix reached \textbf{0.89$\pm$0.03}, a \textbf{271\% improvement} over the baseline parametric model and \textbf{29\%} over the slope-only RSF compared on the same cross-validated footing. Figure~\ref{fig:model-comparison} shows the fold-level distributions for all six configurations.
 
 \begin{figure*}[!htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{figs/model_comparison_boxplot.png}
-\caption{Cross-validation performance comparison across 8 model variants. Box plots show C-index distributions from 5-fold cross-validation for training (left), test (middle), and overfitting gap (right) sets. RSF models with different feature counts (10, 15, 20, 25, 30) and parametric AFT models (Weibull, LogNormal, LogLogistic) all using top-variance slope features. RSF-20 hits the best balance: median training C-index of 0.82, test of 0.63, though substantial overfitting remains (gap: 0.19). Parametric models show more stable train-test gaps but lower overall performance.}
+\includegraphics[width=0.95\textwidth]{figs/model_comparison_boxplot_xgb.png}
+\caption{5-fold cross-validation performance across six model configurations. Panels show the C-index distribution over five folds for training (left), test (middle), and the train-test gap (right); boxes give median and interquartile range, whiskers the full fold range, and orange diamonds the mean. The three parametric AFT models on 20 slope features cluster together at a mean test C-index near 0.72. RSF on the same 20 features reaches 0.69 with the widest fold spread (0.59 to 0.75) and the largest gap (0.20). Adding the 39 T1 features lifts RSF to 0.85$\pm$0.01 and XGBoost to 0.89$\pm$0.03, and in both cases the gap falls well below the slope-only RSF. Note that these are cross-validated means, so they differ from the single-split values in Table~\ref{tab:model-performance}; cross-validation is more favourable to the slope-only models, which is why the combined-model advantage is stated against the cross-validated rather than the single-split baseline wherever both are available.}
 \label{fig:model-comparison}
 \end{figure*}
 
-One especially striking result is how poorly the baseline-only model performed. A C-index of 0.24 is not just weak. It is worse than random ranking. That suggests cross-sectional BSC features may be swamped by stable individual differences unrelated to active disease progression. Baseline anatomy reflects many influences, including genetics, developmental variation, vascular history, education, prior injury, and possibly scanner-related factors. Without temporal context, disease-specific signal can be difficult to isolate.
+The most striking number in the table is still the worst one. A C-index of 0.24 from baseline BSC features is well below the 0.5 expected from random ranking, meaning the model orders subjects backwards. That suggests cross-sectional BSC features are swamped by stable individual differences unrelated to active disease progression. Baseline anatomy reflects many influences, including genetics, developmental variation, vascular history, education, prior injury, and possibly scanner-related factors. Without temporal context, disease-specific signal is difficult to isolate.
 
-Once rates of change were introduced, performance improved sharply. The slope-based Weibull AFT model reached a test C-index of 0.61, which already indicates that longitudinal dynamics carry real prognostic information. The RSF model improved further to 0.63, implying that nonlinear interactions among slope features add some incremental value beyond what a parametric model can capture.
+Once rates of change were introduced, performance improved sharply. The slope-based Weibull AFT model reached 0.61, which already indicates that longitudinal dynamics carry real prognostic information. The RSF on those slopes reached 0.63, implying that nonlinear interactions among slope features add some incremental value beyond what a parametric model can capture. That model overfit badly, with a training C-index of 0.84 against 0.63 on test.
 
-That said, the model clearly overfit. Training C-index for RSF was 0.84, compared with 0.63 on the test set, yielding a gap of 0.21. A gap that large suggests the model learned patterns that did not fully generalize. Possible explanations include subject-specific noise, scanner-specific artifacts, or chance structure in particular demographic or biological subgroups within the training set. The RMSE of 13.05 years for event-time prediction should therefore be interpreted cautiously. The ranking performance is more informative than the absolute time estimates.
+Adding the T1 features produced the largest single jump, and it also reduced the gap rather than widening it. The RSF went from 0.63 to a cross-validated 0.85, while its train-test gap fell from 0.21 to 0.07. That combination is worth pausing on. Adding 39 features to a model with 95 events would normally be expected to make generalization worse, and instead the folds became more consistent. The most likely reading is that global morphometry supplies a signal the slopes were only approximating noisily, so the trees stop having to reconstruct it from high-variance boundary statistics.
 
-Even with that limitation, a test C-index of 0.63 is still within the range commonly reported for structural MRI-only prediction of MCI conversion. Many single-modality studies land somewhere between 0.60 and 0.70, while multimodal approaches often rise into the 0.75--0.85 range. So the present model is not yet clinically definitive, but it is also not trivial. BSC slopes appear to capture useful temporal information that could complement more established biomarkers.
+XGBoost then edged past RSF on the same matrix, reaching a cross-validated 0.89$\pm$0.03 against 0.85$\pm$0.01. The margin is real but modest, and it comes with a training C-index of 0.99. A model that ranks its own training data almost perfectly has memorized a substantial part of it, and the fact that held-out performance survives at 0.89 says more about the strength of the underlying features than about the model being well calibrated. This is why the cross-validated mean, rather than the 0.85 single-split figure, is the number quoted throughout. The single split happened to land near the bottom of the fold range.
 
-Kaplan-Meier survival curves stratified by predicted risk (Figure~\ref{fig:km-curves}) showed clear separation among high-, medium-, and low-risk groups, with a significant log-rank result ($p<0.0001$). High-risk subjects had a median conversion time of 2.1 years, compared with 8.5 years in the low-risk group. From a clinical trial perspective, that kind of stratification could be genuinely useful.
+For context, single-modality structural MRI studies of MCI conversion typically report C-index values between 0.60 and 0.70, with multimodal approaches reaching roughly 0.75 to 0.85. At 0.89 the combined model sits above that band. Some caution is warranted before reading too much into the comparison, since cohort composition, censoring structure, and follow-up length all move the C-index, and the feature-importance analysis below shows the result depends more on morphometry than on the boundary measure this paper is nominally about.
+
+Kaplan-Meier curves stratified by XGBoost predicted risk (Figure~\ref{fig:km-curves}) separate cleanly on the held-out set. Splitting the 135 test subjects into risk tertiles, the high-risk group contained 20 of the 28 observed conversions and had a median time to conversion of 3.2 years. The middle tertile contributed 6 events and the low-risk tertile 2, and neither reached 50\% conversion within follow-up, so their medians are undefined. The log-rank comparison of the high- and low-risk tertiles gave $\chi^2 = 26.8$, $p = 2.2 \times 10^{-7}$. The combined RSF produced almost the same partition (20, 6, and 2 events; median 3.1 years in the high-risk group; $p = 2.7 \times 10^{-7}$), which is reassuring, since two models with different inductive biases are picking out the same subjects.
 
 \begin{figure*}[!htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{figs/kaplan_meier_curves.png}
-\caption{Kaplan-Meier survival curves stratified by Random Survival Forest predicted risk scores. Training set (left) and test set (right) show probability of remaining MCI (not converting to AD) over time for three risk groups defined by risk score tertiles. High-risk subjects (red, top tertile) show rapid conversion with median survival 2.1 years. Medium-risk subjects (orange) exhibit intermediate progression rates. Low-risk subjects (green, bottom tertile) show slow conversion with median survival 8.5 years. Shaded regions indicate 95\% confidence intervals. Event counts per group shown in legend demonstrate adequate statistical power for hazard estimation.}
+\includegraphics[width=0.95\textwidth]{figs/kaplan_meier_curves_xgb.png}
+\caption{Kaplan-Meier curves stratified by XGBoost predicted risk. Training set (left) and test set (right) show the probability of remaining MCI over time for three groups defined by tertiles of predicted risk, with shaded 95\% confidence intervals. On the training set the separation is nearly complete, with all 67 events falling in the high-risk tertile and none in the other two, which is the visual form of the 0.99 training C-index and should be read as memorization rather than performance. The test panel is the informative one: the high-risk tertile (red) holds 20 of the 28 events with a median time to conversion of 3.2 years, the medium-risk tertile (orange) holds 6, and the low-risk tertile (green) holds 2. Neither of the latter two reaches 50\% conversion within follow-up, so their medians are not estimable. Log-rank comparison of the high- and low-risk tertiles on the test set gives $\chi^2 = 26.8$, $p = 2.2 \times 10^{-7}$ (displayed as $p<0.0001$ in the panel). The model predicts log survival time under the AFT objective, so risk ordering is taken from the negated prediction.}
 \label{fig:km-curves}
 \end{figure*}
 
-\subsection{Feature Importance}
+\subsection{Which BSC Slopes Were Selected}
+
+Table~\ref{tab:top-features} lists the slope features that survived selection. This is a variance ranking computed before any model was fit, so it records which slopes carry the most spread across subjects, not which ones the model ended up using. The two are easy to conflate and are answered separately here.
 
 \begin{table}[htbp]
 \centering
-\caption{Top 10 BSC slope features selected by penalized robust variance}
+\caption{Top 10 BSC slope features by penalized robust variance. This is the selection ranking, computed on training data before model fitting, not a measure of model importance.}
 \label{tab:top-features}
 \begin{tabular}{lc}
 \hline
@@ -349,18 +381,56 @@ bsc\_dir\_p50\_slope & 0.025 \\
 
 \textit{Note: Variances shown after robust preprocessing pipeline (signed-log transform, winsorization, penalization, MinMax scaling to [0,1]). Nboundary features were penalized by 0.10 during selection ranking to prevent dominance while retaining complementary information. Final variance range: 0.018--0.142 (ratio 7.9:1), enabling balanced contribution across all features in the Random Survival Forest ensemble.}
 
-After preprocessing, the selected features showed a much more balanced variance structure. Nboundary\_slope retained the largest variance at 0.142, but it no longer overwhelmed the feature set. Several high-percentile sharpness slopes, including bsc\_mag\_p90\_slope, bsc\_mag\_p75\_slope, bsc\_dir\_p90\_slope, and bsc\_dir\_p75\_slope, clustered in a similar range between 0.020 and 0.024. That pattern suggests prediction is not driven by only one aspect of boundary degradation. Rather, the \textit{extent} of boundary loss and the \textit{quality} of the remaining sharpest boundaries may both contribute meaningful information.
+After preprocessing, the selected features showed a much more balanced variance structure. Nboundary\_slope retained the largest variance at 0.142, but it no longer overwhelmed the feature set. Several high-percentile sharpness slopes, including bsc\_mag\_p90\_slope, bsc\_mag\_p75\_slope, bsc\_dir\_p90\_slope, and bsc\_dir\_p75\_slope, clustered in a similar range between 0.020 and 0.024. Selection therefore drew on both the \textit{extent} of boundary loss and the \textit{quality} of the sharpest remaining boundaries, rather than reducing to a single measure.
 
+\subsection{What the Model Actually Used}
+
+Gain importance was computed from the fitted XGBoost booster by summing the loss reduction attributable to every split on each feature across all 500 trees. Fifty-eight of the 59 features were used at least once. Table~\ref{tab:xgb-importance} gives the top ten.
+
+\begin{table}[htbp]
+\centering
+\caption{Top 10 features by XGBoost gain importance, as a percentage of total gain across 500 trees}
+\label{tab:xgb-importance}
+\begin{tabular}{llc}
+\hline
+\textbf{Feature} & \textbf{Block} & \textbf{Gain (\%)} \\
+\hline
+long\_brain\_vol\_last & T1 & 39.3 \\
+long\_snr\_slope\_yr & T1 & 5.1 \\
+long\_brain\_intensity\_slope\_yr & T1 & 4.2 \\
+long\_brain\_vol\_pctchg & T1 & 4.1 \\
+long\_brain\_intensity\_std & T1 & 4.0 \\
+field\_strength\_mode\_t & T1 & 3.2 \\
+long\_brain\_vol\_std & T1 & 2.5 \\
+long\_snr\_mean & T1 & 2.5 \\
+long\_snr\_std & T1 & 2.5 \\
+seg\_bpf\_bl & T1 & 1.9 \\
+\hline
+\multicolumn{2}{l}{\textbf{All 20 BSC slopes combined}} & \textbf{10.3} \\
+\multicolumn{2}{l}{\textbf{All 39 T1 features combined}} & \textbf{89.7} \\
+\hline
+\end{tabular}
+\end{table}
+
+The result is uncomfortable for a paper about boundary sharpness. No BSC slope appears in the top ten, and the entire slope block accounts for 10.3\% of total gain against 89.7\% for the T1 block. The highest-ranked slope, bsc\_mag\_bin\_7\_mean\_slope at 1.5\%, sits fourteenth. A single feature, brain volume at the last available scan, accounts for 39.3\% on its own, nearly four times the whole slope block.
+
+Two things follow. First, the jump from 0.63 to 0.89 is mostly attributable to the T1 features, not to a better model of boundary degradation. Second, the slopes are not redundant: they are used in every tree ensemble, and the slope-only model reaches 0.63 without any morphometry at all, so they carry independent signal. But their contribution to the combined model is a supporting one.
+
+The prominence of long\_brain\_vol\_last also deserves scrutiny rather than celebration. Converters in this cohort have a \textit{higher} mean value on that feature than stable subjects ($9.93 \times 10^6$ versus $8.88 \times 10^6$ mm$^3$), which is the opposite of what atrophy would predict, and the feature correlates with observed follow-up time at $r = -0.41$. The baseline segmentation-derived brain volume, seg\_brain\_mm3\_bl, shows no such correlation ($r = 0.001$) and no group difference in that direction. Whatever long\_brain\_vol\_last is measuring, it is not straightforwardly atrophy, and the most plausible explanation is that it reflects mask behavior and scan timing rather than tissue loss. The appearance of field\_strength\_mode\_t at 3.2\% points the same way, toward acquisition structure being partly learnable. This is treated as a limitation rather than a finding.
 
 \section{Discussion}
 
 \subsection{Principal Findings}
 
-The central finding of this study is that \textbf{longitudinal slopes of the Boundary Sharpness Coefficient}, when modeled with a \textbf{Random Survival Forest}, outperform baseline BSC measurements for predicting conversion from MCI to AD. In a cohort of 450 ADNI participants with at least four MRI scans each, the slope-based RSF model achieved a test C-index of 0.63, whereas the baseline parametric comparison model reached only 0.24.
+This study produced two findings that should be read together, because the second qualifies the first.
 
-That contrast matters. Baseline BSC values were not merely weak. They were actively misleading in a predictive sense. By comparison, slope-based models performed much better, even when using a simpler parametric framework. The Weibull AFT model with slope features reached 0.61, which already indicates that the time-varying component of BSC is doing substantial work. RSF then improved on that result slightly, likely by accommodating nonlinear feature interactions and more complex patterns of progression without forcing a particular survival distribution.
+The first concerns time. Longitudinal slopes of the Boundary Sharpness Coefficient predict conversion from MCI to AD substantially better than baseline BSC measurements do. In 450 ADNI participants with at least four MRI scans each, baseline BSC features gave a test C-index of 0.24, which orders subjects backwards, while the same parametric model on slope features reached 0.61 and an RSF on those slopes reached 0.63. Nothing changed between those models except that the second pair sees rates of change. That is a clean result, and it holds up: the slope models were never rescued by extra features, they simply worked where the baseline model failed.
 
-Taken together, the results support a broader idea that has been gaining traction across neurodegeneration research: static measurements often miss the process, while trajectories reveal it. Hafeez et al.~\cite{hafeez2024deep} made a related point when showing that conversion prediction is harder than cross-sectional AD classification. The difficulty is not simply technical. It is conceptual. Predicting conversion requires modeling change, not just recognizing disease that is already well established.
+The second concerns what carries the signal once more information is available. Adding 39 T1 morphometry and longitudinal imaging features raised the RSF to a cross-validated 0.85$\pm$0.01 and let an XGBoost AFT model reach 0.89$\pm$0.03, a 271\% improvement over the baseline parametric model and 29\% over the slope-only RSF on the same cross-validated footing. But gain analysis attributes 89.7\% of that discrimination to the T1 block and 10.3\% to the boundary slopes. Boundary sharpness is a genuine but minority contributor to the combined model. Reporting 0.89 as a BSC result would overstate what the boundary measure is doing.
+
+Both findings survive the framing. Trajectories beat snapshots, which is the thesis this work started from, and Hafeez et al.~\cite{hafeez2024deep} made a related point when showing that conversion prediction is harder than cross-sectional AD classification. The difficulty there is conceptual rather than technical, since predicting conversion requires modeling change and not just recognizing established disease. What the combined model adds is that boundary sharpness and global morphometry are not measuring the same thing. The slopes alone reach 0.63 with no volumetric information whatsoever, so they are not simply a noisy proxy for atrophy. They are a smaller, partly independent piece of a larger picture.
+
+The comparison between the two ensembles is less interesting than it looks. XGBoost beat RSF by 0.04 on cross-validated test C-index, and its training C-index of 0.99 against 0.92 for RSF suggests most of that margin comes from being able to fit the training data harder rather than from seeing something RSF missed. The two models also select nearly identical risk tertiles on the held-out set. On a cohort of this size the choice between them is close to a wash.
 
 \subsection{Biological Interpretation}
 
@@ -370,17 +440,17 @@ BSC degradation may reflect several converging pathological processes in AD. \te
 
 One particularly interesting result is the prominence of \textit{high-percentile} BSC slope features, especially the 75th and 90th percentiles. These metrics capture the sharpest parts of the remaining boundary. In a way, that is counterintuitive. One might expect the most damaged regions to dominate prediction. Instead, these findings hint that subtle decline in relatively preserved regions may be especially informative. That interpretation fits, at least loosely, with the retrogenesis hypothesis, in which late-myelinating association cortices are more vulnerable early on, while phylogenetically older or more robust regions remain preserved until later stages. If even the sharpest boundaries begin to deteriorate, that may signal a more advanced or more aggressive disease trajectory.
 
-\subsection{Clinical Implications}
+Why boundary sharpness and volumetric morphometry should be complementary rather than redundant is worth stating directly, since the combined model depends on it. Volume measures how much tissue remains. BSC measures whether the tissue that remains is still organized into a clean laminar transition. Those can move independently. A cortex can thin while the gray-white interface stays crisp, which is what ordinary aging often looks like, and an interface can blur while total volume is still within normal range, which is what would be expected if neuropil disruption and superficial myelin changes precede frank tissue loss. The empirical support here is indirect but real: the slope-only model reaches 0.63 with no access to any volume measure, and the combined model uses both blocks in every tree. If BSC were simply a low-resolution atrophy proxy, the slope block would have been driven to near-zero gain once volumes were available, and it was not.
 
 Several practical implications follow from these findings.
 
-\textbf{Clinical trial enrichment} is probably the clearest near-term use case. Trials of anti-amyloid therapies in prodromal AD often struggle because many enrolled MCI participants progress slowly or not at all during the study window. If a biomarker such as BSC slope can identify faster progressors, trials could enrich for subjects more likely to convert within a few years. That would increase statistical power and potentially reduce sample size and cost. In a disease area where phase III trials can cost tens of millions of dollars, even moderate enrichment could matter.
+\textbf{Clinical trial enrichment} is probably the clearest near-term use case, and the combined model makes the argument concrete rather than hypothetical. Trials of anti-amyloid therapies in prodromal AD often struggle because many enrolled MCI participants progress slowly or not at all during the study window. On the held-out set, the top predicted-risk tertile contained 20 of 28 conversions while the bottom tertile contained 2. Screening on the model and enrolling from the top tertile would roughly triple the event rate relative to unselected MCI recruitment. In a disease area where phase III trials cost tens of millions of dollars, that is the kind of difference that changes sample size calculations. The caveat is that the enrichment is driven mostly by the T1 morphometry block, so what would actually be deployed is a structural MRI panel that includes BSC rather than a BSC test.
 
 \textbf{Personalized monitoring} is another possibility. A patient showing rapid BSC decline might warrant closer follow-up, more frequent cognitive testing, or earlier referral for advanced biomarker workup. Conversely, a patient with stable slopes might be reassured that near-term risk appears lower. That kind of stratification would need prospective validation, of course, but it points toward a more individualized surveillance model than current practice often allows.
 
 \textbf{Cost-effectiveness} also favors MRI-based post-processing approaches. Structural MRI is already common in memory clinics. BSC extraction could, in principle, be layered onto routine scans without requiring new acquisitions, radioactive tracers, or invasive fluid collection. Blood biomarkers are becoming more feasible and may ultimately prove more scalable, but MRI still offers spatially resolved information that blood tests cannot.
 
-\textbf{Multimodal integration} may be where BSC slopes become most valuable. On their own, they reach moderate performance. Combined with amyloid PET, tau PET, plasma p-tau217, APOE genotype, neuropsychological trajectories, and volumetric MRI features, they might contribute nonredundant information about structural boundary integrity. In other words, BSC slopes may be less a standalone replacement for existing biomarkers and more a complementary signal that enriches a larger predictive framework.
+\textbf{Multimodal integration} is where BSC slopes look most useful, and the present results are a small demonstration of that argument rather than a promise about it. Slopes alone reach 0.63. Slopes plus volumetric morphometry, which is the cheapest possible second modality since both come from the same scan, reach 0.89. Extending the same logic to amyloid PET, tau PET, plasma p-tau217, APOE genotype, and neuropsychological trajectories is the obvious next step, though it would need testing rather than assuming, since the gains from stacking correlated biomarkers usually shrink as the panel grows. What this study supports is the weaker and better-evidenced claim: BSC is a complementary signal, not a standalone replacement.
 
 \textbf{Treatment monitoring} is a more speculative but intriguing direction. If BSC decline tracks downstream neurodegenerative change, then successful therapy might slow the rate of BSC deterioration. Whether that would be sensitive enough to function as a surrogate endpoint remains uncertain, but it is a question worth testing.
 
@@ -392,15 +462,33 @@ Second, the use of actual acquisition dates rather than nominal visit labels imp
 
 Third, BSC was computed voxel-wise before being summarized, preserving spatial richness at the preprocessing stage even though the final statistical models used collapsed features. That design leaves open the possibility of future regional analyses based on cortical parcellation or network structure.
 
-Fourth, the feature preprocessing pipeline explicitly addressed variance imbalance and was fit only on training data, reducing leakage and improving numerical stability. Finally, the study directly compared baseline and longitudinal feature sets on the same train-test split, which provides a fair test of the core hypothesis that trajectories are more informative than snapshots.
+Fourth, the feature preprocessing pipeline explicitly addressed variance imbalance and was fit only on training data, reducing leakage and improving numerical stability. Fifth, the study compared baseline, slope-only, and combined feature sets on the same data, and fit two different learning algorithms to the combined set, which separates the contribution of the features from the contribution of the model class. Finally, the combined models were evaluated by cross-validation rather than a single split, so the headline numbers come with a fold-to-fold spread instead of resting on one partition.
+
+\subsection{Limitations}
+
+Several caveats constrain how far these results should be carried.
+
+The strongest one concerns \textbf{what the top feature is measuring}. Brain volume at the last available scan accounts for 39.3\% of total XGBoost gain, yet its behavior is not consistent with atrophy. Converters score higher on it than stable subjects, it correlates with follow-up duration at $r = -0.41$, and the baseline segmentation volume from the same pipeline shows neither pattern. The likely explanation is that this feature partly encodes how long a subject was followed and how the brain mask behaved across their scan series, both of which are related to the outcome through study design rather than biology. Removing it and refitting would be the direct test and has not yet been run. Until it is, the honest position is that some unknown share of the 0.89 rests on a feature that may not generalize to a cohort with different follow-up structure.
+
+Related, \textbf{scanner field strength} was included as a covariate and contributes 3.2\% of gain. That is defensible, since the intensity-derived features genuinely depend on it, but it also means the model has some capacity to learn site and hardware structure rather than disease. In ADNI, where scanner assignment is not independent of enrollment wave or site, that is not a neutral thing to allow.
+
+The \textbf{events-per-predictor ratio} is 1.6 at 59 features and 95 events, far below conventional guidance. The cross-validated results are stable, which argues the models are not simply fitting noise, but individual feature importances at this ratio should be read as suggestive rather than established.
+
+The \textbf{XGBoost training C-index of 0.99} indicates the model very nearly memorizes its training data. Held-out performance survives, so the memorization is not fatal, but the model should not be assumed well calibrated in absolute time, and only its ranking is reported here.
+
+There is \textbf{no external validation}. Every number comes from ADNI, a research cohort with recruitment patterns, imaging protocols, and follow-up schedules that do not match routine clinical practice. Both the follow-up-related concern above and the scanner concern would be directly exposed by testing in an independent cohort, which has not been done.
+
+Finally, \textbf{BSC here is global}. Features are summarized across the whole cortical ribbon, so regional patterns that might be more specific to AD topography are averaged away, and the biological interpretations offered above are inferences from a global measure rather than observations of regional change.
 
 \subsection{Future Directions}
 
 Several next steps seem especially important.
 
-\textbf{External validation} is the most urgent. ADNI is a strong resource, but it is still a research cohort with specific recruitment patterns, scanner protocols, and follow-up structures. Testing this framework in OASIS-3, NACC-UDS, UK Biobank, and clinic-based cohorts would provide a much clearer sense of robustness. Performance across more diverse racial, ethnic, socioeconomic, and scanner populations should be examined carefully.
+\textbf{A feature ablation} is the cheapest and most informative next run. Refitting the combined model without long\_brain\_vol\_last, without the field strength covariates, and without the image quality block would show how much of the 0.89 depends on features whose biological interpretation is unclear. If performance holds near 0.85, the result is robust; if it collapses toward 0.70, the honest headline is different. This should be done before any of the applications above are pursued.
 
-\textbf{Multimodal modeling} is another natural extension. BSC slopes could be integrated with cognitive slopes, plasma biomarkers such as p-tau217 or NfL, APOE genotype, and standard MRI volumetrics. A single biomarker rarely carries the full burden of prediction in AD. More likely, clinically useful models will emerge from combinations of partially independent signals.
+\textbf{External validation} is the most urgent of the larger tasks. ADNI is a strong resource, but it is still a research cohort with specific recruitment patterns, scanner protocols, and follow-up structures. Testing this framework in OASIS-3, NACC-UDS, UK Biobank, and clinic-based cohorts would provide a much clearer sense of robustness, and would directly expose whether the follow-up-related and scanner-related concerns above are doing real work. Performance across more diverse racial, ethnic, socioeconomic, and scanner populations should be examined carefully.
+
+\textbf{Multimodal modeling} is another natural extension. BSC slopes and T1 morphometry could be integrated with cognitive slopes, plasma biomarkers such as p-tau217 or NfL, and APOE genotype. A single biomarker rarely carries the full burden of prediction in AD. More likely, clinically useful models will emerge from combinations of partially independent signals, which is the pattern already visible in the jump from the slope-only to the combined model here.
 
 \textbf{Regional analysis} may also sharpen interpretation. Instead of using global summary features, future work could estimate BSC slopes within anatomical regions such as entorhinal cortex, parahippocampal gyrus, posterior cingulate, or precuneus. Those regions are strongly implicated in AD progression and may reveal more specific spatiotemporal signatures.
 
@@ -412,18 +500,18 @@ Several next steps seem especially important.
 
 \section{Conclusion}
 
-Longitudinal slopes of the Boundary Sharpness Coefficient (BSC), analyzed using Random Survival Forest, outperformed baseline BSC measurements for predicting conversion from MCI to AD. In 450 ADNI subjects with at least four MRI scans each, the slope-based RSF model achieved a test C-index of 0.63, representing a 163\% improvement over the baseline parametric comparison model (C-index: 0.24). The most informative features included boundary voxel count slope (Nboundary\_slope: variance = 0.142), magnitude 90th percentile slope (bsc\_mag\_p90\_slope: variance = 0.024), and magnitude 75th percentile slope (bsc\_mag\_p75\_slope: variance = 0.022). Converters showed faster boundary degradation over time.
+Longitudinal slopes of the Boundary Sharpness Coefficient (BSC) predict conversion from MCI to AD far better than baseline BSC measurements do. In 450 ADNI subjects with at least four MRI scans each, baseline BSC features gave a test C-index of 0.24, below chance, while the same parametric model on slopes reached 0.61 and a Random Survival Forest on slopes reached 0.63. Adding 39 T1 morphometry and longitudinal imaging features from the same scans raised the RSF to a 5-fold cross-validated 0.85$\pm$0.01 and allowed an XGBoost accelerated failure time model to reach \textbf{0.89$\pm$0.03}, a 271\% improvement over the baseline parametric model and 29\% over the slope-only RSF compared cross-validation to cross-validation. On held-out data the top predicted-risk tertile contained 20 of 28 conversions, with a median time to conversion of 3.2 years, against 2 conversions in the bottom tertile ($p = 2.2 \times 10^{-7}$).
 
-These findings support the idea that \textit{temporal biomarker trajectories} capture disease progression more effectively than static measurements alone. Baseline BSC features performed poorly, even worse than chance, whereas longitudinal slopes revealed meaningful prognostic signal. That does not mean BSC slopes are able to represent a clinical decision tool. The test performance is still moderate, and the training-test gap suggests notable overfitting. Even so, the approach offers a relatively low-cost and non-invasive way to extract additional prognostic information from routine structural MRI.
+Two conclusions follow, and the second limits the first. Temporal trajectories capture disease progression far more effectively than static measurements, which the baseline-versus-slope comparison establishes cleanly. But gain analysis attributes 89.7\% of the combined model's discrimination to the T1 morphometry block and 10.3\% to the boundary slopes, so 0.89 is a structural MRI result rather than a BSC result. BSC contributes independent signal, reaching 0.63 with no volumetric information at all, and it is a supporting contributor rather than the engine.
 
-Future work should validate these findings in independent cohorts, combine BSC slopes with cognitive and blood-based biomarkers, explore stronger regularization or ensemble strategies to reduce overfitting, and examine regional or subtype-specific patterns of boundary decline. As AD research moves further toward precision medicine, biomarkers that capture \textit{rates of change} rather than isolated snapshots will likely become increasingly important.
+Several things should be checked before this is carried further. The single most influential feature, brain volume at the last scan, behaves in ways more consistent with follow-up structure than with atrophy, and an ablation removing it would settle how much of the performance is real. Validation in an independent cohort remains undone, the events-per-predictor ratio is 1.6, and the XGBoost training C-index of 0.99 means the model memorizes much of what it sees. What the study does establish is that useful prognostic information can be extracted from structural MRI that has already been acquired, without tracers, lumbar puncture, or any additional scan, and that rates of change are where much of that information lives.
 
 \begin{acknowledgments}
 Data collection and sharing for the Alzheimer's Disease Neuroimaging Initiative (ADNI) is funded by the National Institute on Aging (National Institutes of Health Grant U19AG024904). The grantee organization is the Northern California Institute for Research and Education. In the past, ADNI has also received funding from the National Institute of Biomedical Imaging and Bioengineering, the Canadian Institutes of Health Research, and private sector contributions through the Foundation for the National Institutes of Health (FNIH) including generous contributions from the following: AbbVie, Alzheimer's Association; Alzheimer's Drug Discovery Foundation; Araclon Biotech; BioClinica, Inc.; Biogen; Bristol-Myers Squibb Company; CereSpir, Inc.; Cogstate; Eisai Inc.; Elan Pharmaceuticals, Inc.; Eli Lilly and Company; EuroImmun; F. Hoffmann-La Roche Ltd and its affiliated company Genentech, Inc.; Fujirebio; GE Healthcare; IXICO Ltd.; Janssen Alzheimer Immunotherapy Research \& Development, LLC.; Johnson \& Johnson Pharmaceutical Research \& Development LLC.; Lumosity; Lundbeck; Merck \& Co., Inc.; Meso Scale Diagnostics, LLC.; NeuroRx Research; Neurotrack Technologies; Novartis Pharmaceuticals Corporation; Pfizer Inc.; Piramal Imaging; Servier; Takeda Pharmaceutical Company; and Transition Therapeutics.
 
 The author thanks Dr. Fabrizio Piras (IRCCS Santa Lucia Foundation, Rome) for valuable discussions on longitudinal modeling strategies and the emphasis on rates of decline over baseline measurements. The author also acknowledges the open-source neuroimaging community for developing ANTsPy, nibabel, and related tools that made this work possible.
 
-Generative artificial intelligence (AI) tools were used in the preparation of this manuscript. Specifically, GitHub Copilot (Claude Sonnet 4.5) assisted with manuscript editing, grammar refinement, and stylistic improvements. AI was not used for data collection, analysis, interpretation of results, or generation of scientific content. The author has reviewed and takes full responsibility for all content and accuracy of the work.
+Generative artificial intelligence (AI) tools were used in the preparation of this manuscript. Specifically, Claude (Anthropic) assisted with manuscript editing, grammar refinement, stylistic improvements, and with tabulating model metrics and feature importances from saved analysis outputs. AI was not used for data collection, model training, interpretation of results, or generation of scientific claims. The author has reviewed and takes full responsibility for all content and accuracy of the work.
 \end{acknowledgments}
 
 %% References using BibTeX

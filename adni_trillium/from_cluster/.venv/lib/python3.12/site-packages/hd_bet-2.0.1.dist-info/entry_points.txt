@@ -1,0 +1,2 @@
+[console_scripts]
+hd-bet = HD_BET.entry_point:main

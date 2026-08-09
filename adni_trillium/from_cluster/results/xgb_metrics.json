@@ -1,0 +1,7 @@
+{
+  "train_c_index": 0.9665449315949818,
+  "test_c_index": 0.6125992588671255,
+  "overfitting_gap": 0.3539,
+  "n_features": 20,
+  "n_estimators": 500
+}

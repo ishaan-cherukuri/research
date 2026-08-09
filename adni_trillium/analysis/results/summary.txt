@@ -1,0 +1,35 @@
+ADNI-Trillium cohort — model ladder (5-fold CV)
+========================================================================
+
+Subjects 657 | converters 251 | censored 406
+
+Model                          train             test     gap
+Weibull-BL (baseline BSC)     0.6119   0.5904±0.0189  0.0215
+Weibull-20                    0.6101   0.5836±0.0248  0.0264
+LogLogistic-20                0.6132   0.5854±0.0225  0.0278
+LogNormal-20                  0.6151   0.5859±0.0274  0.0292
+RSF-20 (BSC only)             0.8035   0.6450±0.0376  0.1585
+RSF-57 (BSC+T1)               0.8864   0.7800±0.0302  0.1064
+XGB-57 (BSC+T1)               0.9927   0.8319±0.0183  0.1608
+
+70/30 split XGBoost: train 0.9925  test 0.8443
+
+Gain: BSC slopes 18.4%  |  T1 81.6%
+Top 10 features by gain:
+  long_brain_bg_ratio_std            15.79%  [T1]
+  long_brain_vol_std                  9.97%  [T1]
+  long_snr_std                        9.33%  [T1]
+  long_snr_slope_yr                   6.68%  [T1]
+  long_brain_vol_slope_yr             4.87%  [T1]
+  long_brain_bg_ratio_slope_yr        3.75%  [T1]
+  long_brain_vol_pctchg               2.12%  [T1]
+  bsc_dir_bin_1_mean_slope            2.02%  [BSC]
+  long_brain_intensity_std            1.99%  [T1]
+  Nboundary_slope                     1.98%  [BSC]
+
+Demographics (all / converters / stable)
+  Age (yr)        72.8±7.5  73.6±7.2  72.2±7.7
+  Education (yr)  16.0±2.8  15.8±2.8  16.2±2.8
+  Female n(%)     275 (41.9)  102 (40.6)  173 (42.6)
+  Follow-up (yr)  3.99±3.22  2.72±2.44  4.77±3.40
+  Visits          5.66±1.85  5.60±1.65  5.70±1.97
