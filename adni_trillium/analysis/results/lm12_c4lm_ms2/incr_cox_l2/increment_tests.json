@@ -1,0 +1,57 @@
+{
+  "results": [
+    {
+      "comparison": "BSC slopes over covariates",
+      "baseline": "F0_covariates",
+      "augmented": "F6_cov_bsc",
+      "model": "cox_l2",
+      "cv_baseline_mean": 0.8576287125259986,
+      "cv_baseline_sd": 0.02958997329091493,
+      "cv_augmented_mean": 0.8462308792897506,
+      "cv_augmented_sd": 0.028811790474292612,
+      "fold_matched_delta": -0.0113978332362481,
+      "delta_ci_lo": -0.049651184498143826,
+      "delta_ci_hi": -0.025332551740111706,
+      "n_boot": 2000,
+      "cox_lr_stat": 8.838740268685115,
+      "cox_df": 33,
+      "cox_p": 0.9999916744099376
+    },
+    {
+      "comparison": "BSC slopes over covariates + standard MRI",
+      "baseline": "F8_cov_stdmri",
+      "augmented": "F9_cov_bsc_stdmri",
+      "model": "cox_l2",
+      "cv_baseline_mean": 0.8104198099541693,
+      "cv_baseline_sd": 0.03344373835384103,
+      "cv_augmented_mean": 0.7994706527882686,
+      "cv_augmented_sd": 0.03642186367498682,
+      "fold_matched_delta": -0.010949157165900548,
+      "delta_ci_lo": -0.03443380874677594,
+      "delta_ci_hi": -0.007137587307926448,
+      "n_boot": 2000,
+      "cox_lr_stat": 5.699012844944718,
+      "cox_df": 33,
+      "cox_p": 0.9999999743044597
+    },
+    {
+      "comparison": "standard MRI slopes over covariates",
+      "baseline": "F0_covariates",
+      "augmented": "F8_cov_stdmri",
+      "model": "cox_l2",
+      "cv_baseline_mean": 0.8576287125259986,
+      "cv_baseline_sd": 0.02958997329091493,
+      "cv_augmented_mean": 0.8104198099541693,
+      "cv_augmented_sd": 0.03344373835384103,
+      "fold_matched_delta": -0.047208902571829546,
+      "delta_ci_lo": -0.10353324132800784,
+      "delta_ci_hi": -0.05526270006549255,
+      "n_boot": 2000,
+      "cox_lr_stat": 44.64039502925516,
+      "cox_df": 69,
+      "cox_p": 0.989996229091083
+    }
+  ],
+  "n_slopes_tested": 33,
+  "n_slopes_fdr_sig": 0
+}

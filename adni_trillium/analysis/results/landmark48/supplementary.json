@@ -1,0 +1,155 @@
+{
+  "n": 308,
+  "events": 66,
+  "incremental": [
+    {
+      "model": "weibull",
+      "base": "cov",
+      "full": "cov+bsc",
+      "fold_diffs": [
+        -0.0192,
+        0.0097,
+        -0.0531,
+        -0.1066,
+        -0.0831
+      ],
+      "mean_diff": -0.0505,
+      "ci95": [
+        -0.0865,
+        -0.0144
+      ],
+      "paired_t_p": 0.0742
+    },
+    {
+      "model": "weibull",
+      "base": "cov+t1x+t1long",
+      "full": "cov+bsc+t1x+t1long",
+      "fold_diffs": [
+        -0.0192,
+        0.0058,
+        -0.0367,
+        -0.0454,
+        -0.0027
+      ],
+      "mean_diff": -0.0196,
+      "ci95": [
+        -0.0367,
+        -0.0042
+      ],
+      "paired_t_p": 0.1136
+    },
+    {
+      "model": "coxnet",
+      "base": "cov",
+      "full": "cov+bsc",
+      "fold_diffs": [
+        0.0,
+        0.0,
+        0.0,
+        -0.0113,
+        0.0
+      ],
+      "mean_diff": -0.0023,
+      "ci95": [
+        -0.0068,
+        0.0
+      ],
+      "paired_t_p": 0.3739
+    },
+    {
+      "model": "coxnet",
+      "base": "cov+t1x+t1long",
+      "full": "cov+bsc+t1x+t1long",
+      "fold_diffs": [
+        0.0,
+        0.0,
+        0.0,
+        -0.0023,
+        0.0
+      ],
+      "mean_diff": -0.0005,
+      "ci95": [
+        -0.0014,
+        0.0
+      ],
+      "paired_t_p": 0.3739
+    },
+    {
+      "model": "rsf",
+      "base": "cov",
+      "full": "cov+bsc",
+      "fold_diffs": [
+        0.0082,
+        -0.0992,
+        -0.049,
+        -0.1723,
+        0.0885
+      ],
+      "mean_diff": -0.0448,
+      "ci95": [
+        -0.1216,
+        0.0289
+      ],
+      "paired_t_p": 0.3725
+    },
+    {
+      "model": "rsf",
+      "base": "cov+t1x+t1long",
+      "full": "cov+bsc+t1x+t1long",
+      "fold_diffs": [
+        -0.0027,
+        -0.0584,
+        0.0061,
+        -0.0454,
+        0.0456
+      ],
+      "mean_diff": -0.011,
+      "ci95": [
+        -0.0429,
+        0.0184
+      ],
+      "paired_t_p": 0.5893
+    }
+  ],
+  "cox": {
+    "concordance_full": 0.8,
+    "concordance_cov_only": 0.799,
+    "lr_stat_bsc_block": 1.24,
+    "lr_df": 20,
+    "lr_p_bsc_block": 1.0,
+    "min_ph_assumption_p": 0.1008
+  },
+  "n_bsc_slopes_q_below_0.05": 0,
+  "acquisition": {
+    "bsc_mag_mean_baseline_by_field_strength": {
+      "n_1p5T": 73,
+      "n_3T": 235,
+      "mean_1p5T": 0.6203,
+      "mean_3T": 0.6002,
+      "welch_p": 0.353,
+      "cohens_d": -0.126
+    },
+    "bsc_mag_mean_baseline_vs_snr": {
+      "r": 0.232,
+      "p": 4.05e-05,
+      "n": 308
+    },
+    "bsc_mag_mean_slope_by_field_strength": {
+      "n_1p5T": 73,
+      "n_3T": 235,
+      "mean_1p5T": -0.0154,
+      "mean_3T": 0.0015,
+      "welch_p": 0.0356,
+      "cohens_d": 0.308
+    },
+    "bsc_mag_mean_slope_vs_snr": {
+      "r": -0.186,
+      "p": 0.00105,
+      "n": 308
+    },
+    "field_strength_changed_during_window": {
+      "n": 9,
+      "pct": 2.9
+    }
+  }
+}

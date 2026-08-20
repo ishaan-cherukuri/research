@@ -1,0 +1,221 @@
+{
+  "n_shared": 417,
+  "rows": [
+    {
+      "design": "legacy",
+      "feature_set": "F0_covariates",
+      "model": "rsf",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.7858108952018371,
+      "cv_cindex_sd": 0.030447575256583224
+    },
+    {
+      "design": "legacy",
+      "feature_set": "F0_covariates",
+      "model": "xgb_aft",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.7637993544079081,
+      "cv_cindex_sd": 0.04304300194279054
+    },
+    {
+      "design": "legacy",
+      "feature_set": "F0_covariates",
+      "model": "cox_l2",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.803731300252764,
+      "cv_cindex_sd": 0.04685181817511866
+    },
+    {
+      "design": "legacy",
+      "feature_set": "F2_bsc_slopes",
+      "model": "rsf",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.6837223073507601,
+      "cv_cindex_sd": 0.03661336522922564
+    },
+    {
+      "design": "legacy",
+      "feature_set": "F2_bsc_slopes",
+      "model": "xgb_aft",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.6155020858276968,
+      "cv_cindex_sd": 0.03651429603524632
+    },
+    {
+      "design": "legacy",
+      "feature_set": "F2_bsc_slopes",
+      "model": "cox_l2",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.6014420857550562,
+      "cv_cindex_sd": 0.13938576826452076
+    },
+    {
+      "design": "legacy",
+      "feature_set": "F3_regional_slopes",
+      "model": "rsf",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.7373503655771113,
+      "cv_cindex_sd": 0.023206165618270963
+    },
+    {
+      "design": "legacy",
+      "feature_set": "F3_regional_slopes",
+      "model": "xgb_aft",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.6562636535613033,
+      "cv_cindex_sd": 0.059107241807444484
+    },
+    {
+      "design": "legacy",
+      "feature_set": "F3_regional_slopes",
+      "model": "cox_l2",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.5270894052443176,
+      "cv_cindex_sd": 0.056268422182078885
+    },
+    {
+      "design": "legacy",
+      "feature_set": "F5_std_mri_slopes",
+      "model": "rsf",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.7811456209590436,
+      "cv_cindex_sd": 0.061041892704877455
+    },
+    {
+      "design": "legacy",
+      "feature_set": "F5_std_mri_slopes",
+      "model": "xgb_aft",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.7605857027142364,
+      "cv_cindex_sd": 0.09748330241863674
+    },
+    {
+      "design": "legacy",
+      "feature_set": "F5_std_mri_slopes",
+      "model": "cox_l2",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.6470053807968836,
+      "cv_cindex_sd": 0.0932822267384286
+    },
+    {
+      "design": "corrected",
+      "feature_set": "F0_covariates",
+      "model": "rsf",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.7754232616274805,
+      "cv_cindex_sd": 0.03448930954375884
+    },
+    {
+      "design": "corrected",
+      "feature_set": "F0_covariates",
+      "model": "xgb_aft",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.7508264252875868,
+      "cv_cindex_sd": 0.05032108028797118
+    },
+    {
+      "design": "corrected",
+      "feature_set": "F0_covariates",
+      "model": "cox_l2",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.7694981203081225,
+      "cv_cindex_sd": 0.06522154541805741
+    },
+    {
+      "design": "corrected",
+      "feature_set": "F2_bsc_slopes",
+      "model": "rsf",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.6173226481450774,
+      "cv_cindex_sd": 0.02289635653957444
+    },
+    {
+      "design": "corrected",
+      "feature_set": "F2_bsc_slopes",
+      "model": "xgb_aft",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.5869105002739644,
+      "cv_cindex_sd": 0.04354396060921426
+    },
+    {
+      "design": "corrected",
+      "feature_set": "F2_bsc_slopes",
+      "model": "cox_l2",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.4690829950606184,
+      "cv_cindex_sd": 0.055244956708711594
+    },
+    {
+      "design": "corrected",
+      "feature_set": "F3_regional_slopes",
+      "model": "rsf",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.6412803762947287,
+      "cv_cindex_sd": 0.04470889703506039
+    },
+    {
+      "design": "corrected",
+      "feature_set": "F3_regional_slopes",
+      "model": "xgb_aft",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.6154178734620572,
+      "cv_cindex_sd": 0.0730314992505702
+    },
+    {
+      "design": "corrected",
+      "feature_set": "F3_regional_slopes",
+      "model": "cox_l2",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.5686358957762826,
+      "cv_cindex_sd": 0.078981415757074
+    },
+    {
+      "design": "corrected",
+      "feature_set": "F5_std_mri_slopes",
+      "model": "rsf",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.6852392158401879,
+      "cv_cindex_sd": 0.029900434515008303
+    },
+    {
+      "design": "corrected",
+      "feature_set": "F5_std_mri_slopes",
+      "model": "xgb_aft",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.6648605366610748,
+      "cv_cindex_sd": 0.039304585922689685
+    },
+    {
+      "design": "corrected",
+      "feature_set": "F5_std_mri_slopes",
+      "model": "cox_l2",
+      "n_subjects": 417,
+      "n_events": 133,
+      "cv_cindex_mean": 0.5704324898954397,
+      "cv_cindex_sd": 0.06887288490470812
+    }
+  ]
+}

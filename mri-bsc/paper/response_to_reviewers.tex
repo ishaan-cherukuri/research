@@ -1,0 +1,136 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{parskip}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue}
+
+\newcommand{\comment}[1]{\vspace{6pt}\noindent\textbf{Comment.} \textit{#1}\par\vspace{2pt}}
+\newcommand{\response}{\noindent\textbf{Response.} }
+
+\title{Response to Reviewers\\[4pt]\large Manuscript ALZ-26-0928}
+\author{Ishaan Cherukuri}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Summary of what changed}
+
+Both reviewers identified problems with the study design rather than with its presentation, and acting on them changed the result. The central issue is Reviewer 1's third comment: follow-up started at the MCI baseline scan while the model was fed scans acquired years later, some of them after the subject had already been diagnosed with dementia. That is guarantee-time bias, and the reviewer is right that the analysis was measuring detection rather than prediction.
+
+The manuscript has been rebuilt around a landmark design. The landmark sits 24 months after the first MCI scan. Only scans acquired at or before that point contribute to any feature, subjects who converted at or before the landmark are excluded rather than counted as events, and follow-up runs from the landmark to the first clinical dementia visit or to the last clinical visit. Conversion and censoring dates now come from the ADNIMERGE2 DXSUM clinical record rather than from the diagnosis attached to a scan, which was necessary because censoring at the last MRI leaves every non-converter with zero follow-up after the landmark. The cohort is 557 subjects with 160 conversions.
+
+Under that design the study's original conclusion does not survive. Age, sex, education, and MMSE at the landmark reach a cross-validated C-index of 0.747. Adding 20 BSC slopes changes that by $-0.000$ (95\% CI $-0.013$ to $+0.013$). The slope block does not improve the Cox partial likelihood ($\chi^2 = 5.1$, 20 df, $p = 1.00$), and no slope separates converters from non-converters after false discovery correction. The result holds across six model families, under a second landmark definition, and with T1 morphometry in or out of the model.
+
+We also isolated the mechanism. Holding subjects, features, folds, hyperparameters, and seed fixed, and changing only where the survival clock starts, BSC slope performance moves from 0.720 to 0.501 and the combined imaging model from 0.672 to 0.534, while the clinical model is unaffected. That comparison is now the design-effect figure in the results and is, we think, the most useful thing the paper has to offer.
+
+The title, abstract, results, and conclusions have been rewritten accordingly. The paper now reports a negative result together with the design analysis that explains the earlier positive one. Every reviewer comment is addressed below, with the corresponding change noted.
+
+\section*{Reviewer 1}
+
+\comment{Literature review incomplete. MCI-to-dementia conversion literature is substantial. It would be good to provide an analysis of the existing research gaps rather than an anecdotal example of a specific approach which is then critiqued for its use of expensive data. Cognitive testing does quite well in the prediction and when combined with MRI it does even better. There are good reviews (PMID 33091740, 34583745) which can serve as starting points. Related, there has been a lot of work also in time-to-event modeling (PMC11517816, doi:10.1016/j.nicl.2013.11.010, PMID 28436391). These articles should be reviewed carefully and it should be explained what additional value the current study provides.}
+
+\response The Prior Work section has been replaced with a gap analysis built on the two systematic reviews the reviewer names, and the time-to-event literature is now discussed in its own right rather than omitted.
+
+Ansart et al.\ (2021) and Grueso and Viejo-Sobera (2021) support four points that now shape the design. Cognitive testing alone reaches a mean AUC near 0.78 in the Ansart review, statistically indistinguishable from MRI alone, and combinations perform best. Reported performance depends heavily on design choices, with single-split studies reporting higher figures than cross-validated ones. Most of the literature treats conversion as a binary label within a fixed horizon, discarding censoring. And few studies report an external test.
+
+The time-to-event work is now cited and used. Li et al.\ (2017) fit joint models linking longitudinal cognitive and imaging trajectories to conversion time. Zhang et al.\ (2024) make the point that conversion is interval-censored, which we now acknowledge explicitly in the survival data section. Da et al.\ (2014) quantify the relative value of atrophy patterns, cognition, APOE, and CSF in one survival framework and find that no imaging marker displaces cognition, which is precisely the accounting this revision adopts.
+
+The reviewer's observation about cognitive testing turned out to be the decisive one. The submitted manuscript reported an imaging model without any clinical comparator. Adding one shows that the four cheapest available variables outperform every imaging configuration in the study, and that the imaging adds nothing to them. The paper's contribution is therefore no longer "a new marker predicts conversion" but a negative result plus a quantified demonstration of how the follow-up definition produced the earlier positive one. We think the latter is more useful to the field, and it is what the data support.
+
+\comment{The studied BSC measure was not sufficiently motivated. It needs to be discussed in more detail how the longitudinal surface blurring is hypothesized to bring additional information beyond the standard T1w measures. Also, its relationship to cortical gray-white intensity contrast (PMID 19580876) should be analysed. How is this BSC related to gray-white blurring (PMID 16171974), used as imaging marker in epilepsy? What are the potential failure modes? It could be sensitive to motion and scanner differences.}
+
+\response A new subsection, "Relation to Gray-White Intensity Contrast and to Junction Blurring", addresses each part.
+
+On the relationship to Salat et al.\ (2009): intensity contrast is a difference of sampled gray and white matter levels, while BSC is a projected gradient, the spatial derivative of intensity restricted to the component aligned with the tissue-probability normal. It describes how quickly signal changes across the interface rather than how far apart the two tissues sit. The two are monotonically related for an ideal step edge and correlated but not equivalent in real data, since a boundary can lose contrast while staying geometrically crisp, or blur while retaining the same endpoint intensities. We state plainly that BSC inherits most of the confounds of intensity contrast and adds those of a derivative operator.
+
+On Huppertz et al.\ (2005): the epilepsy junction image thresholds a blurring index against a normal template to localize focal cortical dysplasia, which is the same anatomy approached as a detection problem with a spatial answer rather than as a global summary.
+
+On additional information beyond standard T1w measures: this is now an empirical question in the paper rather than an assertion. T1 morphometry is treated as a competing block, measured on the same scans inside the same window, and the results show BSC does not beat it, does not add to it, and that neither adds to the clinical model.
+
+On failure modes, the reviewer's specific concerns are now tested rather than acknowledged. The acquisition dependence section reports that mean BSC magnitude differs between 1.5T and 3T scans ($d = 0.30$, $p = 0.003$), correlates with SNR ($r = 0.22$, $p = 1.8\times10^{-7}$), and that the annualized slope also differs by field strength ($p = 0.029$). Both acquisition effects are larger than any converter versus non-converter difference in the same cohort, where the largest effect size was $d = 0.15$. Motion, bias field, interpolation, derivative smoothing width, and segmentation drift are discussed as further mechanisms that can move a slope without any tissue change.
+
+\comment{The most important concern relates to the definition of the follow-up. The follow-up in the manuscript starts from the baseline whereas it should start from the last MRI acquisition entered in the analysis. This means that the method in the manuscript is not about MCI-to-dementia conversion but about dementia detection: imagine that a participant has scans from baseline, m12, m24, and m36 and is diagnosed with dementia at m24. This means that the last two scans utilized in the analysis are already from a person diagnosed with dementia. This makes no sense for the time-to-event conversion detection.}
+
+\response The reviewer is right, and the example describes what was happening. We verified it directly in the data: subjects with a dementia diagnosis at an intermediate visit had later scans inside the feature window, and non-converters were censored at their last MRI, which meant follow-up and feature measurement overlapped for everyone.
+
+The analysis has been rebuilt as a landmark analysis (the landmark design section). The three rules are: only scans at or before the landmark contribute features; subjects who converted at or before the landmark are excluded, since they are not at risk afterwards; and follow-up starts at the landmark and ends at the first clinical dementia visit or the last clinical visit. The landmark is fixed at 24 months, which trades cohort size against the number of scans available for a slope estimate. A subject-specific landmark placed at each subject's own last pre-conversion scan is reported as a sensitivity analysis and gives the same conclusions.
+
+Because the correction changes the headline result, we also quantified its effect directly (the design-effect section and figure). Scoring the same 557 subjects, with the same 160 events, under both designs and holding features, folds, hyperparameters, and seed fixed, BSC slope performance falls from 0.720 to 0.501, T1 morphometry from 0.712 to 0.587, and the combined imaging model from 0.672 to 0.534, while the clinical model rises from 0.684 to 0.747. Demographics and cognition do not depend on when the scans were taken, which is why only the imaging blocks move.
+
+We are grateful for this comment. It is the reason the paper now reports something we believe rather than something we cannot defend.
+
+\comment{(a) How to correct for different field strengths between scans?}
+
+\response Three changes. First, a units error was found and fixed: a subset of DICOM headers reported field strength as 15000 rather than 1.5, and these were rescaled before use. Second, field strength now enters the analysis as an explicitly reported quantity rather than as an unexamined covariate, and the acquisition dependence section reports its association with both baseline BSC and the BSC slope. Third, we now report that 4.3\% of subjects changed field strength during the landmark window, which is small enough here not to drive the result but would matter in a cohort with more scanner turnover.
+
+We stop short of claiming a correction. Given that the acquisition effect exceeds the disease effect in this cohort, the honest recommendation, now in the discussion and future directions, is harmonization before modeling, ComBat-style or otherwise, rather than covariate adjustment after the fact.
+
+\comment{(b) Due to small sample size (and even smaller when the follow up is correctly defined), I would prefer cross-validation over hold-out.}
+
+\response Agreed, and the single 70/30 split has been removed as an evaluation device. Every number in the revised results is a 5-fold cross-validated estimate with feature selection, imputation, winsorization, and scaling refit inside each training fold. The Kaplan-Meier panels now use out-of-fold predictions pooled across the five folds, so every subject is scored by a model that did not see them, instead of predictions from one arbitrary split.
+
+We went a step further on precision. Because differences between feature blocks are small relative to fold-to-fold variation, block comparisons are made within folds: both feature sets are fit on the same training partition and scored on the same held-out subjects, and the paired difference is reported with a bootstrap interval and a paired $t$ test. That is how the BSC increment of $-0.000$ (95\% CI $-0.013$ to $+0.013$) is obtained.
+
+\comment{(c) I did not understand why a complex feature extraction approach is needed (Table 2); why not to use regional coefficients?}
+
+\response A paragraph in the slope computation section now answers this directly. Two reasons. The BSC pipeline segments tissue probabilistically and never builds a cortical surface, so there is no parcellation to project onto without adding a registration step, and its own failure modes, to every one of the 3,720 scans. And with 160 events, moving from 33 global summaries to several hundred correlated regional coefficients is the wrong direction for a cohort this size; the events-per-predictor ratio is already 1.9 for the largest feature set used. The eight spatial bin summaries are described honestly as a coarse compromise that retains some topography at a fraction of the parameter cost.
+
+We agree that a regional analysis is the more interesting one and it remains in the future directions, but it is a different study with a different sample size requirement.
+
+\comment{(d) Power-analysis does not make much sense, partially due to comment 3, partially because it is post-hoc, and partially because it is not for predictive settings.}
+
+\response The post-hoc power calculation has been removed. It has been replaced with a short section on precision that states what this cohort can actually resolve: the fold-to-fold standard deviations attached to every estimate, the roughly 0.013 in C-index that the paired comparisons resolve, the events-per-predictor ratio of 1.9 for the largest feature sets, and the width of the external bootstrap interval. We agree that power for a hazard ratio is the wrong quantity for a study whose endpoint is out-of-sample discrimination.
+
+\section*{Reviewer 2}
+
+\comment{Essential covariates, such as age, sex, education, and baseline cognitive performance, appear to be excluded from predictive models.}
+
+\response They were, and including them changed the conclusion of the paper. Age at the landmark, sex, years of education, and MMSE from the clinical visit nearest the landmark are now a feature block in their own right and serve as the reference model for every comparison. MMSE was missing for 21 of 557 subjects and is imputed to the training-fold median inside each fold.
+
+The covariates reach a cross-validated C-index of 0.747$\pm$0.024 with a train-test gap of essentially zero, which is higher than any imaging configuration in the study. The adjusted Cox model (new adjusted hazard ratio table) shows MMSE at HR 0.62 per standard deviation ($p = 1.2\times10^{-18}$) and age at HR 1.27 ($p = 3.6\times10^{-4}$), with no BSC slope reaching significance. This comment and Reviewer 1's first comment converge on the same point, and it is now the backbone of the results.
+
+\comment{It is unclear whether BSC slopes outperform other established longitudinal MRI measurements.}
+
+\response They do not, and the comparison is now explicit. T1 morphometry is measured on the same scans, inside the same landmark window, and treated as a competing block rather than as an accessory. Eight scan-level quantities, including total brain volume, brain parenchymal fraction, tissue volumes, and CSF volume, are summarized cross-sectionally at the first in-window scan (12 features) and as trajectories over the window (48 features).
+
+BSC slopes reach 0.556$\pm$0.045 at best, T1 morphometry reaches 0.587$\pm$0.038, and the two together reach 0.577$\pm$0.044. None of them approaches the clinical model. We also note in the limitations that the T1 block being this flat is itself informative: brain volume and BPF trajectories are established markers and should do better, which suggests the two-year window limits all imaging trajectories here rather than BSC specifically.
+
+One related correction: in the submitted version the T1 trajectory features were computed over all scans up to and including the conversion visit, so the T1 block was contaminated in the same way as the BSC block. Every T1 feature has been recomputed inside the landmark window for this revision.
+
+\comment{The Cox proportional hazards model should be included as an additional benchmark. A regularized version of it may be particularly appropriate given the number of candidate predictors.}
+
+\response Added, and regularized as suggested. Penalized Cox regression with an elastic net penalty ($\ell_1$ ratio 0.5, 50-point regularization path) is now run for every feature set, and it is among the best performing model families in the revised analysis, reaching 0.741 on covariates and 0.737 on the full 84-feature matrix while the tree ensembles overfit badly on the same data.
+
+Two additional Cox-based results follow from having it available. A likelihood ratio test compares covariates plus BSC slopes against covariates alone and finds no improvement ($\chi^2 = 5.08$, 20 df, $p = 1.00$), which is a fit-based confirmation of the null C-index increment. And the adjusted hazard ratio table gives per-standard-deviation effects for every term. Scaled Schoenfeld residuals gave no evidence against proportional hazards (minimum $p = 0.28$).
+
+\comment{On the 2nd row of Table 3, the C-index increases substantially from 0.34 in the training set to 0.61 in the test set. This pattern is unusual because predictive performance is generally expected to be at least as high in the training data as in test data.}
+
+\response The reviewer is right that this pattern should not occur, and it does not occur anywhere in the revised results. That row came from a Weibull AFT fit on a single 70/30 split of the earlier 450-subject cohort, where an unstable parametric fit and an unhandled risk direction combined to produce a training value below chance. Both causes are now removed: the hold-out split is gone in favour of cross-validation, and risk direction is fixed once for all models (see the response to comment 6).
+
+In the revised model comparison table, every configuration has train $\geq$ test with the single exception of the covariates-only log-normal AFT, where the two agree to 0.001 and the difference is fold noise on a four-parameter model.
+
+\comment{Also, Table 3 reports results only for the Weibull accelerated failure time (AFT) model, although Weibull, log-normal, and log-logistic AFT models were all evaluated.}
+
+\response All three distributions are now reported for every feature set, not just the best one. In the revised model comparison table the clinical model appears under Weibull (0.745$\pm$0.025), log-normal (0.747$\pm$0.024), and log-logistic (0.745$\pm$0.024), and the BSC slope block appears under all three as well (0.546, 0.552, 0.556). The full grid of 38 configurations across six model families is written to a supplementary results file rather than being filtered down to whichever row looked best.
+
+\comment{It is weird to see so many C-index values worse than 0.5 (random guess). Several reported C-index values are below 0.5, which indicates performance worse than random ranking. This may reflect reversal of the risk-score direction.}
+
+\response The reviewer's diagnosis was correct, and it has been fixed at the source. A new methods subsection, "Direction of the Risk Score", states the convention: every model returns one quantity defined so that larger means earlier conversion, before any metric is computed. For AFT models and XGBoost, which predict survival time or its logarithm, the risk score is the negated prediction; for Cox it is the linear predictor; for RSF it is the predicted cumulative hazard. This is now set once in the code and applied identically everywhere.
+
+With that fixed and the follow-up definition corrected, no configuration in the revised analysis falls meaningfully below chance. The lowest value in that table is 0.501, for RSF on BSC slopes alone, and that one is a genuine failure to rank rather than an inverted score: the same model fits its training data at 0.844, which is what memorizing noise looks like. We now say explicitly in the results that values near 0.5 should be read as real failure, not as a sign convention.
+
+\comment{In the abstract, the sentence beginning with ``This study measures how BSC changes over time...'' is grammatically unclear.}
+
+\response That sentence spliced two clauses together and has been removed. The abstract has been rewritten from scratch around the landmark design and the revised findings, and the opening now reads: "The Boundary Sharpness Coefficient measures how sharply gray matter and white matter separate on a T1-weighted scan, and the appeal of tracking it over time is that a rate of change might carry information a single scan cannot. This study tests that idea under a design in which prediction is actually being asked of the model."
+
+\comment{Unclear citation ``[?]'' in Section 2.4.1.}
+
+\response Fixed. We checked every citation key in the manuscript against the bibliography programmatically and there are now no undefined references. Two related asset problems were also resolved: a figure file referenced in that section was missing from the submission package, and that figure, a generic Random Survival Forest schematic, has been removed since the revised analysis no longer treats any single model family as primary. All figures referenced in the revised manuscript are included in the package.
+
+\section*{New material in the revision}
+
+For convenience, the substantive additions are: a landmark cohort definition and its accounting (the landmark design section); a subsection on BSC in relation to intensity contrast and junction blurring, with failure modes (the BSC motivation section); a clinical covariate block (the clinical covariates section); a risk direction convention (the risk direction section); fold-matched increment testing (the evaluation section); the follow-up definition experiment (the methods and results sections on the follow-up definition); a landmark sensitivity analysis (the landmark sensitivity section); an acquisition dependence analysis (the acquisition dependence section); an adjusted Cox hazard ratio table; and three new figures. The post-hoc power analysis, the 70/30 hold-out, and the Random Survival Forest schematic have been removed.
+
+\end{document}

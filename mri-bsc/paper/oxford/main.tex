@@ -1,0 +1,549 @@
+
+%% url is loaded by the document class, so its options have to be registered
+%% before \documentclass. Loading it again with [hyphens] causes an option clash.
+\PassOptionsToPackage{hyphens}{url}
+
+\documentclass[blue]{ludusofficial}  % Theme: blue, red, green, purple, orange, cyan
+                                               % Article type: fullpaper, letter, poster, survey, shortpaper, artpaper
+
+%% Document metadata
+% BibLaTeX Vancouver-like numeric refs, but truncate authors to 1 + et al.
+\usepackage{amsmath}
+\usepackage{graphicx}
+%% dblfloatfix is deliberately not loaded. It pulls in fixltx2e, which is
+%% obsolete on TeX Live 2015 and later and aborts the build. It was only needed
+%% to place double-column floats at the bottom of a page, and this manuscript
+%% has no figures.
+\usepackage{placeins}
+\usepackage{lineno}
+%% Without these, LaTeX defers most floats to the end of the document in a
+%% two-column layout. They let more floats sit at the top of a page and allow a
+%% page to be mostly float.
+\setcounter{topnumber}{4}
+\setcounter{dbltopnumber}{4}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{6}
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\dbltopfraction}{0.95}
+\renewcommand{\bottomfraction}{0.5}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.8}
+\renewcommand{\dblfloatpagefraction}{0.8}
+\linenumbers
+
+%% Article information
+%% TITLE NOT YET FIXED. Candidates under consideration:
+%%  1. Longitudinal Boundary Sharpness Coefficient Slopes and Time to Alzheimer's
+%%     Disease Conversion in Mild Cognitive Impairment: A Reanalysis Using the ADNI Cohort
+%%  2. Do Longitudinal Boundary Sharpness Coefficient Slopes Predict Alzheimer's Disease
+%%     Conversion? A Reanalysis Under a Corrected Follow-up Definition
+%%  3. Follow-up Definition Determines the Apparent Prognostic Value of Boundary
+%%     Sharpness Coefficient Slopes in Mild Cognitive Impairment
+%%  4. Regional Boundary Sharpness Coefficient Slopes Do Not Improve Prediction of
+%%     Alzheimer's Disease Conversion Beyond Clinical Covariates and Standard Longitudinal MRI
+%%  5. Design Effects and Scanner Confounding in Longitudinal Gray-White Matter Boundary
+%%     Measures: A Reanalysis of MCI-to-AD Conversion in ADNI
+%%  6. Boundary Sharpness Coefficient Slopes in Mild Cognitive Impairment: Guarantee-Time
+%%     Bias, Scanner Effects, and the Limits of a Structural MRI Biomarker
+\title{Longitudinal Boundary Sharpness Coefficient Slopes and Clinical Covariates for Prediction of Alzheimer's Disease Conversion in Mild Cognitive Impairment: A Survival Analysis Using the ADNI Cohort}
+
+\shorttitle{Follow-up Definition and BSC Slopes in MCI}  % Short title for page headers
+\shortauthor{Cherukuri}  % Short author names for page headers
+
+\author{%
+    \textbf{Ishaan Cherukuri}\textsuperscript{1}\textsuperscript{*}\\[0.2cm]
+    \small\textsuperscript{1}Independent Researcher, USA\\
+    \small Corresponding: ishaan.cherukuri@gmail.com\\[0.4cm]
+    \small\textsuperscript{*}Data used in preparation of this article were obtained from the Alzheimer's Disease Neuroimaging Initiative (ADNI) database (adni.loni.usc.edu). As such, the investigators within the ADNI contributed to the design and implementation of ADNI and/or provided data but did not participate in the analysis or writing of this report. A complete listing of ADNI investigators can be found at: \href{http://adni.loni.usc.edu/wp-content/uploads/how_to_apply/ADNI_Acknowledgement_List.pdf}{adni.loni.usc.edu/how\_to\_apply/ADNI\_Acknowledgement\_List.pdf}
+}
+
+\begin{document}
+
+%% Abstract and keywords must be defined BEFORE \maketitle
+\begin{abstract}
+Predicting whether someone with mild cognitive impairment (MCI) will progress to Alzheimer's disease (AD) is crucial in the early stages of neurodegeneration, since that uncertainty limits enrollment in clinical trials and delays urgent treatment. Structural MRI is attractive for this purpose because it is already part of standard workups, costs a fraction of PET imaging (\$800--\$1,500 vs. \$5,000--\$7,000), and requires no CSF collection. The Boundary Sharpness Coefficient (BSC)\cite{olafson2021bsc} measures how well-defined the gray-white matter boundary looks on structural MRI, and annualized change in BSC has been proposed as a prognostic marker for MCI-to-AD conversion. This study reanalyzes that proposal in the ADNI cohort after correcting the definition of follow-up, which previously began at the MCI baseline scan while features were drawn from every available scan, including scans acquired after the dementia diagnosis. The cohort was rebuilt so that features come only from scans acquired while the subject was still MCI, with the clock starting at the last such scan, giving 2,252 scans from 417 subjects (133 converters, 284 stable). BSC voxel-wise maps were computed using tissue segmentation at the gray-white matter cortical ribbon, and clinical covariates, cortical thickness and hippocampal volume comparators, longitudinal ComBat harmonization and a 62-parcel regional analysis were added. Clinical covariates alone reached a cross-validated C-index of 0.795, global BSC slopes 0.584 and regional BSC slopes 0.649. Fold-matched comparisons showed no incremental value for BSC over covariates and standard longitudinal MRI (change in C-index 0.002, 95\% CI $-0.021$ to $0.022$). Restricted to the same 417 subjects, the corrected definition cost covariates 0.010 to 0.034 in C-index but cost every imaging family two to four times more. BSC showed no association with age ($r=-0.007$, $p=0.74$) while correlating with image intensity dispersion ($r=0.239$). The prognostic value previously attributed to BSC slopes is therefore largely attributable to the follow-up definition rather than to the biomarker.
+\end{abstract}
+
+
+\keywords{Alzheimer's disease; mild cognitive impairment; boundary sharpness coefficient; longitudinal MRI; survival analysis; guarantee-time bias; scanner harmonization; ComBat; cortical parcellation; MCI-to-AD conversion; ADNI; reproducibility}
+
+%% Maketitle creates full-width header with abstract and keywords, then starts two-column layout
+\maketitle
+
+%% From here, content is in two columns
+\section{Introduction}
+
+Alzheimer's disease affects more than 55 million people worldwide and is the leading cause of dementia~\cite{hafeez2024deep}. Mild cognitive impairment (MCI) sits in a more uncertain space, since it is neither normal aging nor dementia, and it does not lead everyone down the same path. Annual conversion rates to dementia are often estimated near 10 to 15\%~\cite{li2021predicting}, but that average hides wide variation. Some individuals remain stable for years, some improve, and others decline quickly.
+
+The clinical need for early risk stratification has grown with the arrival of anti-amyloid therapies such as lecanemab~\cite{vanDyck2022lecanemab} and donanemab~\cite{sims2023donanemab}, which target earlier disease stages. Amyloid PET measures pathology directly but costs \$5,000--\$7,000 per scan and is not widely accessible. Cerebrospinal fluid testing is invasive. Blood-based biomarkers are advancing quickly, though interpretation is still not entirely straightforward. Structural MRI is already part of standard workups for cognitive complaints and costs roughly \$800--\$1,500. The difficulty is that conventional MRI markers measured at a single time point have often disappointed for prediction~\cite{baytas2024predicting}.
+
+\subsection{Prior Work}
+
+MCI-to-AD prediction has a substantial literature, and two systematic reviews map it. Ansart et al.~\cite{ansart2021predicting} reviewed 234 experiments drawn from 111 articles and asked which data types actually improved prediction. Cognitive testing, FDG-PET and electrophysiological measures each improved performance significantly, whereas adding T1-weighted MRI did not. Grueso and Viejo-Sobera~\cite{grueso2021machine} screened 452 studies and analyzed 116, and noted that few validate externally.
+
+Time-to-event modeling of AD progression is likewise well established. Da et al.~\cite{da2014integration} combined the SPARE-AD atrophy index with cognitive scores, APOE genotype and CSF biomarkers in a Cox framework, and found that cognitive measures carried much of the predictive weight. Li et al.~\cite{li2017prediction} jointly modeled longitudinal biomarkers with time to conversion in ADNI. Zhang et al.~\cite{zhang2024interval} modeled conversion time directly with interval-censored methods, which acknowledges that conversion is observed only at discrete clinic visits rather than on the day it occurs. Across these studies a consistent pattern appears: once cognitive and demographic information is in the model, additional imaging measures add less than their standalone performance suggests.
+
+That pattern sets the standard a new imaging marker has to meet. Reporting that a marker discriminates converters from non-converters is not sufficient, because the relevant question is whether it adds anything to what is already measured in clinic. The present study was designed to answer that question for BSC, and to check whether an earlier positive report survives a correction to how follow-up was defined.
+
+\subsection{The Boundary Sharpness Coefficient}
+
+The Boundary Sharpness Coefficient measures how sharply gray matter and white matter are separated on structural MRI. In a healthy brain the transition between cortical gray matter and underlying white matter is fairly crisp on a T1-weighted scan. Gray matter appears darker and white matter brighter because of its myelin content. When disease-related processes disrupt that organization, the interface can become less distinct.
+
+BSC differs from familiar measures such as regional volume or cortical thickness. Those metrics quantify how much tissue remains. BSC instead captures a property of the boundary itself. It is not a microscope-like readout of microstructure, and claiming otherwise would overstate what a 1 mm voxel can resolve. Several processes in AD could plausibly blur the interface, including synaptic loss, tau pathology, myelin degeneration in superficial white matter, and neuroinflammation. None maps one-to-one onto BSC.
+
+BSC computation followed a multi-step pipeline. Atropos $k$-means clustering~\cite{avants2011atropos} assigned each voxel a probability of belonging to gray matter, white matter or cerebrospinal fluid. Boundary voxels were defined as those where gray matter probability fell between 0.4 and 0.6, which captures a transition band rather than forcing the analysis onto an unstable single-voxel contour. Gradient filters then measured how rapidly intensity changed across that boundary, projected along the direction perpendicular to the interface. For each boundary voxel $\mathbf{x}$, the directional BSC was computed as
+
+\begin{equation}
+    \text{BSC}_{\text{dir}}(\mathbf{x}) = \nabla I(\mathbf{x}) \cdot \frac{\nabla P_{GM}(\mathbf{x})}{\|\nabla P_{GM}(\mathbf{x})\|}
+\end{equation}
+
+where $I(\mathbf{x})$ is MRI intensity and $P_{GM}$ the gray matter probability map. The dot product isolates the component of the intensity gradient aligned with the boundary normal. Positive values indicate the expected increase in intensity moving from gray matter toward white matter.
+
+\subsubsection{Relationship to Prior Boundary-Based Measures}
+
+BSC is not the first quantitative index of the gray-white junction, and two earlier traditions bear on this work.
+
+Gray-white matter contrast, introduced by Salat et al.~\cite{salat2009age}, samples T1 intensity at fixed distances above and below the gray-white surface and computes a ratio between the two tissue classes. It has been used extensively as a marker of cortical aging, and Salat et al. reported that it declines measurably with age in healthy adults. Gray-white matter blurring was developed independently in the epilepsy literature~\cite{huppertz2005enhanced,blackmon2015cortical} as a lesion-detection tool for focal cortical dysplasia, quantifying focal blur at the junction by comparison against a normative database.
+
+BSC differs from both in a specific way. Gray-white contrast is a ratio of intensities and therefore a measure of the contrast level between tissue classes. BSC is a spatial derivative and therefore a measure of how abruptly the transition occurs. Two brains can share a contrast ratio while differing in how smeared the transition is. The epilepsy blurring measures are engineered for cross-sectional detection of developmental lesions with dramatic local blur, whereas BSC, following Olafson et al.~\cite{olafson2021bsc}, is intended as a continuous measure suited to diffuse progressive change. The concepts overlap; the methodological requirements do not.
+
+\subsection{From Static Measures to Temporal Slopes}
+
+A cross-sectional scan mixes influences accumulated across a lifetime. Two people can show the same hippocampal volume for very different reasons: one may have had a smaller hippocampus for years, the other may be mid-neurodegeneration. A single snapshot cannot separate those cases. Cognitive reserve complicates matters further, since some individuals tolerate substantial pathology before symptoms appear.
+
+Rates of change are appealing for exactly this reason. A declining trajectory can reveal ongoing pathology that baseline values obscure. The hypothesis motivating the original analysis was that annualized BSC slopes capture progression dynamics invisible in a baseline scan.
+
+Testing that hypothesis requires care about when measurements are taken relative to the outcome. If features are drawn from scans acquired after a subject has already been diagnosed, the model is describing established disease rather than forecasting it, and any apparent predictive skill is partly an artifact of the design. This concern applies to any longitudinal imaging marker, not to BSC specifically, and it is the main subject of this reanalysis.
+
+\subsection{Study Objectives}
+
+This study had five aims:
+
+\begin{enumerate}
+    \item Rebuild the ADNI cohort so that every feature comes from a scan acquired while the subject was still MCI, with follow-up starting at the last such scan
+    \item Quantify how much the follow-up definition alone changes apparent performance, holding subjects, features and models fixed
+    \item Test whether BSC slopes add prognostic information beyond clinical covariates and established longitudinal MRI measures
+    \item Extend BSC from global summaries to regional measures across a cortical parcellation
+    \item Characterize the sensitivity of BSC to scanner and image quality
+\end{enumerate}
+
+\section{Materials and Methods}
+
+\subsection{Dataset and Study Population}
+
+All data were obtained from the Alzheimer's Disease Neuroimaging Initiative (ADNI) database (\texttt{adni.loni.usc.edu})~\cite{weiner2010adni,petersen2010adni}. ADNI began in 2003 as a public-private effort led by Michael W. Weiner, MD, to determine whether serial MRI, PET, fluid biomarkers and cognitive testing could track the progression of MCI and early AD. Its standardized protocols and repeated follow-up make it well suited to longitudinal work, though like many research cohorts it is not a mirror of routine clinical populations.
+
+\subsubsection{Inclusion Criteria}
+
+A subject entered the analysis if the baseline scan carried an MCI diagnosis, at least four T1-weighted scans were available before conversion or censoring, scans were chronologically ordered with valid acquisition dates, and clinical metadata were complete. Any scan whose own diagnosis code was AD was excluded from feature computation, as was any scan acquired on or after the date of first dementia diagnosis.
+
+Of 1,617 subjects with processed scans, 421 were excluded because the baseline scan was not MCI, 691 because fewer than four scans remained inside the pre-conversion window, and 88 because no positive follow-up time remained after the last usable scan. The final cohort contained 417 subjects, 133 converters and 284 stable, contributing 2,252 scans. Table~\ref{tab:demographics} summarizes the cohort, and Figure~\ref{fig:splot} shows the age distribution and the observation window of every subject. At scan level, 513 scans were dropped for falling at or after conversion and 152 for carrying an AD diagnosis code. All exclusions were logged.
+
+The cost of this requirement falls almost entirely on converters. Among subjects with an MCI baseline, 665 had four or more scans in total, of whom 293 converted. Requiring four scans before conversion retained only 133 of those converters. A converter who is scanned four times but converts after the second scan cannot contribute, whereas a stable subject scanned four times always can. Any analysis of this kind trades converter count for temporal validity, and the trade is steep.
+
+
+\begin{table*}[t!]
+\centering
+\caption{Demographic and clinical characteristics of the corrected cohort}
+\label{tab:demographics}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Characteristic} & \textbf{All} & \textbf{Converters} & \textbf{Stable} & \textbf{$p$} \\
+ & (N=417) & (N=133) & (N=284) & \\
+\hline
+Age at landmark (years) & 76.9$\pm$7.6 & 77.7$\pm$7.2 & 76.6$\pm$7.8 & 0.18 \\
+Female, n (\%) & 164 (39.3) & 49 (36.8) & 115 (40.5) & 0.52 \\
+Education (years) & 16.2$\pm$2.7 & 16.2$\pm$2.7 & 16.2$\pm$2.7 & 0.97 \\
+APOE4 carrier, n (\%) & 179 (42.9) & 78 (58.6) & 101 (35.6) & $<$0.001 \\
+MMSE & 27.3$\pm$2.6 & 26.2$\pm$2.4 & 27.9$\pm$2.5 & $<$0.001 \\
+ADAS-Cog13 & 16.3$\pm$8.2 & 20.9$\pm$7.1 & 14.1$\pm$7.8 & $<$0.001 \\
+CDR sum of boxes & 1.72$\pm$1.41 & 2.56$\pm$1.29 & 1.30$\pm$1.28 & $<$0.001 \\
+3T at landmark, n (\%) & 281 (67.4) & 67 (50.4) & 214 (75.4) & $<$0.001 \\
+Switched field strength, n (\%) & 50 (12.0) & 19 (14.3) & 31 (10.9) & 0.34 \\
+Scans in window & 5.40$\pm$1.79 & 4.93$\pm$1.45 & 5.62$\pm$1.90 & $<$0.001 \\
+Window span (years) & 4.18$\pm$3.02 & 3.19$\pm$2.19 & 4.65$\pm$3.24 & $<$0.001 \\
+Follow-up after last scan (years) & 1.69$\pm$1.86 & 1.91$\pm$1.48 & 1.58$\pm$2.00 & $<$0.001 \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{figure*}[t!]
+\centering
+\includegraphics[width=\textwidth]{fig_splot_cohort.png}
+\caption{Cohort demographic and longitudinal sampling structure. Left: age
+distribution at the first scan, stacked by sex (salmon female, teal male), with
+converters overlaid as hatched bars. Right: observation window for each of the
+417 subjects, sorted by age at first scan, which produces the S-shaped
+enrollment structure. Each line spans a subject's first to last scan used for
+feature computation. Line style and end marker distinguish stable subjects
+(solid, circle) from converters (dashed, cross). Converters appear across the
+full age range but contribute shorter windows, which follows from the
+requirement that every scan precede conversion.}
+\label{fig:splot}
+\end{figure*}
+
+\begin{figure*}[t!]
+\centering
+\includegraphics[width=\textwidth]{fig3_arch.png}
+\caption{Analysis pipeline. Preprocessing, segmentation and BSC computation are unchanged
+from the original study. Three elements are new. Acquisition dates are read from the image
+archive rather than inferred from nominal visit labels, and every scan acquired at or
+after the dementia diagnosis is excluded, with the survival clock starting at the last
+remaining scan. Per-scan features are harmonized across scanners. A cortical parcellation
+branch produces regional measures. Clinical covariates and the FreeSurfer comparator
+measures enter from ADNI tables without passing through the imaging pipeline, which is
+what allows the incremental value of BSC to be tested against them.}
+\label{fig:arch}
+\end{figure*}
+
+\subsection{MRI Acquisition and Preprocessing}
+
+Figure~\ref{fig:arch} summarizes the analysis pipeline. ADNI participants underwent T1-weighted structural MRI on 1.5T or 3T scanners using standardized protocols~\cite{jack2008adni_mri}, typically 3D MPRAGE with TR = 2300 ms, TE = 2.98 ms, TI = 900 ms, flip angle 9$^\circ$ and 1 mm isotropic voxels.
+
+Preprocessing applied N4 bias correction~\cite{tustison2010n4} to reduce low-frequency intensity non-uniformity, since gradual brightness shifts could otherwise be mistaken for boundary change. Skull stripping used Otsu thresholding with morphological cleanup. Images were resampled to 1 mm$^3$ isotropic resolution with linear interpolation, chosen because higher-order interpolation can introduce ringing that would contaminate later gradient computation. Tissue segmentation used Atropos $k$-means clustering~\cite{avants2011atropos} with three classes. Gradients were estimated with 3D Gaussian derivative filters at $\sigma = 1.0$ mm.
+
+Scanner metadata were extracted for every scan from the ADNI image archive, giving field strength, manufacturer, scanner model and acquisition site. Field strength was recovered for all scans and vendor for 97\%. Acquisition dates were also recovered from the archive, since the de-identified image files themselves carry no absolute date. This mattered more than expected: dates previously inferred from nominal visit labels differed from true acquisition dates by a median of 21 days and by more than 90 days for 7\% of scans, and slopes are regressed against this time axis. Real dates were matched for 96.4\% of scans; the remainder retain the nominal estimate.
+
+\subsubsection{Scanner Harmonization}
+
+Longitudinal ComBat~\cite{beer2020longitudinal} was applied to the per-scan BSC features. Standard ComBat assumes independent observations, which is wrong here, since each subject contributes several scans and the within-subject correlation is the quantity of interest. The longitudinal variant adds a subject random intercept so that batch effects are estimated after accounting for repeated measures. Batch effects were estimated as fixed effects jointly with that random intercept, because estimating the intercept first and reading batch off the residuals biases the batch effect toward zero for subjects scanned entirely on one scanner. Batch parameters were shrunk toward their across-feature means by empirical Bayes.
+
+The definition of a batch turned out to matter more than the harmonization itself. Candidate definitions were compared by how much each reduced the within-subject step in BSC observed when a subject changes scanner mid-study, which is a within-subject quantity and therefore free of between-subject confounding. Harmonizing on field strength alone did not help at all, changing the step by $-1.8\%$, and vendor combined with field strength performed no better at $-1.9\%$. Only definitions including acquisition site helped, with site combined with vendor and field strength reducing the step by 24.7\% across 124 batches. That definition was used throughout.
+
+Two features of this result deserve emphasis. First, the group-level difference between 1.5T and 3T scans is small (Cohen's $d = -0.09$), because the direction of the step varies between scanner pairs and averaging across subjects cancels much of it. A group comparison on field strength therefore understates the problem substantially. Second, harmonization removes roughly a quarter of the within-subject step, not all of it. Residual scanner variance remains, and the field-strength issue should not be considered resolved.
+
+
+\subsection{Longitudinal Slope Computation}
+
+For each scan, 35 BSC summary features were extracted (Table~\ref{tab:bsc-features}), covering boundary voxel count, directional and magnitude summary statistics, percentiles and spatial bin summaries. Each feature was regressed against time within subject:
+
+\begin{equation}
+    f_s(t) = \beta_0 + \beta_1 \cdot t + \epsilon
+\end{equation}
+
+where $\beta_1$ is the annualized rate of change. Slopes were computed on harmonized features, using real acquisition dates, and only over scans acquired while the subject was still MCI.
+
+\begin{table}[htbp]
+\centering
+\caption{BSC feature categories extracted per scan}
+\label{tab:bsc-features}
+\begin{tabular}{lc}
+\hline
+\textbf{Feature Category} & \textbf{Count} \\
+\hline
+Boundary count (Nboundary) & 1 \\
+Directional statistics (mean, std, median) & 3 \\
+Directional percentiles (p10, p25, p50, p75, p90) & 5 \\
+Magnitude statistics (mean, std, median) & 3 \\
+Magnitude percentiles (p10, p25, p50, p75, p90) & 5 \\
+Directional spatial bins (8 bins) & 8 \\
+Magnitude spatial bins (8 bins) & 8 \\
+\hline
+\textbf{Total per scan} & \textbf{35} \\
+\hline
+\end{tabular}
+\end{table}
+
+For each base feature, four longitudinal descriptors were derived: baseline value, final value, annual slope and goodness of fit ($R^2$).
+
+\subsection{Feature Selection and Preprocessing}
+
+Raw slope features showed extreme heterogeneity in variance, with the boundary count slope varying on a far larger scale than the rest. Selection and preprocessing were carried out on training folds only. Slope values were transformed with a signed logarithm, $\text{sign}(x) \cdot \log(1 + |x|)$, which compresses extreme values while preserving direction. Outliers were then clipped by winsorization~\cite{tukey1962future} at the 1st and 99th percentiles, followed by MinMax scaling to $[0, 1]$. A 0.10 penalty factor was applied to boundary count features during variance ranking only, which altered ranking scores rather than the values used for modeling. Models that perform their own selection, including the gradient-boosted and penalized regression models, received the full feature set.
+
+\subsubsection{Regional Analysis}
+
+Global summaries collapse the whole cortex into a single number, which discards the regional specificity that AD pathology is known to have. BSC was therefore computed within cortical parcels.
+
+Labels came from the Desikan-Killiany-Tourville protocol, generated with a deep learning parcellation~\cite{tustison2021antsxnet} applied to the T1 volume directly, which avoids the cost of full surface reconstruction. Since the quantity of interest is a slope, generating labels independently at each visit would inject parcellation noise straight into the modeled quantity. Labels were therefore generated once per subject and propagated to that subject's other timepoints by rigid registration, which is adequate within subject and avoids deforming the cortical ribbon. The reference scan was chosen by quality control rather than assumed to be the baseline, since parcellation failed outright on 13.7\% of baseline scans and a failed reference propagates to every timepoint for that subject.
+
+One adjustment was necessary. The parcellation labels the cortical gray ribbon, whereas the BSC boundary band sits at the gray-white interface and therefore falls largely in unlabeled white matter. Intersecting the two directly captured under 10\% of boundary voxels and left region means resting on a median of 32 voxels. Each parcel was therefore extended inward to its nearest boundary voxels using a Euclidean distance transform, with assignment refused beyond 5 mm so that deep white matter is not attributed to a parcel it does not border. This raised the median to 185 voxels per region. Coverage plateaus near 50\% of the boundary band because the band also spans cerebellar, subcortical and ventricular interfaces that have no cortical parcel.
+
+The analysis retained 62 cortical parcels. In addition, a single AD-signature composite was specified in advance as the voxel-weighted mean across seven bilateral regions selected from the AD literature: entorhinal cortex, parahippocampal gyrus, inferior temporal cortex, middle temporal cortex, precuneus, posterior cingulate and fusiform gyrus. Specifying this composite before analysis gives one biologically motivated test that does not depend on selection among 62 regions.
+
+\subsubsection{Clinical Covariates}
+
+Eight covariates were drawn from ADNI clinical tables at the landmark visit: age, sex, years of education, APOE4 allele count, MMSE, ADAS-Cog13, CDR sum of boxes, and field strength. Missingness was low, affecting 6 subjects for MMSE, 7 for ADAS-Cog13 and 15 for CDR sum of boxes, with none missing for the remaining covariates. Missing values were imputed with the training-fold median.
+
+\subsubsection{Comparator MRI Measures}
+
+To test whether BSC adds anything to established longitudinal MRI, cortical thickness was extracted for 68 Desikan-Killiany regions and hippocampal volume normalized by intracranial volume from the ADNI FreeSurfer tables, matched to each scan by subject and examination date within 120 days. Slopes were computed over the identical windows and with the identical procedure used for BSC, so the two feature families differ in what they measure rather than in how they are summarized.
+
+\subsection{Survival Data Preparation}
+
+For each subject, $t_{\text{last}}$ is the date of the last MRI used in feature computation, which for converters is the last scan preceding the dementia diagnosis. The event date is the date of first dementia diagnosis taken from the clinical record rather than from a scan label, and censoring is at last known clinical follow-up. Time to event is $(t_{\text{event}} - t_{\text{last}})/365.25$ in years, and only subjects with positive time were retained.
+
+Taking conversion dates from the clinical record rather than from scan diagnoses matters, because a subject whose conversion is recorded at a clinic visit between two scans would otherwise be dated to the later scan.
+
+\subsection{Statistical Analysis}
+
+\subsubsection{Survival Modeling}
+
+Seven models were fitted. The primary model was gradient-boosted survival regression with an accelerated failure time objective~\cite{barnwal2022survivalxgb}, which accommodates nonlinear structure and performs its own feature selection. Comparators were Random Survival Forest~\cite{ishwaran2008rsf} with 1,000 trees, Cox proportional hazards~\cite{cox1972} with L2 penalization, Lasso-penalized Cox, and Weibull, log-normal and log-logistic accelerated failure time models with penalizer 0.1. Including both a penalized Cox model and all three parametric AFT families allows the reader to see whether conclusions depend on model family, which they largely do not.
+
+\subsubsection{Model Training and Evaluation}
+
+Given the modest event count, performance was estimated by stratified 5-fold cross-validation rather than a single split, and is reported as mean and standard deviation across folds. A 20\% stratified hold-out was reserved, never used during model development, and evaluated once. All imputation, transformation, winsorization and scaling parameters were estimated within training folds and applied to held-out folds.
+
+Discrimination was measured by Harrell's concordance index and by Uno's inverse-probability-weighted concordance index~\cite{uno2011cstat}, which is better behaved under censoring. Time-dependent AUC was computed at one, two and three years.
+
+\subsubsection{Risk Direction Convention}
+
+A single convention was applied: a higher risk score corresponds to shorter time to conversion. After fitting, the concordance between predicted risk and observed time was evaluated \textit{on the training fold}, and the risk score was negated if that concordance fell below 0.5. Accelerated failure time models predict survival time rather than risk, so their predictions are negated by construction.
+
+Determining the direction on training data only is deliberate. Choosing the sign that makes held-out performance look better would guarantee a C-index above 0.5 for any model, including a model with no signal, and would make the metric uninterpretable. A consequence is that genuinely uninformative feature sets can and do produce held-out values below 0.5, and these are reported as they are.
+
+\subsubsection{Incremental Value}
+
+The question of whether BSC adds information is a nested comparison, and comparing two marginal cross-validation means does not answer it. Each pair of feature sets was therefore refitted on identical folds, the per-fold difference in C-index was taken, and a 95\% interval was obtained by resampling subjects from the pooled out-of-fold predictions. Nested Cox models were additionally compared by likelihood ratio test. Individual slopes were screened univariately with Benjamini-Hochberg control of the false discovery rate.
+
+\subsubsection{Design Comparison}
+
+To isolate the effect of the follow-up definition, the cohort was also rebuilt under the original design, in which features come from every scan including those acquired after diagnosis and the clock starts at the MCI baseline scan. Both designs were then restricted to the subjects present in each, so that the same people, features and models are compared and only the timing differs.
+
+\subsection{Software and Reproducibility}
+
+Analyses were conducted in Python 3.12. Preprocessing used Advanced Normalization Tools~\cite{avants2011ants}, cortical parcellation used ANTsXNet~\cite{tustison2021antsxnet}, survival modeling used scikit-survival~\cite{polsterl2020sksurv}, lifelines~\cite{davidson-pilon2019lifelines} and XGBoost~\cite{chen2016xgboost}. Longitudinal ComBat was implemented directly following Beer et al.~\cite{beer2020longitudinal}. Code is available at \texttt{github.com/ishaan-cherukuri/research/tree/main/mri-bsc}.
+
+\section{Results}
+
+\subsection{Cohort Characteristics}
+
+
+Table~\ref{tab:demographics} summarizes the corrected cohort. Converters and stable subjects did not differ detectably in age, sex or education, but differed on every cognitive measure and on APOE4 carriage, as expected.
+
+Two entries deserve comment because they shape the interpretation of everything that follows. Half of converters were scanned at 3T at the landmark visit compared with three quarters of stable subjects ($p<0.001$), so field strength is confounded with the outcome and any residual scanner effect is correlated with the label rather than being noise. Converters also contributed fewer scans over shorter windows, which is a direct consequence of requiring scans to precede conversion.
+
+\subsection{Survival Model Performance}
+
+\begin{table*}[t!]
+\centering
+\caption{Cross-validated C-index by feature set and model family. Values are means across five stratified folds. Feature counts are given in parentheses.}
+\label{tab:model-performance}
+\begin{tabular}{lccccccc}
+\hline
+\textbf{Feature set} & \textbf{XGB AFT} & \textbf{RSF} & \textbf{Cox L2} & \textbf{Cox Lasso} & \textbf{Weibull} & \textbf{LogNorm} & \textbf{LogLog} \\
+\hline
+Clinical covariates (8) & 0.773 & 0.778 & 0.793 & 0.788 & 0.795 & 0.789 & 0.789 \\
+BSC baseline (33) & 0.532 & 0.502 & 0.520 & 0.5199 & 0.510 & 0.528 & 0.513 \\
+BSC slopes, global (33) & 0.584 & 0.540 & 0.542 & 0.537 & 0.552 & 0.520 & 0.581 \\
+BSC slopes, regional (124) & 0.642 & 0.649 & 0.511 & 0.514 & 0.512 & 0.536 & 0.529 \\
+AD-signature composite (2) & 0.512 & 0.546 & 0.409 & 0.454 & 0.432 & 0.433 & 0.430 \\
+Thickness + hippocampus (69) & 0.685 & 0.711 & 0.527 & 0.559 & 0.543 & 0.548 & 0.547 \\
+\hline
+Covariates + BSC global (41) & 0.788 & 0.754 & 0.769 & 0.788 & 0.765 & 0.773 & 0.771 \\
+Covariates + BSC regional (132) & 0.788 & 0.762 & 0.695 & 0.788 & 0.694 & 0.714 & 0.721 \\
+Covariates + AD-signature (10) & 0.790 & 0.782 & 0.775 & 0.788 & 0.777 & 0.779 & 0.776 \\
+Covariates + standard MRI (77) & 0.778 & 0.779 & 0.698 & 0.783 & 0.706 & 0.715 & 0.718 \\
+Covariates + BSC + standard MRI (110) & 0.778 & 0.763 & 0.715 & 0.783 & 0.708 & 0.718 & 0.711 \\
+Covariates + regional + standard MRI (201) & 0.796 & 0.762 & 0.688 & 0.782 & 0.669 & 0.666 & 0.667 \\
+\hline
+\end{tabular}
+\end{table*}
+
+Table~\ref{tab:model-performance} reports all seven model families across all feature sets, and Figure~\ref{fig:models} shows the fold-level distributions behind those means. Clinical covariates alone reached 0.773 to 0.795 depending on model family and were the strongest single block in the study. Global BSC slopes reached 0.584 at best. Regional BSC slopes reached 0.649, clearly better than the global summaries they replace. Longitudinal cortical thickness and hippocampal volume reached 0.711.
+
+Uno's concordance index gave the same ordering, with the flagship model at 0.772 for covariates, 0.529 for global BSC slopes and 0.644 for regional slopes. The hold-out set contained 84 subjects and 27 events, which is too few to support a precise estimate, and hold-out values should be read as a consistency check rather than as headline performance.
+
+Figure~\ref{fig:km} shows the same contrast as survival curves: stratifying by clinical covariates separates the risk tertiles widely, while stratifying by regional BSC slopes separates them far less. Thirteen of the 91 model and feature-set combinations produced cross-validated values below 0.5, concentrated in the BSC-only and AD-signature-only sets. Because the risk direction was fixed on training folds, these are genuine indications that the feature set carries no usable signal in held-out data rather than reversed scores. Reporting them as values above 0.5 would require choosing the sign from test performance, which would make the metric meaningless.
+
+
+\begin{figure*}[t!]
+\centering
+\includegraphics[width=\textwidth]{fig1_model_comparison.png}
+\caption{Model performance across five cross-validation folds. Boxes show the fold
+distribution, red diamonds the mean. Clinical covariate models (blue) reach the highest
+test C-index and show a train-to-test gap of 0.017 to 0.025. Every imaging configuration
+(red) shows a gap near 0.20, so the additional discrimination visible in training does not
+transfer to held-out folds. The combined model attains a training C-index of 0.984 against
+a test value of 0.772.}
+\label{fig:models}
+\end{figure*}
+
+\begin{figure*}[t!]
+\centering
+\includegraphics[width=\textwidth]{fig2_kaplan_meier.png}
+\caption{Kaplan-Meier estimates of the probability of remaining MCI, stratified by tertile
+of predicted risk. Risk scores are out-of-fold, so no subject is stratified by a model
+fitted on them. Shaded bands are 95 per cent confidence intervals. Stratification by
+clinical covariates separates the tertiles widely, with 5, 44 and 84 events.
+Stratification by regional BSC slopes separates them far less, with 30, 46 and 57 events,
+even though both log-rank tests are significant. The event counts are the more informative
+comparison, since the log-rank test responds to any departure from equality rather than to
+its size.}
+\label{fig:km}
+\end{figure*}
+
+\subsection{Effect of the Follow-up Definition}
+
+\begin{table*}[t!]
+\centering
+\caption{Cross-validated C-index under the original and corrected follow-up definitions, restricted to the 417 subjects present in both. Only the timing differs; subjects, features and models are identical.}
+\label{tab:design}
+\begin{tabular}{llccc}
+\hline
+\textbf{Feature set} & \textbf{Model} & \textbf{Original design} & \textbf{Corrected design} & \textbf{Change} \\
+\hline
+Clinical covariates & RSF & 0.786 & 0.775 & $-0.010$ \\
+ & XGB AFT & 0.764 & 0.751 & $-0.013$ \\
+ & Cox L2 & 0.804 & 0.769 & $-0.034$ \\
+\hline
+BSC slopes, global & RSF & 0.684 & 0.617 & $-0.066$ \\
+ & XGB AFT & 0.616 & 0.587 & $-0.029$ \\
+ & Cox L2 & 0.601 & 0.469 & $-0.132$ \\
+\hline
+BSC slopes, regional & RSF & 0.737 & 0.641 & $-0.096$ \\
+ & XGB AFT & 0.656 & 0.615 & $-0.041$ \\
+ & Cox L2 & 0.527 & 0.569 & $+0.042$ \\
+\hline
+Thickness + hippocampus & RSF & 0.781 & 0.685 & $-0.096$ \\
+ & XGB AFT & 0.761 & 0.665 & $-0.096$ \\
+ & Cox L2 & 0.647 & 0.570 & $-0.077$ \\
+\hline
+\end{tabular}
+\end{table*}
+
+Table~\ref{tab:design} and Figure~\ref{fig:design} isolate the effect of the follow-up definition. Under the original design the cohort contains 665 subjects with 293 converters and a median follow-up of 3.07 years. Under the corrected design it contains 417 subjects with 133 converters and a median follow-up of 1.04 years. Restricting both to the 417 subjects present in each removes cohort composition as an explanation.
+
+Clinical covariates lost between 0.010 and 0.034 in C-index when the design was corrected. Every imaging feature family lost substantially more. Global BSC slopes lost 0.029 to 0.132, regional BSC slopes lost up to 0.096, and cortical thickness with hippocampal volume lost 0.077 to 0.096 across all three model families.
+
+The asymmetry is the result. A design in which features may be drawn from scans acquired after diagnosis inflates the apparent performance of longitudinal imaging markers while leaving clinical prediction close to unchanged. This is not specific to BSC. Standard volumetric measures, which are far better established, are affected as strongly. Under the original design, cortical thickness and hippocampal volume slopes reach 0.781 with a Random Survival Forest, which would be a strong result if it were real.
+
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=\columnwidth]{fig4_design_effect.png}
+\caption{Effect of the follow-up definition, restricted to the 417 subjects present under
+both designs so that only the timing differs. Each line is one model family fitted to one
+feature set. Clinical covariates are close to flat, losing 0.010 to 0.034 in C-index.
+Every imaging feature family falls substantially further, including cortical thickness
+with hippocampal volume, which is an established measure rather than a novel one.}
+\label{fig:design}
+\end{figure}
+
+\subsection{Incremental Value of BSC}
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Fold-matched incremental value, gradient-boosted AFT model. Intervals are 95\% bootstrap percentile intervals on the paired difference. Cov.\ denotes the eight clinical covariates and MRI denotes cortical thickness with hippocampal volume slopes.}
+\label{tab:increment}
+\begin{tabular}{lcc}
+\hline
+\textbf{Feature added} & \textbf{$\Delta$ C-index (95\% CI)} & \textbf{$p$} \\
+\hline
+\multicolumn{3}{l}{\textit{Baseline set: clinical covariates}} \\
+\quad BSC global & $+0.022$ ($-0.001$, $+0.053$) & 1.00 \\
+\quad BSC regional & $-0.000$ ($-0.032$, $+0.032$) & 1.00 \\
+\quad AD-signature & $+0.011$ ($-0.016$, $+0.026$) & 0.85 \\
+\quad Standard MRI & $+0.020$ ($-0.010$, $+0.049$) & 0.73 \\
+\multicolumn{3}{l}{\textit{Baseline set: covariates + standard MRI}} \\
+\quad BSC global & $-0.005$ ($-0.020$, $+0.012$) & 1.00 \\
+\quad BSC regional & $+0.002$ ($-0.021$, $+0.022$) & 1.00 \\
+\quad AD-signature & $+0.006$ ($-0.011$, $+0.017$) & 0.68 \\
+\hline
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:increment} reports the nested comparisons. No BSC feature set improved on clinical covariates, and none improved on covariates combined with standard longitudinal MRI. Every interval includes zero, and every likelihood ratio test of the corresponding nested Cox models was non-significant.
+
+Two entries need comment. Global BSC slopes over covariates gave the largest point estimate, $+0.022$, with a lower interval bound of $-0.001$ that only just includes zero. This is not treated as evidence of an effect, for three reasons. The likelihood ratio test for the same nested comparison returned $p = 1.00$. The corresponding comparison against covariates plus standard MRI was negative at $-0.005$, so the apparent gain does not survive the addition of the measures BSC would have to improve upon. And the same comparison for standard MRI slopes gave a similar estimate of $+0.020$ with an interval of comparable width, which suggests both reflect the variance of a fold-matched comparison at 133 events rather than a specific property of BSC.
+
+The AD-signature composite gave $+0.011$ over covariates, but its interval spans zero and the composite performs at chance on its own (0.512). It is not interpreted as a positive finding either.
+
+\subsection{Regional Findings}
+
+Regional BSC slopes discriminated better than global summaries (0.649 against 0.584), which supports the idea that collapsing the cortex to a single number discards spatial information. That advantage did not translate into incremental value once covariates were present.
+
+Screening the 159 individual slope features univariately, two survived false discovery rate control at $q<0.05$. Both were the left rostral anterior cingulate, measured once as directional sharpness and once as magnitude ($q=0.041$, hazard ratio 0.81 and 0.82 per standard deviation). These are two measurements of one region rather than two independent findings. The left rostral anterior cingulate is not among the seven regions specified in advance as the AD signature, and the pre-specified composite itself performed at chance. The finding is reported as exploratory, and it does not support the regional hypothesis the analysis set out to test.
+
+
+\begin{figure*}[t!]
+\centering
+\includegraphics[width=\textwidth]{fig6_construct_validity.png}
+\caption{Association between BSC and biological and image quality measures, across the
+2,386 cohort scans with complete quality metrics. All four panels use the same scans, so
+the contrast is not an artefact of differing sample sizes. BSC shows no association with
+age in a cohort of mean age 76.9 years, and none with brain parenchymal fraction, while
+correlating with signal-to-noise ratio and with brain intensity dispersion. Gray-white
+contrast, the closest established measure, declines detectably with age in healthy adults,
+which makes the flat age panel difficult to reconcile with BSC behaving primarily as a
+measure of tissue microstructure.}
+\label{fig:construct}
+\end{figure*}
+
+\subsection{Sensitivity of BSC to Image Quality}
+
+Reviewer concern about failure modes prompted a direct check of what BSC covaries with (Figure~\ref{fig:construct}). Across the 2,386 scans in the analysis cohort with complete quality metrics, BSC showed no association with age ($r = -0.007$, $p = 0.74$ for directional mean). It correlated instead with image quality: brain intensity standard deviation ($r = 0.239$, $p = 3\times10^{-32}$), signal-to-noise ratio ($r = 0.191$, $p = 4\times10^{-21}$) and brain-to-background ratio ($r = 0.133$, $p = 8\times10^{-11}$). Associations with biological measures were weak by comparison, reaching $r = 0.023$ for brain parenchymal fraction ($p = 0.25$) and $r = -0.080$ for brain volume. All six correlations are computed on the same set of scans, so the contrast is not an artefact of differing sample sizes.
+
+This is difficult to reconcile with BSC behaving primarily as a measure of tissue microstructure. Gray-white contrast, the closest established measure, declines detectably with age in healthy adults~\cite{salat2009age}. In a cohort with mean age 76.9 years, BSC did not vary with age at all, while varying substantially with how the image was acquired.
+
+\section{Discussion}
+
+\subsection{Principal Findings}
+
+The main finding is that the definition of follow-up, rather than the biomarker, accounts for most of the prognostic value previously attributed to longitudinal BSC slopes. Holding subjects, features and models fixed and changing only the timing, clinical covariates lost 0.010 to 0.034 in discrimination while imaging feature families lost two to four times as much.
+
+Under the corrected design, BSC slopes add nothing detectable to information already available in clinic. Clinical covariates reached 0.795, and no BSC feature set improved on that or on covariates combined with cortical thickness and hippocampal volume. The intervals rule out large effects but are not narrow enough to exclude a small one: the widest upper bound reaches $+0.053$. What they do establish is that no BSC feature set produced an increment distinguishable from the increment produced by standard volumetric measures over the same folds, and that the nested likelihood ratio tests were uniformly non-significant.
+
+Two secondary findings qualify the negative result rather than softening it. Regional BSC slopes discriminate better than global summaries, so the original global feature set was measurably suboptimal, and a regional approach is the right way to compute BSC even though it does not rescue the marker. Conversely, BSC covaries with image quality more strongly than with any biological variable measured here, and shows no age association at all, which raises a question about what the measure captures that is prior to any question about its prognostic value.
+
+The generality of the design effect deserves emphasis. Cortical thickness and hippocampal volume slopes, which are well validated in AD, were inflated as much as BSC by the original design. The problem is a property of the analysis, not of the marker, and any longitudinal imaging study that draws features from scans acquired after the outcome is at risk of it.
+
+It is worth noting that the null result reported here is what the prior literature would predict. Ansart et al.~\cite{ansart2021predicting}, reviewing 234 experiments, found that cognitive, FDG-PET and electrophysiological measures each improved prediction of MCI progression while T1-weighted MRI did not. BSC is a T1-derived measure, and the finding that it adds nothing over cognitive and demographic information is consistent with that quantitative synthesis rather than at odds with it. The result that would have required explanation is the original positive one.
+
+\subsection{Biological Interpretation}
+
+The gray-white boundary marks the transition from cortical neuronal cell bodies to myelinated axonal projections, and a sharp transition on T1-weighted MRI reflects, indirectly, preserved tissue organization. Synaptic loss, tau pathology, myelin breakdown in superficial white matter and neuroinflammation could all in principle blur it.
+
+The results here do not support that interpretation of what was measured. A marker of cortical microstructural integrity in an elderly cohort would be expected to track age, since gray-white contrast does~\cite{salat2009age}. It would not be expected to track signal-to-noise ratio and intensity dispersion more strongly than any tissue measure. The most parsimonious reading is that the implementation used here is substantially sensitive to acquisition characteristics, and that any biological component is small relative to that sensitivity.
+
+This distinguishes BSC from the boundary measures it resembles. Gray-white contrast is a ratio of sampled intensities and is comparatively robust to overall gain, whereas a spatial derivative of intensity responds directly to sharpness of the image as well as sharpness of the anatomy. Blurring measures in the epilepsy literature control for this by z-scoring against a normative database acquired on matched hardware~\cite{huppertz2005enhanced,blackmon2015cortical}, a step that a longitudinal multi-site design makes difficult. Whether a formulation of BSC that normalizes for local image sharpness would behave differently is worth testing, and it is the most promising direction arising from this work.
+
+\subsection{Clinical Implications}
+
+The practical implication is narrow. BSC slopes as implemented here do not add prognostic information beyond age, cognition, APOE genotype and standard volumetric MRI, so there is no case for computing them in a clinical or trial-enrichment setting at present. The cost advantage of structural MRI over PET is real, but it is not relevant to a measure that does not contribute once cheaper information is already in the model.
+
+The methodological implication is broader. Studies proposing longitudinal imaging markers for conversion should state explicitly when features were measured relative to the outcome, and should report performance against a clinical covariate model rather than against a weak imaging baseline. On these data the difference between those two comparisons is the difference between a positive and a null result.
+
+\subsection{Methodological Strengths}
+
+Follow-up is now defined so that every feature precedes the outcome, and conversion dates come from clinical records rather than scan labels. Performance is estimated by cross-validation rather than a single split, which matters at this event count. Scanner effects are harmonized with a longitudinal method and, more usefully, quantified rather than assumed. The regional analysis uses labels generated once per subject and propagated, so parcellation noise does not enter the slopes. Comparisons against clinical covariates and against established volumetric measures are made on identical folds, and incremental value is tested as a paired nested comparison rather than by comparing marginal means.
+
+\subsection{Limitations}
+
+Motion was not assessed. The pipeline computes signal-to-noise and related intensity statistics but no motion estimate, and given the sensitivity of BSC to image quality reported above, motion is a plausible contributor that this study cannot quantify.
+
+Scanner harmonization is incomplete. Longitudinal ComBat removed roughly a quarter of the within-subject step at a scanner change, leaving most of it in place. Because field strength is confounded with conversion status in this cohort, residual scanner variance is correlated with the outcome rather than being random noise.
+
+Parcellation quality depends on vendor. Boundary-band coverage fell below 5\% for 32.6\% of scans acquired on one manufacturer's scanners, compared with 9.2\% and 0\% for the other two, and those scans also had substantially smaller boundary bands. Since vendor is associated with site and site with outcome, regional feature quality is not missing at random. All scans were retained and coverage was carried as a quality metric rather than used to exclude, because exclusion would import the bias directly.
+
+Sample size limits several analyses. The hold-out contains 27 events, which is too few for a precise estimate. The largest feature sets contain more features than there are events, so the cross-validated performance estimates are trustworthy while per-feature interpretation of those models is not.
+
+Segmentation depends on Atropos $k$-means clustering, and BSC is defined relative to the resulting probability maps, so segmentation instability propagates into the measure. Finally, all analyses are within ADNI. External validation in an independent cohort remains necessary, and is more useful for establishing the generality of the design effect than for the null result itself.
+
+\subsection{Future Directions}
+
+The most direct next step is to test whether a formulation of BSC that normalizes for local image sharpness retains any biological signal. If a normalized variant recovers the age association that gray-white contrast shows, the measure would be worth revisiting; if it does not, that is informative in its own right.
+
+Beyond that, the design comparison reported here should be repeated in other cohorts and for other longitudinal imaging markers. The effect was large and applied to well-established volumetric measures as well as to BSC, which suggests that published longitudinal prediction results may be sensitive to a design detail that is rarely reported. Quantifying how often this occurs would be more valuable than adding another candidate marker.
+
+\section{Conclusion}
+
+After correcting a follow-up definition that allowed features to be drawn from scans acquired after the dementia diagnosis, longitudinal Boundary Sharpness Coefficient slopes added no prognostic information beyond clinical covariates and established longitudinal MRI measures in 417 ADNI subjects with 133 conversion events. Clinical covariates alone reached a cross-validated C-index of 0.795. Adding regional BSC slopes to covariates and standard MRI changed the fold-matched C-index by 0.002 (95\% CI $-0.021$ to $0.022$), and no individual slope survived correction for multiple comparisons except two measurements of a single region that was not among those specified in advance.
+
+Comparing the two designs on the same subjects, the corrected definition cost clinical prediction almost nothing and cost every imaging feature family several times more, including cortical thickness and hippocampal volume. The prognostic value previously reported for BSC slopes is therefore better attributed to the analysis design than to the biomarker. BSC also showed no association with age while correlating with image quality, which raises a question about the construct that precedes any question about its clinical use.
+
+\begin{acknowledgments}
+Data collection and sharing for the Alzheimer's Disease Neuroimaging Initiative (ADNI) is funded by the National Institute on Aging (National Institutes of Health Grant U19AG024904). The grantee organization is the Northern California Institute for Research and Education. In the past, ADNI has also received funding from the National Institute of Biomedical Imaging and Bioengineering, the Canadian Institutes of Health Research, and private sector contributions through the Foundation for the National Institutes of Health (FNIH) including generous contributions from the following: AbbVie, Alzheimer's Association; Alzheimer's Drug Discovery Foundation; Araclon Biotech; BioClinica, Inc.; Biogen; Bristol-Myers Squibb Company; CereSpir, Inc.; Cogstate; Eisai Inc.; Elan Pharmaceuticals, Inc.; Eli Lilly and Company; EuroImmun; F. Hoffmann-La Roche Ltd and its affiliated company Genentech, Inc.; Fujirebio; GE Healthcare; IXICO Ltd.; Janssen Alzheimer Immunotherapy Research \& Development, LLC.; Johnson \& Johnson Pharmaceutical Research \& Development LLC.; Lumosity; Lundbeck; Merck \& Co., Inc.; Meso Scale Diagnostics, LLC.; NeuroRx Research; Neurotrack Technologies; Novartis Pharmaceuticals Corporation; Pfizer Inc.; Piramal Imaging; Servier; Takeda Pharmaceutical Company; and Transition Therapeutics.
+
+Computations were performed on the Trillium cluster at SciNet, University of Toronto. The author thanks Dr. Fabrizio Piras (IRCCS Santa Lucia Foundation, Rome) for valuable discussions on longitudinal modeling strategies, and the two anonymous reviewers whose comments on the previous version prompted the reanalysis reported here. The author also acknowledges the open-source neuroimaging community for developing ANTsPy, nibabel, and related tools that made this work possible.
+
+Generative artificial intelligence tools were used in the preparation of this manuscript. Specifically, large language model assistants were used for manuscript editing, grammar refinement, code review, and stylistic improvements. AI was not used for data collection, interpretation of results, or generation of scientific content. The author has reviewed and takes full responsibility for all content and accuracy of the work.
+\end{acknowledgments}
+
+%% References using BibTeX
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}

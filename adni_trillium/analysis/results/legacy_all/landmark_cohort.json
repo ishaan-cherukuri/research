@@ -1,0 +1,19 @@
+{
+  "subjects_with_scans": 1604,
+  "baseline_not_mci": 421,
+  "no_clinical_record": 0,
+  "converted_at_or_before_landmark": 0,
+  "too_few_scans_in_window": 243,
+  "no_followup_after_landmark": 5,
+  "subjects_retained": 935,
+  "converters": 373,
+  "stable": 562,
+  "median_followup_years": 2.111,
+  "mean_followup_years": 3.373,
+  "mean_scans_in_window": 4.74,
+  "mmse_available": 934,
+  "age_available": 935,
+  "educ_available": 935,
+  "landmark": "legacy",
+  "landmark_months": null
+}
