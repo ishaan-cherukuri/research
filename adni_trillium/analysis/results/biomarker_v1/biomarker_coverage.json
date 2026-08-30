@@ -1,0 +1,19 @@
+{
+  "n_subjects": 417,
+  "n_events": 133,
+  "coverage_pet": 278,
+  "coverage_csf": 326,
+  "coverage_any_prelandmark": 355,
+  "coverage_any_ever_descriptive": 376,
+  "coverage_taupet": 95,
+  "pet_csf_agreement": 0.8353413654618473,
+  "n_pet_csf_both": 249,
+  "csf_cutoff_pg_ml": 977.0,
+  "grace_days": 180,
+  "n_A+": 188,
+  "events_A+": 81,
+  "n_A-": 167,
+  "events_A-": 20,
+  "n_unknown": 62,
+  "events_unknown": 32
+}

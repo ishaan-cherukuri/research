@@ -1,0 +1,100 @@
+{
+  "seed": 42,
+  "horizons": [
+    1.0,
+    2.0,
+    3.0
+  ],
+  "results": [
+    {
+      "auc_1y": 0.7348236048260353,
+      "auc_2y": 0.8308421967496671,
+      "auc_3y": 0.8568058738290748,
+      "brier_1y": 0.10511716945278352,
+      "brier_2y": 0.172042647214889,
+      "brier_3y": 0.15928438699458303,
+      "cindex": 0.7766098542991402,
+      "ibs": 0.14230412388809657,
+      "n_folds": 5,
+      "model": "cox_l2",
+      "config": "F0_covariates",
+      "label": "Clinical covariates",
+      "n_features": 8
+    },
+    {
+      "auc_1y": 0.6806908116659287,
+      "auc_2y": 0.7971472303338165,
+      "auc_3y": 0.8192380751170119,
+      "brier_1y": 0.11379113637139078,
+      "brier_2y": 0.1806160071988577,
+      "brier_3y": 0.1787667437662083,
+      "cindex": 0.7400314181416443,
+      "ibs": 0.15198931559292989,
+      "n_folds": 5,
+      "model": "cox_l2",
+      "config": "F8_cov_stdmri",
+      "label": "Covariates + standard MRI",
+      "n_features": 77
+    },
+    {
+      "auc_1y": 0.6526885448837066,
+      "auc_2y": 0.7878728235958018,
+      "auc_3y": 0.7876902657020732,
+      "brier_1y": 0.12129663565239372,
+      "brier_2y": 0.1901086927049628,
+      "brier_3y": 0.19966986182254187,
+      "cindex": 0.7243584411271136,
+      "ibs": 0.16112889575524109,
+      "n_folds": 5,
+      "model": "cox_l2",
+      "config": "F9b_cov_regional_stdmri",
+      "label": "Covariates + regional BSC + standard MRI",
+      "n_features": 201
+    },
+    {
+      "auc_1y": 0.7295140416520788,
+      "auc_2y": 0.846934280377978,
+      "auc_3y": 0.8780813602026356,
+      "brier_1y": 0.1060527006000942,
+      "brier_2y": 0.16472790332104642,
+      "brier_3y": 0.1491465919747167,
+      "cindex": 0.7754232616274805,
+      "ibs": 0.13820474536178198,
+      "n_folds": 5,
+      "model": "rsf",
+      "config": "F0_covariates",
+      "label": "Clinical covariates",
+      "n_features": 8
+    },
+    {
+      "auc_1y": 0.7704408248212642,
+      "auc_2y": 0.8582402876891695,
+      "auc_3y": 0.8639020600885065,
+      "brier_1y": 0.10247419969141054,
+      "brier_2y": 0.1639062123775124,
+      "brier_3y": 0.16570279251624187,
+      "cindex": 0.7674133570424441,
+      "ibs": 0.1413806112902345,
+      "n_folds": 5,
+      "model": "rsf",
+      "config": "F8_cov_stdmri",
+      "label": "Covariates + standard MRI",
+      "n_features": 77
+    },
+    {
+      "auc_1y": 0.7718434106855452,
+      "auc_2y": 0.8651452814678378,
+      "auc_3y": 0.8558112571581329,
+      "brier_1y": 0.1033898290623109,
+      "brier_2y": 0.16613214531210657,
+      "brier_3y": 0.17590768903065937,
+      "cindex": 0.7697205579966471,
+      "ibs": 0.14395555844761806,
+      "n_folds": 5,
+      "model": "rsf",
+      "config": "F9b_cov_regional_stdmri",
+      "label": "Covariates + regional BSC + standard MRI",
+      "n_features": 201
+    }
+  ]
+}

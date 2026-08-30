@@ -1,10 +1,15 @@
-"""Architecture schematic for the V3 revision.
+"""Analysis pipeline schematic for the NeuroImage: Reports manuscript.
 
-Keeps the left-to-right structure of the original arch.png (timeline, then
-preprocessing, segmentation, BSC extraction, features, models, outputs) and adds
-the four things the revision changed: real acquisition dates with a
-pre-conversion cut, scanner harmonization, a regional parcellation branch, and
-comparator feature families that never touch the imaging pipeline.
+Reads left to right: scan timeline with the pre-conversion cut, preprocessing,
+segmentation, BSC extraction, harmonization and parcellation, feature families,
+survival models, evaluation.
+
+Stages 10 to 12 branch off that spine and are numbered by where they branch.
+Stage 10 leaves the BSC map, because construct validity asks what the measure
+tracks rather than what it predicts. Stages 11 and 12 leave evaluation, because
+both re-fit the stage 8 models on the frozen folds under a different outcome
+coding or in a restricted sample. Every branch carries a drawn connector back to
+the stage it leaves.
 
 Output is vector PDF, so every box, circle and arrow stays an editable object in
 a drawing program. Shapes are deliberately plain (rounded rectangles, circles,
@@ -21,7 +26,7 @@ mpl.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Ellipse, FancyArrowPatch, FancyBboxPatch
 
-OUT = Path(__file__).resolve().parents[2] / "mri-bsc/paper/oxford/figs"
+from nireports_fignames import target
 
 # Same hues as the data figures, used at low alpha so text stays legible.
 BLUE, VERM, GREEN, VIOLET = "#0072B2", "#D55E00", "#009E73", "#8B5FA8"
@@ -31,8 +36,8 @@ GROUP = "#f2f3f5"
 mpl.rcParams.update({"pdf.fonttype": 42, "ps.fonttype": 42,
                      "savefig.bbox": "tight", "savefig.dpi": 300})
 
-fig, ax = plt.subplots(figsize=(17.6, 7.4))
-ax.set_xlim(0, 17.6); ax.set_ylim(0.2, 7.4); ax.axis("off")
+fig, ax = plt.subplots(figsize=(20.9, 7.4))
+ax.set_xlim(0, 20.9); ax.set_ylim(0.2, 7.4); ax.axis("off")
 
 
 def group(x, y, w, h, title=None, dashed=True):
@@ -176,11 +181,43 @@ for i, t in enumerate(["Random survival forest", "Cox L2  ·  Lasso-Cox",
     box(15.35, 5.12 - i * 0.50, 2.00, 0.42 if i < 2 else 0.50, t, MUTED, fs=7.0,
         alpha=0.16)
 
-group(15.20, 1.15, 2.30, 2.12, "9. Evaluation")
+group(15.20, 0.70, 2.30, 2.70, "9. Evaluation")
 for i, t in enumerate(["5-fold CV + 20% hold-out",
                        "Fold-matched increment\nwith bootstrap CI",
+                       "Calibration: integrated\nBrier score, time-dep. AUC",
                        "Design comparison:\ncorrected vs original clock"]):
-    box(15.35, 2.62 - i * 0.62, 2.00, 0.54, t, BLUE, fs=7.0)
+    box(15.35, 2.78 - i * 0.62, 2.00, 0.54, t, BLUE, fs=7.0)
+
+# ============================================================ construct validity
+# Branches from the BSC map rather than from the models: these ask what BSC
+# tracks, which is prior to whether it predicts.
+group(2.60, 0.42, 6.60, 2.42)
+ax.text(2.66, 3.00, "10. Construct validity of BSC", ha="left", va="bottom",
+        fontsize=9.5, color=INK, zorder=6)
+cv_boxes = [(2.78, 1.78, "Within-subject mixed model:\n$\\Delta$BSC vs $\\Delta$image quality"),
+            (5.98, 1.78, "Scanner-only survival model:\nsite · vendor · field strength"),
+            (2.78, 0.86, "BSC slopes vs amyloid\nand tau biomarkers"),
+            (5.98, 0.86, "Regional BSC residualized\non scanner identity")]
+for bx, by, t in cv_boxes:
+    box(bx, by, 3.02, 0.86, t, VERM, fs=7.0)
+ax.text(5.90, 0.62, "2,386 scans with complete quality metrics; also raw versus "
+        "quality-adjusted outcome association", ha="center", fontsize=6.6,
+        color=MUTED, style="italic")
+
+# ============================================================ column 8
+group(18.05, 4.30, 2.30, 2.05, "11. Competing risks")
+for i, t in enumerate(["28 deaths before\nconversion",
+                       "Cause-specific C-index",
+                       "Fine-Gray subdistribution"]):
+    box(18.20, 5.60 - i * 0.62, 2.00, 0.54, t, GREEN, fs=7.0)
+
+group(18.05, 0.85, 2.30, 2.50, "12. Biomarker subgroup")
+for i, t in enumerate(["Amyloid PET / CSF A$\\beta$42\nat landmark",
+                       "A+ subgroup:\n$n=188$, 81 events",
+                       "Amyloid as covariate,\nall 417 subjects"]):
+    box(18.20, 2.68 - i * 0.82, 2.00, 0.62, t, VIOLET, fs=7.0)
+ax.text(19.20, 0.44, "from ADNI biomarker, registry and\nadverse-event tables",
+        ha="center", fontsize=6.6, color=MUTED, style="italic")
 
 # ===================================================================== flow
 arrow(2.32, 4.90, 2.60, 4.90)
@@ -191,12 +228,21 @@ arrow(9.22, 4.45, 9.50, 3.85, rad=-0.12)         # BSC to parcellation
 arrow(12.07, 5.40, 12.35, 5.90, rad=0.12)        # harmonized global features
 arrow(12.07, 3.45, 12.35, 4.55, rad=0.10)        # regional features
 arrow(14.92, 4.60, 15.20, 5.10, rad=0.10)        # features to models
-arrow(16.35, 4.05, 16.35, 3.32)                  # models to evaluation
+arrow(16.35, 4.05, 16.35, 3.46)                  # models to evaluation
+# Stage 4 branches down into construct validity.
+arrow(7.35, 3.88, 6.95, 2.92, rad=-0.10, lw=1.1)
+ax.text(6.55, 3.42, "per-scan BSC with image-quality metrics", ha="right",
+        va="center", fontsize=6.6, color=MUTED, style="italic")
 
-ax.text(0.25, 7.22, "New in this revision: the excluded scans in stage 1, and "
-        "stages 5 and 6.", fontsize=7.8, color=VERM, ha="left")
+# Stage 9 branches into 11 and 12: one riser, two arrowheads.
+ax.plot([17.52, 17.80], [2.10, 2.10], color=INK, linewidth=1.1, zorder=2)
+ax.plot([17.80, 17.80], [2.10, 5.30], color=INK, linewidth=1.1, zorder=2)
+arrow(17.80, 5.30, 18.06, 5.30, lw=1.1)
+arrow(17.80, 2.10, 18.06, 2.10, lw=1.1)
+ax.text(17.67, 3.85, "re-fit on the frozen folds", rotation=90, ha="center",
+        va="center", fontsize=6.6, color=MUTED, style="italic")
 
-OUT.mkdir(parents=True, exist_ok=True)
-for ext in ("pdf", "png"):
-    fig.savefig(OUT / f"fig0_architecture.{ext}")
-print(f"wrote {OUT/'fig0_architecture.pdf'} and .png")
+_out = target("fig0_architecture")
+_out.parent.mkdir(parents=True, exist_ok=True)
+fig.savefig(_out)
+print(f"wrote {_out}")

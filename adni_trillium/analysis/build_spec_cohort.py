@@ -265,11 +265,24 @@ def load_regional(path: str) -> tuple[pd.DataFrame, list[str]]:
     Only the region means are carried forward; the n_roi voxel counts are QC
     quantities, not features, and modelling them would let the model key on
     parcel size rather than boundary sharpness.
+
+    Measure prefixes are matched rather than named one by one so that a new
+    regional measure is picked up automatically. bscdir/bscmag are the Atropos
+    gradient pipeline; bscsig/bscsigfree/bscratio are the sigmoid pipeline in
+    bsc_sigmoid/. A file whose columns match no prefix would otherwise be
+    accepted and contribute nothing, which reads downstream as a null result
+    rather than as a wiring mistake, so that case raises.
     """
+    prefixes = ("bscdir", "bscmag", "bscsig", "bscsigfree", "bscratio")
     r = pd.read_csv(path)
     cols = [c for c in r.columns
-            if c.startswith(("bscdir_roi", "bscmag_roi"))
-            or c in ("bscdir_adsig", "bscmag_adsig")]
+            if any(c.startswith(f"{p}_roi") for p in prefixes)
+            or c in tuple(f"{p}_adsig" for p in prefixes)]
+    if not cols:
+        raise ValueError(
+            f"{path} has no regional feature columns matching {prefixes}; "
+            f"found {list(r.columns)[:10]}"
+        )
     return r[["image_id"] + cols], cols
 
 

@@ -1,0 +1,13 @@
+feature_set,label,n_features,xgb_aft,rsf,cox_l2,cox_lasso,aft_weibull,aft_lognormal,aft_loglogistic
+F0_covariates,Clinical covariates,8,0.773,0.778,0.793,0.788,0.795,0.789,0.789
+F1_bsc_baseline,BSC baseline,33,0.532,0.502,0.520,0.5199,0.510,0.528,0.513
+F2_bsc_slopes,"BSC slopes, global",33,0.584,0.540,0.542,0.537,0.552,0.520,0.581
+F3_regional_slopes,"BSC slopes, regional",124,0.642,0.649,0.511,0.514,0.512,0.536,0.529
+F4_adsig_slope,AD-signature composite,2,0.512,0.546,0.409,0.454,0.432,0.433,0.430
+F5_std_mri_slopes,Thickness + hippocampus,69,0.685,0.711,0.527,0.559,0.543,0.548,0.547
+F6_cov_bsc,Covariates + BSC global,41,0.788,0.754,0.769,0.788,0.765,0.773,0.771
+F7_cov_regional,Covariates + BSC regional,132,0.788,0.762,0.695,0.788,0.694,0.714,0.721
+F4b_cov_adsig,Covariates + AD-signature,10,0.790,0.782,0.775,0.788,0.777,0.779,0.776
+F8_cov_stdmri,Covariates + standard MRI,77,0.778,0.779,0.698,0.783,0.706,0.715,0.718
+F9_cov_bsc_stdmri,Covariates + BSC + standard MRI,110,0.778,0.763,0.715,0.783,0.708,0.718,0.711
+F9b_cov_regional_stdmri,Covariates + regional + standard MRI,201,0.796,0.762,0.688,0.782,0.669,0.666,0.667

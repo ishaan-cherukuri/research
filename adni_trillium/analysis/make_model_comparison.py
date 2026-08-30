@@ -1,9 +1,11 @@
 """Figure 1 for the oxford manuscript: cross-validated C-index, every feature
 set against every model family.
 
-Reads results/spec_v3_harmonized/table3_cindex.csv, which is the same file the
-manuscript's Table 3 is built from, so the figure and the table cannot drift
-apart.
+Reads results/spec_v3_harmonized/table3_cindex_regen.csv, which is regenerated
+directly from cv_results.csv and is the same file the manuscript's Table 2 is
+built from, so the figure and the table cannot drift apart. The older
+table3_cindex.csv was edited by hand after the run and disagrees with it in the
+two BSC-only rows; do not read from that file.
 
 One row per feature set, one marker per model family. Hue groups the families
 into the three kinds of model in the study and marker shape separates the
@@ -25,7 +27,7 @@ from matplotlib.lines import Line2D
 
 ROOT = Path(__file__).resolve().parent
 RES = ROOT / "results/spec_v3_harmonized"
-OUT = ROOT.parent.parent / "mri-bsc/paper/oxford"
+from nireports_fignames import target
 
 BLUE, VERM, GREEN = "#0072B2", "#D55E00", "#009E73"
 INK, MUTED, RULE = "#1a1a1a", "#6b6b6b", "#cfcfcf"
@@ -61,7 +63,7 @@ def clean_rc():
 
 def main():
     clean_rc()
-    d = pd.read_csv(RES / "table3_cindex.csv")
+    d = pd.read_csv(RES / "table3_cindex_regen.csv")
     cols = [c for c, *_ in FAMILIES]
 
     fig, ax = plt.subplots(figsize=(7.1, 4.3))
@@ -84,9 +86,9 @@ def main():
 
     # Separate the single blocks from the covariate combinations.
     ax.axhline(len(d) - N_SINGLE - 0.5, color=RULE, linewidth=0.6, zorder=1)
-    ax.text(0.396, len(d) - 0.35, "Single feature blocks", fontsize=6.6,
+    ax.text(0.381, len(d) - 0.35, "Single feature blocks", fontsize=6.6,
             color=MUTED, ha="left", va="bottom", style="italic")
-    ax.text(0.396, len(d) - N_SINGLE - 0.42, "Added to clinical covariates",
+    ax.text(0.381, len(d) - N_SINGLE - 0.42, "Added to clinical covariates",
             fontsize=6.6, color=MUTED, ha="left", va="top", style="italic")
 
     labels = [f"{lb} ({n})" for lb, n in zip(d.label, d.n_features)]
@@ -94,7 +96,7 @@ def main():
     ax.set_yticklabels(labels)
     ax.tick_params(axis="y", length=0)
     ax.set_ylim(-0.8, len(d) + 0.45)
-    ax.set_xlim(0.39, 0.85)
+    ax.set_xlim(0.375, 0.85)
     ax.set_xlabel("Cross-validated C-index (mean of five stratified folds)")
     ax.xaxis.grid(True, color=RULE, linewidth=0.5, zorder=0)
     ax.set_axisbelow(True)
@@ -106,10 +108,11 @@ def main():
     ax.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, -0.235),
               ncol=7, frameon=False, handletextpad=0.25, columnspacing=1.25)
 
-    OUT.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT / "fig1_model_comparison.png", dpi=300, bbox_inches="tight")
+    out = target("fig1_model_comparison")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=300, bbox_inches="tight")
     plt.close(fig)
-    print(f"  wrote fig1_model_comparison.png into {OUT}")
+    print(f"  wrote {out}")
 
 
 if __name__ == "__main__":

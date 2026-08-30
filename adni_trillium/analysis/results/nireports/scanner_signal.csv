@@ -1,0 +1,2 @@
+model,n_scanner_predictors,n_sites_retained,cindex_scanner_only,cindex_scanner_only_sd,cindex_regional_bsc,cindex_regional_bsc_sd,cindex_regional_bsc_residualized,cindex_regional_bsc_residualized_sd,drop_after_residualizing
+rsf,18,12,0.6087829343293656,0.005120518647581758,0.6412803762947287,0.04470889703506039,0.6298409446612009,0.03743549793716691,0.011439431633527786

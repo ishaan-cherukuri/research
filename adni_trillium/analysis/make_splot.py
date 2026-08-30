@@ -22,7 +22,7 @@ from matplotlib.lines import Line2D
 
 ROOT = Path(__file__).resolve().parent
 COH = ROOT / "results/spec_v3_harmonized/spec_cohort.csv"
-OUT = ROOT.parent.parent / "mri-bsc/paper/oxford"
+from nireports_fignames import target
 
 F_COLOR, M_COLOR = "#F8766D", "#00BFC4"
 BG_COLOR, GRID_COLOR = "#EBEBEB", "white"
@@ -104,7 +104,8 @@ ax.legend(handles=[
     fontsize=9, title_fontsize=9)
 
 fig.tight_layout(pad=2.0)
-OUT.mkdir(parents=True, exist_ok=True)
-fig.savefig(OUT / "fig_splot_cohort.png", dpi=300, bbox_inches="tight")
-print(f"wrote {OUT/'fig_splot_cohort.png'}  "
+_out = target("fig_splot_cohort")
+_out.parent.mkdir(parents=True, exist_ok=True)
+fig.savefig(_out, dpi=300, bbox_inches="tight")
+print(f"wrote {_out}  "
       f"({len(d)} subjects, {int(d.event.sum())} converters)")

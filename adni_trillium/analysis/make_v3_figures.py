@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 ROOT = Path(__file__).resolve().parent
 RES = ROOT / "results/spec_v3_harmonized"
 CLUSTER = ROOT.parent / "from_cluster"
-OUT = ROOT.parent.parent / "mri-bsc/paper/oxford"
+from nireports_fignames import target
 
 # Risk tertiles, high to low. Line style backs up the colour, because the orange
 # and green are too close for red-blind readers to separate reliably.
@@ -45,10 +45,15 @@ INK, MUTED, RULE = "#1a1a1a", "#6b6b6b", "#cfcfcf"
 
 
 def save(fig, name):
-    OUT.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT / f"{name}.png", dpi=300, bbox_inches="tight")
+    out = target(name)
+    if out is None:
+        plt.close(fig)
+        print(f"  skipped {name}, not included in the manuscript")
+        return
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=300, bbox_inches="tight")
     plt.close(fig)
-    print(f"  wrote {name}.png")
+    print(f"  wrote {out.name} ({name})")
 
 
 def clean_rc():

@@ -1,0 +1,6 @@
+predictor,label,n_scans,r,p,kind
+age,Age at scan,2386,-0.006896351589413104,0.7363494780906505,biological
+seg_bpf,Brain parenchymal fraction,2386,0.023328512610396132,0.2546703250885033,biological
+qc_snr,Signal-to-noise ratio,2386,0.19138588925958133,4.062941062169448e-21,quality
+qc_brain_std,Brain intensity SD,2386,0.23860696483206797,3.070121513071474e-32,quality
+qc_brain_bg_ratio,Brain-to-background ratio,2386,0.1325356901773609,8.073321343009692e-11,quality
