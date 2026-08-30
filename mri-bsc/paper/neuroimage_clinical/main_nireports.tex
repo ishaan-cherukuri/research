@@ -148,28 +148,6 @@ requirement that every scan precede conversion.}
 \label{fig:splot}
 \end{figure*}
 
-\begin{figure*}[t!]
-\centering
-\includegraphics[width=\textwidth]{fig2.png}
-\caption{Analysis pipeline. Numbered stages read left to right. Acquisition
-dates are taken from the image archive rather than inferred from nominal visit
-labels, and every scan acquired at or after the dementia diagnosis is excluded,
-with the survival clock starting at the last remaining scan. Per-scan features
-are harmonized across scanners and a cortical parcellation branch produces
-regional measures. Clinical covariates and the FreeSurfer comparator measures
-enter from ADNI tables without passing through the imaging pipeline, which is
-what allows the incremental value of BSC to be tested against them. Stages 10 to
-12 branch off the main sequence and are numbered by where they branch. Stage 10
-leaves the BSC map, because construct validity asks what the measure tracks
-rather than what it predicts, and it works from the per-scan maps rather than
-from the fitted models. Stages 11 and 12 leave evaluation, because both re-fit
-the stage 8 models on the frozen cross-validation folds, one under a competing-risk
-coding of the outcome and one in the amyloid-confirmed subsample. Stages 11 and
-12 also draw on ADNI registry, adverse-event and biomarker tables that the
-imaging pipeline never touches.}
-\label{fig:arch}
-\end{figure*}
-
 \subsection{Image processing and BSC computation}
 
 Figure~\ref{fig:arch} summarizes the analysis pipeline. ADNI participants underwent T1-weighted structural MRI on 1.5T or 3T scanners using standardized protocols~\cite{jack2008adni_mri}, typically 3D MPRAGE with TR = 2300 ms, TE = 2.98 ms, TI = 900 ms, flip angle 9$^\circ$ and 1 mm isotropic voxels.
@@ -265,6 +243,25 @@ Conversion is observed at scheduled clinic visits rather than on the day it occu
 Calibration was assessed as well as discrimination, since a claim that clinical covariates are sufficient is stronger if they are also well calibrated. The integrated Brier score was computed over the first three years for the covariates-only, covariates-plus-standard-MRI and full models, alongside the Brier score and time-dependent AUC at one, two and three years. Brier scores need a predicted survival function rather than a risk score, so they were computed for the penalized Cox and Random Survival Forest fits. The gradient-boosted AFT model returns a predicted time, and constructing a survival curve for it would be a modelling choice reported as a measurement.
 
 To isolate the effect of the follow-up definition, the cohort was also rebuilt under the original design, in which features come from every scan including those acquired after diagnosis and the clock starts at the MCI baseline scan. Both designs were then restricted to the subjects present in each, so that the same people, features and models are compared and only the timing differs. The mechanism at work in the looser design is guarantee-time bias: a subject cannot enter the analysis until enough scans have accumulated, so surviving long enough to be scanned repeatedly is a precondition for inclusion, and features measured over that guaranteed interval carry information about an outcome that has in part already occurred.
+
+\begin{figure*}[t!]
+\centering
+\includegraphics[width=\textwidth]{fig2.png}
+\caption{Analysis pipeline. Longitudinal T1-weighted MRI enters restricted to
+the pre-conversion window, so every feature comes from a scan acquired while the
+subject was still MCI and the survival clock starts at the last such scan. The
+BSC branch runs from preprocessing through segmentation, the boundary band, the
+directional gradient projection and longitudinal ComBat harmonization to 124
+regional slopes. Clinical covariates and standard longitudinal MRI enter from
+ADNI tables without passing through the imaging pipeline, and are drawn at the
+same level as the BSC branch because they are the control condition against
+which BSC is tested rather than a secondary comparison. All three feature
+sources are then fitted with the same models on the same folds. The flow ends on
+the incremental-value test rather than on a risk score, since the question the
+study asks is whether BSC adds anything to information already available in
+clinic.}
+\label{fig:arch}
+\end{figure*}
 
 \subsection{Competing risks}
 
@@ -449,11 +446,25 @@ with hippocampal volume, which is an established measure rather than a novel one
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:increment} reports the nested comparisons. No BSC feature set improved on clinical covariates, and none improved on covariates combined with standard longitudinal MRI. Every interval includes zero, and every likelihood ratio test of the corresponding nested Cox models was non-significant.
+Table~\ref{tab:increment} and Figure~\ref{fig:forest} report the nested comparisons. No BSC feature set improved on clinical covariates, and none improved on covariates combined with standard longitudinal MRI. Every interval includes zero, and every likelihood ratio test of the corresponding nested Cox models was non-significant.
 
 Two entries need comment. Global BSC slopes over covariates gave the largest point estimate, $+0.022$, with a lower interval bound of $-0.001$ that only just includes zero. This is not treated as evidence of an effect, for three reasons. The likelihood ratio test for the same nested comparison returned $p = 1.00$. The corresponding comparison against covariates plus standard MRI was negative at $-0.005$, so the apparent gain does not survive the addition of the measures BSC would have to improve upon. And the same comparison for standard MRI slopes gave a similar estimate of $+0.020$ with an interval of comparable width, which suggests both reflect the variance of a fold-matched comparison at 133 events rather than a specific property of BSC.
 
 The AD-signature composite gave $+0.011$ over covariates, but its interval spans zero and the composite performs at chance on its own (0.512). It is not interpreted as a positive finding either.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=\columnwidth]{fig6.png}
+\caption{Fold-matched incremental value of each imaging feature set, gradient-boosted
+AFT model refitted on identical folds. Points are the mean per-fold change in C-index
+and whiskers are 95 per cent bootstrap percentile intervals on the paired difference.
+Every interval includes zero. No BSC feature set improves on clinical covariates, or on
+covariates combined with standard longitudinal MRI, and the increment BSC produces is
+indistinguishable from the one produced by cortical thickness with hippocampal volume
+over the same folds, drawn in green as the established comparator. No significance
+markers are shown, because nothing is significant and that is the result.}
+\label{fig:forest}
+\end{figure}
 
 \subsection{Regional findings}
 
@@ -461,20 +472,6 @@ Regional BSC slopes discriminated better than global summaries (0.649 against 0.
 
 Screening all 159 individual slope features univariately, that is the 124 regional, 33 global and two composite slopes together, two survived false discovery rate control at $q<0.05$. Both were the left rostral anterior cingulate, measured once as directional sharpness and once as magnitude ($q=0.041$, hazard ratio 0.81 and 0.82 per standard deviation). These are two measurements of one region rather than two independent findings. The left rostral anterior cingulate is not among the seven regions specified in advance as the AD signature, and the pre-specified composite itself performed at chance. The finding is reported as exploratory, and it does not support the regional hypothesis the analysis set out to test.
 
-
-\begin{figure*}[t!]
-\centering
-\includegraphics[width=\textwidth]{fig6.png}
-\caption{Association between BSC and biological and image quality measures, across the
-2,386 cohort scans with complete quality metrics. All four panels use the same scans, so
-the contrast is not an artefact of differing sample sizes. BSC shows no association with
-age in a cohort of mean age 76.9 years, and none with brain parenchymal fraction, while
-correlating with signal-to-noise ratio and with brain intensity dispersion. Gray-white
-contrast, the closest established measure, declines detectably with age in healthy adults,
-which makes the flat age panel difficult to reconcile with BSC behaving primarily as a
-measure of tissue microstructure.}
-\label{fig:construct}
-\end{figure*}
 
 \subsection{Competing risks}
 
@@ -517,17 +514,17 @@ Amyloid status entered as a covariate on the full cohort behaved as expected and
 
 Whether BSC adds prognostic value is a question about a model. What BSC measures is a question about the instrument, and it comes first. Five analyses bear on it. Four of them point the same way, and the fifth does not.
 
-\paragraph{Across scans.} What BSC covaries with was checked directly (Figure~\ref{fig:construct}). This check uses every scan belonging to a cohort subject rather than only those inside the feature windows, since the question concerns the measure itself rather than prediction. Of the 2,407 scans contributed by the 417 subjects, 2,386 had complete quality metrics. Across those, BSC showed no association with age ($r = -0.007$, $p = 0.74$ for directional mean). It correlated instead with image quality: brain intensity standard deviation ($r = 0.239$, $p = 3\times10^{-32}$), signal-to-noise ratio ($r = 0.191$, $p = 4\times10^{-21}$) and brain-to-background ratio ($r = 0.133$, $p = 8\times10^{-11}$). Associations with biological measures were weak by comparison, reaching $r = 0.023$ for brain parenchymal fraction ($p = 0.25$) and $r = -0.080$ for brain volume. All six correlations are computed on the same set of scans, so the contrast is not an artefact of differing sample sizes.
+\paragraph{Across scans.} What BSC covaries with was checked directly. This check uses every scan belonging to a cohort subject rather than only those inside the feature windows, since the question concerns the measure itself rather than prediction. Of the 2,407 scans contributed by the 417 subjects, 2,386 had complete quality metrics. Across those, BSC showed no association with age ($r = -0.007$, $p = 0.74$ for directional mean; Figure~\ref{fig:convergent}, panel A). It correlated instead with image quality: brain intensity standard deviation ($r = 0.239$, $p = 3\times10^{-32}$), signal-to-noise ratio ($r = 0.191$, $p = 4\times10^{-21}$) and brain-to-background ratio ($r = 0.133$, $p = 8\times10^{-11}$). Associations with biological measures were weak by comparison, reaching $r = 0.023$ for brain parenchymal fraction ($p = 0.25$) and $r = -0.080$ for brain volume. All six correlations are computed on the same set of scans, so the contrast is not an artefact of differing sample sizes.
 
-\paragraph{Within one brain.} A correlation across scans can be produced by differences between the people scanned rather than by the measure responding to the image. Removing each subject's own mean from both variables answers the stronger question: when the same brain is imaged with more or less noise, does BSC move? It does, and by more than the cross-sectional figure suggests (Figure~\ref{fig:within}, panels A and B). Within subject, BSC rose by 0.297 standard deviations per standard deviation of signal-to-noise ratio (95\% CI $+0.165$ to $+0.429$, $p = 1\times10^{-5}$), against 0.195 between subjects and $r = 0.191$ across scans. Brain intensity dispersion behaved similarly at $+0.116$ within subject ($+0.032$ to $+0.200$). A mixed model with a subject random intercept fitted to the uncentred scans gave $+0.252$ for signal-to-noise ($+0.204$ to $+0.299$), agreeing with the within-subject estimate.
+\paragraph{Within one brain.} A correlation across scans can be produced by differences between the people scanned rather than by the measure responding to the image. Removing each subject's own mean from both variables answers the stronger question: when the same brain is imaged with more or less noise, does BSC move? It does, and by more than the cross-sectional figure suggests (Figure~\ref{fig:convergent}, panel C). Within subject, BSC rose by 0.297 standard deviations per standard deviation of signal-to-noise ratio (95\% CI $+0.165$ to $+0.429$, $p = 1\times10^{-5}$), against 0.195 between subjects and $r = 0.191$ across scans. Brain intensity dispersion behaved similarly at $+0.116$ within subject ($+0.032$ to $+0.200$). A mixed model with a subject random intercept fitted to the uncentred scans gave $+0.252$ for signal-to-noise ($+0.204$ to $+0.299$), agreeing with the within-subject estimate.
 
 Controlling all time-invariant subject characteristics therefore strengthens the association with image quality rather than weakening it, which is what one would expect if the measure is responding to the image.
 
 The same model shows BSC moving with brain parenchymal fraction within subject, at $-0.324$ standard deviations per standard deviation once age is included. This is a real biological association and it is reported as one. Its sign is difficult to place: boundary sharpness rises as parenchymal fraction falls, so on this reading atrophy would make the gray-white interface crisper. The within-subject age coefficient is likewise positive ($+0.274$), which cannot be read straightforwardly either, since within a subject age is elapsed study time and is therefore entangled with the scanner upgrades ADNI performed over the same years.
 
-\paragraph{Against pathology.} If BSC tracked Alzheimer's pathology, its slopes should correlate with a pathological measure of it. All 159 slopes were correlated against amyloid PET centiloids, CSF A$\beta$42, CSF p-tau, the CSF p-tau to A$\beta$42 ratio and tau PET meta-temporal SUVR. Not one survived false discovery rate control against any of the five targets. The largest correlation with any biomarker anywhere in that screen was $\rho = 0.18$, and the smallest $q$-value against amyloid PET was 0.98. BSC slopes track how the image was acquired and do not track the pathology the outcome is named after.
+\paragraph{Against pathology.} If BSC tracked Alzheimer's pathology, its slopes should correlate with a pathological measure of it. All 159 slopes were correlated against amyloid PET centiloids, CSF A$\beta$42, CSF p-tau, the CSF p-tau to A$\beta$42 ratio and tau PET meta-temporal SUVR. Not one survived false discovery rate control against any of the five targets (Figure~\ref{fig:convergent}, panel B). The largest correlation with any biomarker anywhere in that screen was $\rho = 0.18$, and the smallest $q$-value against amyloid PET was 0.98. BSC slopes track how the image was acquired and do not track the pathology the outcome is named after.
 
-\paragraph{Scanner signal.} If BSC is partly acquisition signal, acquisition ought to predict the outcome by itself. It does. A Random Survival Forest given nothing but site, vendor and field strength, with 18 indicators in total, reached a cross-validated C-index of 0.609 (SD across folds 0.005), above global BSC slopes at 0.584 and not far below regional BSC slopes at 0.649 (Figure~\ref{fig:within}, panel C). Where and on what a subject was scanned carries real information about whether they converted, which follows from field strength being confounded with the outcome in this cohort and is precisely the structure a longitudinal imaging marker is exposed to.
+\paragraph{Scanner signal.} If BSC is partly acquisition signal, acquisition ought to predict the outcome by itself. It does. A Random Survival Forest given nothing but site, vendor and field strength, with 18 indicators in total, reached a cross-validated C-index of 0.609 (SD across folds 0.005), above global BSC slopes at 0.584 and not far below regional BSC slopes at 0.649 (Figure~\ref{fig:convergent}, panel D). Where and on what a subject was scanned carries real information about whether they converted, which follows from field strength being confounded with the outcome in this cohort and is precisely the structure a longitudinal imaging marker is exposed to.
 
 Residualizing the regional BSC features on that same design matrix, fitted inside training folds, moved the regional C-index from 0.641 to 0.630, a drop of 0.011. The regional signal is therefore not reducible to the coarse acquisition structure that can be modelled here. Two things limit how far that goes. These features have already been through longitudinal ComBat, which removed roughly a quarter of the within-subject step at a scanner change, so much of the scanner variance was gone before the residualizing step. And 18 indicators describe site, vendor and field strength, not the full 120-level batch structure, which cannot be residualized against 417 subjects without removing variance mechanically.
 
@@ -536,16 +533,21 @@ Residualizing the regional BSC features on that same design matrix, fitted insid
 \begin{figure*}[t!]
 \centering
 \includegraphics[width=\textwidth]{fig7.png}
-\caption{Construct validity of BSC. (A) The association between BSC and
-signal-to-noise ratio, estimated three ways, each as a standardized slope with a
-95 per cent interval. The within-subject estimate, which removes every
-time-invariant subject characteristic, is the largest of the three. (B) The same
-within-subject association drawn directly: every scan with its own subject's mean
-removed from both axes. (C) Cross-validated C-index for a model given nothing but
-acquisition structure, beside the imaging feature sets and the clinical
-covariates, each at its best model family. Scanner identity alone discriminates
-better than global BSC slopes.}
-\label{fig:within}
+\caption{Convergent evidence on what BSC measures. Top row, what BSC does not
+track. (A) BSC against age at scan, across the 2,386 scans with complete quality
+metrics contributed by 412 of the 417 cohort subjects. (B) BSC slopes against
+amyloid PET burden in the 278 subjects with a scan, annotated with the result of
+the false discovery rate screen of all 159 slopes against five pathology targets.
+Bottom row, what BSC does track. (C) The association between BSC and
+signal-to-noise ratio estimated three ways, each as a standardized slope with a
+95 per cent interval; the within-subject estimate removes every time-invariant
+subject characteristic and is the largest of the three. (D) Cross-validated
+C-index at each feature set's best model family, with a model given nothing but
+acquisition structure shown in purple. BSC does not track age in a cohort old
+enough that it should, does not track amyloid or tau, tracks image quality more
+strongly within one brain than across brains, and is out-predicted by the scanner
+label.}
+\label{fig:convergent}
 \end{figure*}
 
 Taken together, BSC does not track age in a cohort old enough that it should, does not track amyloid or tau, tracks image quality more strongly inside one brain than across brains, and is outperformed as a predictor by the scanner label. Gray-white contrast, the closest established measure, declines detectably with age in healthy adults~\cite{salat2009age}. None of this is what a measure of tissue microstructure would look like.

@@ -243,6 +243,11 @@ ax.text(17.67, 3.85, "re-fit on the frozen folds", rotation=90, ha="center",
         va="center", fontsize=6.6, color=MUTED, style="italic")
 
 _out = target("fig0_architecture")
-_out.parent.mkdir(parents=True, exist_ok=True)
-fig.savefig(_out)
-print(f"wrote {_out}")
+if _out is None:
+    # Superseded by nireports_arch.py, which draws Figure 2 for the manuscript.
+    print("skipped: this schematic is no longer in the manuscript, "
+          "see nireports_arch.py")
+else:
+    _out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(_out)
+    print(f"wrote {_out}")
