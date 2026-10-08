@@ -1,0 +1,41 @@
+# Cluster Growing Summary (mri_surfcluster)
+# 7.4.1
+# 7.4.1
+# CreationTime 2026/09/16-22:20:53-GMT
+# cmdline mri_surfcluster --in fsA_rh/contrast_A/sig.mgh --mask fsA_rh/mask.mgh --cwsig fsA_rh/contrast_A/perm.th20.abs.sig.cluster.mgh --sum fsA_rh/contrast_A/perm.th20.abs.sig.cluster.summary --ocn fsA_rh/contrast_A/perm.th20.abs.sig.ocn.mgh --annot aparc --cwpvalthresh 0.05 --o fsA_rh/contrast_A/perm.th20.abs.sig.masked.mgh --no-fixmni --csd-out fsA_rh/csd/all.perm.th20.abs-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j001-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j002-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j003-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j004-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j005-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j006-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j007-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j008-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j009-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j010-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j011-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j012-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j013-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j014-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j015-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j016-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j017-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j018-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j019-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j020-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j021-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j022-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j023-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j024-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j025-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j026-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j027-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j028-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j029-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j030-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j031-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j032-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j033-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j034-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j035-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j036-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j037-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j038-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j039-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j040-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j041-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j042-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j043-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j044-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j045-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j046-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j047-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j048-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j049-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j050-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j051-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j052-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j053-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j054-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j055-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j056-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j057-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j058-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j059-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j060-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j061-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j062-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j063-contrast_A.csd --csd fsA_rh/csd/perm.th20.abs.j064-contrast_A.csd --csdpdf fsA_rh/contrast_A/perm.th20.abs.pdf.dat --vwsig fsA_rh/contrast_A/perm.th20.abs.sig.voxel.mgh --vwsigmax fsA_rh/contrast_A/perm.th20.abs.sig.voxel.max.dat --oannot fsA_rh/contrast_A/perm.th20.abs.sig.ocn.annot --bonferroni 2 --surf white 
+# cwd /scratch/ishaan/adni_trillium/derivatives/vertexwise/glm
+# sysname  Linux
+# hostname tri0069
+# machine  x86_64
+# FixVertexAreaFlag 1
+# FixSurfClusterArea 1
+# 
+# Input      fsA_rh/contrast_A/sig.mgh
+# Frame Number      0
+# srcsubj fsaverage6
+# hemi rh
+# surface white
+# group_avg_surface_area 85131.2
+# group_avg_vtxarea_loaded 1
+# annot aparc
+# SUBJECTS_DIR /cvmfs/restricted.computecanada.ca/easybuild/software/2023/x86-64-v3/Core/freesurfer/7.4.1/subjects
+# SearchSpace_mm2 79329.9
+# SearchSpace_vtx 37471
+# Bonferroni 2
+# Minimum Threshold 2
+# Maximum Threshold infinity
+# Threshold Sign    abs
+# AdjustThreshWhenOneTail 1
+# CW PValue Threshold: 0.05 
+# Area Threshold    0 mm^2
+# CSD thresh  2.000000
+# CSD nreps    9984
+# CSD simtype  perm
+# CSD contrast contrast_A
+# CSD confint  90.000000
+# Overall max 4.86028 at vertex 9407
+# Overall min -3.05689 at vertex 36532
+# NClusters          0
+# FixMNI = 0
+# 
+# ClusterNo  Max   VtxMax   Size(mm^2)  MNIX   MNIY   MNIZ    CWP    CWPLow    CWPHi   NVtxs    WghtVtx   Annot

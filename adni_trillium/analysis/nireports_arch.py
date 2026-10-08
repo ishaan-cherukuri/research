@@ -2,20 +2,20 @@
 
 The earlier schematic read like a prediction-tool diagram: the imaging branch
 dominated the canvas and the flow ended on risk scores. That framing works
-against the paper, which argues that BSC adds nothing once cheaper information is
+against the paper, which argues that gBSC adds nothing once cheaper information is
 in the model. This version makes two structural changes.
 
   * The three feature sources are siblings at one visual level. Clinical
     covariates and standard MRI are the control condition, not an afterthought,
-    so they get the same size and weight as the BSC branch.
+    so they get the same size and weight as the gBSC branch.
   * The flow ends on the incremental-value test rather than on a C-index, since
-    the question the study asks is whether BSC adds anything, not how well a
+    the question the study asks is whether gBSC adds anything, not how well a
     model predicts.
 
-Feature counts are the three that appear in the reported comparison: regional BSC
+Feature counts are the three that appear in the reported comparison: regional gBSC
 (124), clinical covariates (8) and standard MRI (69). No global-slope count is
 drawn, because the global set is not part of the final comparison. The delta on
-the output chip is the regional-BSC-over-covariates-plus-standard-MRI result read
+the output chip is the regional-gBSC-over-covariates-plus-standard-MRI result read
 from results/spec_v3_harmonized/incr_xgb/increment_tests.csv.
 """
 
@@ -86,13 +86,13 @@ ax.text(1.18, 2.62, "pre-conversion window only", ha="center", fontsize=6.5,
 ax.text(1.18, 2.42, "baseline to last MCI scan", ha="center", fontsize=6.5,
         color=VERM, style="italic")
 
-# ===================================================== 2. BSC computation
-group(2.35, 0.95, 2.95, 4.25, "2. BSC computation", tx=2.35)
+# ===================================================== 2. gBSC computation
+group(2.35, 0.95, 2.95, 4.25, "2. gBSC computation", tx=2.35)
 steps = ["N4 bias correction, skull strip,\nresample 1 mm$^3$",
          "Atropos 3-class segmentation\n(GM / WM / CSF)",
          "Boundary band\n$0.4 \\leq P_{GM} \\leq 0.6$",
          "Directional gradient projection\n"
-         r"$\mathrm{BSC}_{\mathrm{dir}}=\nabla I\cdot\frac{\nabla P_{GM}}{\|\nabla P_{GM}\|}$",
+         r"$\mathrm{gBSC}_{\mathrm{dir}}=\nabla I\cdot\frac{\nabla P_{GM}}{\|\nabla P_{GM}\|}$",
          "LongComBat harmonization\nbatch = site $\\times$ vendor $\\times$ field strength"]
 for i, t in enumerate(steps):
     box(2.50, 4.32 - i * 0.79, 2.65, 0.66, t, VERM, fs=6.9)
@@ -103,7 +103,7 @@ for i in range(len(steps) - 1):
 group(5.75, 0.95, 2.55, 4.25, "3. Feature sources", tx=5.75)
 ax.text(7.02, 5.02, "compared on equal terms", ha="center", fontsize=6.5,
         color=MUTED, style="italic")
-sources = [(3.95, "Regional BSC slopes\n$n=124$", VERM),
+sources = [(3.95, "Regional gBSC slopes\n$n=124$", VERM),
            (2.55, "Clinical covariates\n$n=8$", BLUE),
            (1.15, "Standard MRI\n$n=69$", GREEN)]
 for y, t, c in sources:
@@ -148,7 +148,7 @@ delta = (f"$\\Delta$C-index = {sgn(row.fold_matched_delta)}\n"
          f"95% CI ({sgn(row.delta_ci_lo)}, {sgn(row.delta_ci_hi)})")
 
 group(11.35, 2.05, 2.05, 2.05, "5. Incremental-value test", tx=10.95)
-ax.text(12.37, 3.86, "Does BSC add C-index over", ha="center", fontsize=6.6,
+ax.text(12.37, 3.86, "Does gBSC add C-index over", ha="center", fontsize=6.6,
         color=INK)
 ax.text(12.37, 3.68, "covariates + standard MRI?", ha="center", fontsize=6.6,
         color=INK)
@@ -160,7 +160,7 @@ ax.text(12.37, 2.16, "interval includes zero", ha="center", fontsize=6.3,
 
 # ===================================================== flow
 arrow(2.17, 3.02, 2.35, 3.02)
-# The BSC chip is the output of the branch, so the connector leaves the last
+# The gBSC chip is the output of the branch, so the connector leaves the last
 # step and runs up the channel between the two groups rather than over the boxes.
 ax.plot([5.17, 5.52], [1.49, 1.49], color=INK, linewidth=1.1, zorder=2)
 ax.plot([5.52, 5.52], [1.49, 4.34], color=INK, linewidth=1.1, zorder=2)

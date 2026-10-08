@@ -64,6 +64,9 @@ def clean_rc():
 def main():
     clean_rc()
     d = pd.read_csv(RES / "table3_cindex_regen.csv")
+    # The manuscript calls the measure gBSC; the stored table predates the
+    # rename, so map the display labels rather than rewriting the results file.
+    d["label"] = d["label"].str.replace("BSC", "gBSC", regex=False)
     cols = [c for c, *_ in FAMILIES]
 
     fig, ax = plt.subplots(figsize=(7.1, 4.3))

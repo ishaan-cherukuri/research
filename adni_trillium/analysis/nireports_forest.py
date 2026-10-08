@@ -1,9 +1,9 @@
 """Figure 6: fold-matched incremental value of each imaging feature set.
 
 The clearest single statement of the null. Every interval crosses zero, and the
-increment BSC produces is indistinguishable from the one produced by standard
+increment gBSC produces is indistinguishable from the one produced by standard
 volumetric measures over the same folds, which is why the standard-MRI row is
-drawn in a second colour rather than alongside the BSC rows.
+drawn in a second colour rather than alongside the gBSC rows.
 
 No significance markers are drawn. Nothing is significant, and that is the point.
 
@@ -33,13 +33,13 @@ INK, MUTED, RULE = "#1a1a1a", "#6b6b6b", "#cfcfcf"
 # comparator: an established measure put through the identical test.
 ROWS = [
     ("header", "Added to clinical covariates", None, None),
-    ("F0_covariates", "F6_cov_bsc", "BSC slopes, global", VERM),
-    ("F0_covariates", "F7_cov_regional", "BSC slopes, regional", VERM),
+    ("F0_covariates", "F6_cov_bsc", "gBSC slopes, global", VERM),
+    ("F0_covariates", "F7_cov_regional", "gBSC slopes, regional", VERM),
     ("F0_covariates", "F4b_cov_adsig", "AD-signature composite", VERM),
     ("F0_covariates", "F8_cov_stdmri", "Standard MRI slopes", GREEN),
     ("header", "Added to covariates + standard MRI", None, None),
-    ("F8_cov_stdmri", "F9_cov_bsc_stdmri", "BSC slopes, global", VERM),
-    ("F8_cov_stdmri", "F9b_cov_regional_stdmri", "BSC slopes, regional", VERM),
+    ("F8_cov_stdmri", "F9_cov_bsc_stdmri", "gBSC slopes, global", VERM),
+    ("F8_cov_stdmri", "F9b_cov_regional_stdmri", "gBSC slopes, regional", VERM),
     ("F8_cov_stdmri", "F9c_cov_adsig_stdmri", "AD-signature composite", VERM),
 ]
 
@@ -104,7 +104,7 @@ def main():
     # Legend distinguishing the biomarker under test from the established
     # comparator held to the identical standard.
     ax.plot([], [], "o-", color=VERM, markersize=4.4, linewidth=1.5,
-            label="BSC feature set")
+            label="gBSC feature set")
     ax.plot([], [], "o-", color=GREEN, markersize=4.4, linewidth=1.5,
             label="Established comparator")
     ax.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.42, -0.19),

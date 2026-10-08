@@ -1,18 +1,18 @@
-"""Figure 7: convergent evidence that BSC measures acquisition, not biology.
+"""Figure 7: convergent evidence that gBSC measures acquisition, not biology.
 
 Folds the old four-panel scatter and the old three-panel construct-validity
-figure into one verdict. Top row is what BSC fails to track, bottom row is what
+figure into one verdict. Top row is what gBSC fails to track, bottom row is what
 it does track, and the colour carries the argument: grey for a null biological
 association, orange for image quality, purple for the scanner label.
 
-  A  BSC against age at scan, per scan.
-  B  BSC slopes against amyloid PET burden, per subject, with the result of the
+  A  gBSC against age at scan, per scan.
+  B  gBSC slopes against amyloid PET burden, per subject, with the result of the
      full false-discovery-rate screen across all five pathology targets.
-  C  The BSC-to-SNR association estimated three ways. The within-subject
+  C  The gBSC-to-SNR association estimated three ways. The within-subject
      estimate removes every time-invariant subject characteristic and is the
      largest of the three.
   D  Cross-validated C-index at each feature set's best model family, with
-     scanner identity alone included. It sits above global BSC slopes.
+     scanner identity alone included. It sits above global gBSC slopes.
 
 Counts: the per-scan analyses use 2,386 scans with complete quality metrics,
 contributed by 412 of the 417 cohort subjects. Five subjects contribute no scan
@@ -94,9 +94,9 @@ def main():
                   left=0.075, right=0.985, top=0.855, bottom=0.105)
 
     # ---------------------------------------------------------- row headings
-    fig.text(0.075, 0.960, "What BSC does not track (biology)", fontsize=8.4,
+    fig.text(0.075, 0.960, "What gBSC does not track (biology)", fontsize=8.4,
              color=NULLC, fontweight="bold", ha="left")
-    fig.text(0.075, 0.445, "What BSC does track (acquisition)", fontsize=8.4,
+    fig.text(0.075, 0.445, "What gBSC does track (acquisition)", fontsize=8.4,
              color=VERM, fontweight="bold", ha="left")
 
     # ---------------------------------------------------------- A: age
@@ -104,10 +104,11 @@ def main():
     a = xs["age"]
     ax = fig.add_subplot(gs[0, 0:6])
     scatter(ax, scans["age"].to_numpy(), scans["bsc_dir_mean"].to_numpy(),
-            NULLC, "Age at scan (years)", "BSC directional mean",
+            NULLC, "Age at scan (years)", "gBSC directional mean",
             "A  No age association",
             f"r = {a['r']:+.3f}".replace("-", "−") + f"\np = {a['p']:.2f}\n"
-            f"{len(scans):,} scans, {scans.subject.nunique()} subjects")
+            f"{len(scans):,} scans, {scans.subject.nunique()} of "
+            f"{len(cohort)} subjects")
 
     # ---------------------------------------------------------- B: pathology
     pb = bio[["bsc_dir_mean_slope", "pet_CENTILOIDS"]].dropna()
@@ -118,11 +119,11 @@ def main():
     ax = fig.add_subplot(gs[0, 6:12])
     scatter(ax, pb["pet_CENTILOIDS"].to_numpy(),
             pb["bsc_dir_mean_slope"].to_numpy(), NULLC,
-            "Amyloid PET (centiloids)", "BSC directional slope",
+            "Amyloid PET (centiloids)", "gBSC directional slope",
             "B  No pathology association",
             f"$\\rho$ = {row.rho:+.3f}".replace("-", "−")
-            + f"\np = {row.p:.2f}\n{len(pb)} subjects with PET")
-    ax.text(0.035, 0.045, f"{n_sig} of {n_tested} BSC slopes survive FDR against "
+            + f"\np = {row.p:.2f}\n{len(pb)} subjects with amyloid PET")
+    ax.text(0.035, 0.045, f"{n_sig} of {n_tested} gBSC slopes survive FDR against "
             "amyloid PET,\nCSF A$\\beta$42, CSF p-tau, their ratio or tau PET",
             transform=ax.transAxes, fontsize=6.2, ha="left", va="bottom",
             color=NULLC, style="italic", zorder=6,
@@ -154,7 +155,7 @@ def main():
     ax.set_yticks(range(len(rows)))
     ax.set_yticklabels([r[0] for r in rows][::-1], fontsize=6.8)
     ax.set_xlim(-0.05, 0.62)
-    ax.set_xlabel("BSC per SD of signal-to-noise ratio")
+    ax.set_xlabel("gBSC per SD of signal-to-noise ratio")
     ax.set_title("C  Tracks image quality, most within-brain", loc="left",
                  fontsize=7.8, color=INK)
     ax.xaxis.grid(True, color=RULE, linewidth=0.5, zorder=0)
@@ -164,9 +165,9 @@ def main():
     sc = cv["scanner_signal"]["cindex_scanner_only"]
     bars = [("Clinical covariates", float(t3.loc["F0_covariates", fam].max()), BLUE),
             ("Thickness + hippocampus", float(t3.loc["F5_std_mri_slopes", fam].max()), GREEN),
-            ("BSC slopes, regional", float(t3.loc["F3_regional_slopes", fam].max()), VERM),
+            ("gBSC slopes, regional", float(t3.loc["F3_regional_slopes", fam].max()), VERM),
             ("Scanner identity alone", sc, VIOLET),
-            ("BSC slopes, global", float(t3.loc["F2_bsc_slopes", fam].max()), VERM)]
+            ("gBSC slopes, global", float(t3.loc["F2_bsc_slopes", fam].max()), VERM)]
     ax = fig.add_subplot(gs[1, 5:12])
     y = np.arange(len(bars))[::-1]
     for yy, (lab, v, c) in zip(y, bars):
@@ -182,7 +183,7 @@ def main():
     ax.set_yticklabels([b[0] for b in bars], fontsize=6.8)
     ax.set_xlim(0.45, 0.87)
     ax.set_xlabel("Cross-validated C-index (best model family)")
-    ax.set_title("D  Scanner identity out-predicts BSC", loc="left",
+    ax.set_title("D  Scanner identity out-predicts gBSC", loc="left",
                  fontsize=7.8, color=INK)
     ax.xaxis.grid(True, color=RULE, linewidth=0.5, zorder=0)
     ax.set_axisbelow(True)

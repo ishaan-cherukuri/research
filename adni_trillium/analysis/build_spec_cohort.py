@@ -273,7 +273,8 @@ def load_regional(path: str) -> tuple[pd.DataFrame, list[str]]:
     accepted and contribute nothing, which reads downstream as a null result
     rather than as a wiring mistake, so that case raises.
     """
-    prefixes = ("bscdir", "bscmag", "bscsig", "bscsigfree", "bscratio")
+    prefixes = ("bscdir", "bscmag", "bscsig", "bscsigfree", "bscratio",
+                "bscsigratio")
     r = pd.read_csv(path)
     cols = [c for c in r.columns
             if any(c.startswith(f"{p}_roi") for p in prefixes)

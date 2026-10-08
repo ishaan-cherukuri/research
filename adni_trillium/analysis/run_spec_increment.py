@@ -36,9 +36,9 @@ PAIRS = [
 ]
 
 
-def paired_folds(df, cols_a, cols_b, model, n_boot, rng):
+def paired_folds(df, cols_a, cols_b, model, n_boot, rng, seed=None):
     """Per-fold C-index for both feature sets on identical splits."""
-    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED)
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED if seed is None else seed)
     ca, cb, per_subject = [], [], []
     for a, b in skf.split(df, df["event"]):
         tr, te = df.iloc[a], df.iloc[b]
@@ -132,6 +132,9 @@ def main():
     ap.add_argument("--out_dir", default=str(root / "results/spec_v3"))
     ap.add_argument("--model", default="cox_lasso")
     ap.add_argument("--n_boot", type=int, default=2000)
+    ap.add_argument("--seed", type=int, default=None,
+                    help="override the CV fold seed; a result that only holds for "
+                         "one split is an artefact of that split, not a finding")
     args = ap.parse_args()
 
     df = pd.read_csv(args.cohort)
@@ -143,7 +146,7 @@ def main():
     results = []
     for a_name, b_name, label in PAIRS:
         ca, cb, deltas, oof = paired_folds(df, sets[a_name], sets[b_name],
-                                           args.model, args.n_boot, rng)
+                                           args.model, args.n_boot, rng, args.seed)
         lo, hi = (np.percentile(deltas, [2.5, 97.5]) if len(deltas)
                   else (np.nan, np.nan))
         lr = cox_lr_test(df, sets[a_name], sets[b_name])

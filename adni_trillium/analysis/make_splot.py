@@ -93,9 +93,9 @@ ax.set_ylabel("Subject", fontsize=11)
 ax.set_title("Longitudinal sample", fontsize=13, pad=10)
 ax.legend(handles=[
     Line2D([0], [0], color=F_COLOR, lw=1.2, marker="o", markersize=4,
-           label="F, stable"),
+           label="F, non-converter"),
     Line2D([0], [0], color=M_COLOR, lw=1.2, marker="o", markersize=4,
-           label="M, stable"),
+           label="M, non-converter"),
     Line2D([0], [0], color=F_COLOR, lw=1.2, linestyle="--", marker="x",
            markersize=5, markeredgewidth=1.2, label="F, converter"),
     Line2D([0], [0], color=M_COLOR, lw=1.2, linestyle="--", marker="x",

@@ -1,0 +1,14 @@
+{
+  "model": "B",
+  "hemi": "rh",
+  "n": 416,
+  "p": 8,
+  "df": 408,
+  "tcrit": 2.587932917664605,
+  "cft": 0.01,
+  "nperm": 10000,
+  "seed": 0,
+  "n_cortex_vertices": 37471,
+  "observed_clusters": 22,
+  "perm_seconds": 200.6
+}

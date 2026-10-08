@@ -1,0 +1,6 @@
+converter
+nonconverter
+age_c
+female_c
+apoe4_c
+field_3t_c

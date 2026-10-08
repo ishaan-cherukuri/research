@@ -8,7 +8,7 @@ author and dropped in as Figure 3, so the numbering here skips it.
   (fig3 is the architecture schematic, not produced here)
   fig4  Effect of the follow-up definition
   fig5  Fold-matched incremental value
-  fig6  What BSC covaries with
+  fig6  What gBSC covaries with
 
 Every figure reads from a file under results/spec_v3_harmonized/, so the numbers
 in the plots and the numbers in the manuscript cannot drift apart.
@@ -142,8 +142,8 @@ def fig4_design_effect():
     p = d.pivot_table(index=["feature_set", "model"], columns="design",
                       values="cv_cindex_mean").reset_index()
     label = {"F0_covariates": "Clinical covariates",
-             "F2_bsc_slopes": "BSC slopes, global",
-             "F3_regional_slopes": "BSC slopes, regional",
+             "F2_bsc_slopes": "gBSC slopes, global",
+             "F3_regional_slopes": "gBSC slopes, regional",
              "F5_std_mri_slopes": "Thickness + hippocampus"}
     colour = {"F0_covariates": BLUE, "F2_bsc_slopes": VERM,
               "F3_regional_slopes": VIOLET, "F5_std_mri_slopes": GREEN}
@@ -165,7 +165,7 @@ def fig4_design_effect():
             va="bottom", ha="center")
     ax.set_xlim(-0.12, 1.02)
     ax.set_xticks([0, 1])
-    ax.set_xticklabels(["Original\ndesign", "Corrected\ndesign"], fontsize=7.5)
+    ax.set_xticklabels(["Original\ndesign", "Pre-outcome\nrestricted"], fontsize=7.5)
     ax.set_ylabel("Cross-validated C-index")
     ax.set_ylim(0.40, 0.86)
     ax.yaxis.grid(True, color=RULE, linewidth=0.5, zorder=0)
@@ -178,14 +178,16 @@ def fig4_design_effect():
 def fig5_increment():
     """Forest plot of the fold-matched nested comparisons."""
     d = pd.read_csv(RES / "incr_xgb/increment_tests.csv")
+    # These are keys into the stored results file, which predates the rename to
+    # gBSC, so they must keep the original spelling. Display labels below do not.
     order = ["BSC slopes over covariates", "regional BSC over covariates",
              "AD-signature composite over covariates",
              "standard MRI slopes over covariates",
              "BSC slopes over covariates + standard MRI",
              "regional BSC over covariates + standard MRI",
              "AD-signature over covariates + standard MRI"]
-    short = ["BSC global", "BSC regional", "AD-signature", "Standard MRI",
-             "BSC global", "BSC regional", "AD-signature"]
+    short = ["gBSC global", "gBSC regional", "AD-signature", "Standard MRI",
+             "gBSC global", "gBSC regional", "AD-signature"]
     d = d.set_index("comparison").loc[order].reset_index()
 
     fig, ax = plt.subplots(figsize=(3.4, 2.9))
@@ -193,7 +195,7 @@ def fig5_increment():
     ys[:4] += 0.45
     for y, (_, r), s in zip(ys, d.iterrows(), short):
         # Standard MRI is the reference row: an established measure behaving the
-        # same way is what makes the BSC nulls interpretable.
+        # same way is what makes the gBSC nulls interpretable.
         c = GREEN if "standard MRI slopes" in r["comparison"] else BLUE
         ax.plot([r.delta_ci_lo, r.delta_ci_hi], [y, y], color=c, linewidth=1.3,
                 solid_capstyle="round", zorder=3)
@@ -215,7 +217,7 @@ def fig5_increment():
 
 # ============================================================ figure 6
 def fig6_construct_validity():
-    """Scatter panels: BSC against biological then image-quality measures."""
+    """Scatter panels: gBSC against biological then image-quality measures."""
     from scipy import stats
     bsc = pd.read_csv(CLUSTER / "bsc_simple_features_merged.csv")
     t1 = pd.read_csv(CLUSTER / "t1_scan_features.csv")
@@ -260,14 +262,14 @@ def fig6_construct_validity():
             ax.xaxis.get_offset_text().set_fontsize(6)
         ax.yaxis.grid(True, color=RULE, linewidth=0.5, zorder=0)
         ax.set_axisbelow(True)
-    axes[0].set_ylabel("BSC directional mean")
+    axes[0].set_ylabel("gBSC directional mean")
     axes[0].set_ylim(d.bsc_dir_mean.quantile(.002), d.bsc_dir_mean.quantile(.998))
     fig.tight_layout(w_pad=0.8)
     save(fig, "fig6_construct_validity")
 
 
 if __name__ == "__main__":
-    print(f"building figures into {OUT}")
+    print("building manuscript figures")
     clean_rc()
     for fn in (fig1_model_comparison, fig2_kaplan_meier, fig4_design_effect,
                fig5_increment, fig6_construct_validity):

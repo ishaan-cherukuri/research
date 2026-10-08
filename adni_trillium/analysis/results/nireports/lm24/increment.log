@@ -1,0 +1,22 @@
+BSC slopes over covariates
+  F0_covariates 0.840 -> F6_cov_bsc 0.853  delta=+0.0130 [-0.0042, +0.0281]  cox LR p=1
+BSC slopes over covariates + standard MRI
+  F8_cov_stdmri 0.851 -> F9_cov_bsc_stdmri 0.848  delta=-0.0033 [-0.0113, +0.0074]  cox LR p=1
+standard MRI slopes over covariates
+  F0_covariates 0.840 -> F8_cov_stdmri 0.851  delta=+0.0111 [-0.0166, +0.0289]  cox LR p=0.869
+regional BSC over covariates
+  F0_covariates 0.840 -> F7_cov_regional 0.847  delta=+0.0069 [-0.0132, +0.0235]  cox LR p=1
+regional BSC over covariates + standard MRI
+  F8_cov_stdmri 0.851 -> F9b_cov_regional_stdmri 0.858  delta=+0.0069 [-0.0067, +0.0206]  cox LR p=1
+AD-signature composite over covariates
+  F0_covariates 0.840 -> F4b_cov_adsig 0.844  delta=+0.0033 [-0.0066, +0.0165]  cox LR p=0.964
+AD-signature over covariates + standard MRI
+  F8_cov_stdmri 0.851 -> F9c_cov_adsig_stdmri 0.847  delta=-0.0039 [-0.0110, +0.0055]  cox LR p=0.786
+
+univariate BSC slope screen: 10 of 159 survive FDR q<0.05
+             feature       hr        p        q
+bscmag_roi1007_slope 1.300865 0.000039 0.006257
+bscdir_roi2013_slope 1.375933 0.000213 0.016906
+bscmag_roi1009_slope 1.307513 0.000395 0.020942
+bscdir_roi2009_slope 1.189293 0.000715 0.027455
+bscmag_roi2009_slope 1.282612 0.000863 0.027455

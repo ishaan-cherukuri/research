@@ -1,0 +1,4 @@
+fs_subjects/
+__pycache__/
+logs/
+results/_tmp_example/

@@ -51,10 +51,22 @@ def feature_sets(df: pd.DataFrame) -> dict[str, list[str]]:
     hippo = [c for c in df.columns if c.startswith("fs_hippo") and c.endswith("_slope")]
     std_mri = thick + hippo
 
+    # The gradient pipeline contributes bscdir/bscmag; bscratio is the
+    # scale-invariant cos(theta) variant. Whichever the cohort was built with
+    # is picked up here, so the same feature-set names carry across runs and
+    # the results stay directly comparable.
+    # bscdir/bscmag are the Atropos gradient pipeline, bscratio the
+    # scale-invariant cos(theta) variant of it, bscsig/bscsigfree/bscsigratio
+    # the sigmoid pipeline. Whichever the cohort was built with is picked up
+    # here, so feature-set names stay comparable across measures.
+    _reg = ("bscdir_roi", "bscmag_roi", "bscratio_roi",
+            "bscsig_roi", "bscsigfree_roi", "bscsigratio_roi")
+    _ads = ("bscdir_adsig", "bscmag_adsig", "bscratio_adsig",
+            "bscsig_adsig", "bscsigfree_adsig", "bscsigratio_adsig")
     reg_slope = [c for c in df.columns
-                 if c.startswith(("bscdir_roi", "bscmag_roi")) and c.endswith("_slope")]
+                 if c.startswith(_reg) and c.endswith("_slope")]
     adsig = [c for c in df.columns
-             if c.startswith(("bscdir_adsig", "bscmag_adsig")) and c.endswith("_slope")]
+             if c.startswith(_ads) and c.endswith("_slope")]
 
     cov = [c for c in COVARIATES if c in df.columns]
     sets = {

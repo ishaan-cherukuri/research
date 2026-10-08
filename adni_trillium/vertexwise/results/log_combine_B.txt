@@ -1,0 +1,17 @@
+model B: 30 observed clusters, 0 survive cwp<0.05 (critical area 869 mm2 over 10000 permutations)
+hemi  cluster  n_vertices   area_mm2    peak_t  peak_vertex sign              peak_aparc      cwp model
+  lh        1         190 329.376866 -3.494716        16693  neg         superiorfrontal 0.254775     B
+  rh        1         110 259.658718 -3.015633          161  neg          middletemporal 0.351265     B
+  rh        3         148 234.023733 -3.221054         9089  neg              precentral 0.401560     B
+  rh        5         119 164.143868  4.072350         9407  pos        isthmuscingulate 0.587141     B
+  lh        2         104 138.847907 -4.088542        11851  neg             postcentral 0.670033     B
+  rh        7          62 101.605474 -3.602004         4412  neg         superiorfrontal 0.800520     B
+  rh        8          31  95.629829  2.946361        13976  pos           pericalcarine 0.820218     B
+  rh       16          33  82.694075 -3.127503        22881  neg        superiortemporal 0.865113     B
+  rh       15          37  63.305985 -2.886830         8984  neg     caudalmiddlefrontal 0.928507     B
+  rh        6          27  62.530677 -2.738488        34078  neg        inferiortemporal 0.931207     B
+  rh        2          40  61.911111 -3.096691        29935  neg caudalanteriorcingulate 0.933407     B
+  lh        4          46  58.792972  3.284560        30364  pos    rostralmiddlefrontal 0.941206     B
+  rh       14          26  51.705568 -3.064486        24599  neg caudalanteriorcingulate 0.958104     B
+  rh       12          29  51.154009 -3.011790        15628  neg                fusiform 0.959204     B
+  rh       10          32  46.478212 -3.087564         8760  neg         superiorfrontal 0.968203     B

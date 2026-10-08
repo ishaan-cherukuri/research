@@ -1,0 +1,28 @@
+  xgb_aft          F0_covariates        n=  8 CV=0.827+-0.051 HO=0.877
+  rsf              F0_covariates        n=  8 CV=0.838+-0.060 HO=0.887
+  xgb_aft          F1_bsc_baseline      n= 33 CV=0.517+-0.023 HO=0.500
+  rsf              F1_bsc_baseline      n= 33 CV=0.527+-0.034 HO=0.461
+  xgb_aft          F2_bsc_slopes        n= 33 CV=0.541+-0.088 HO=0.466
+  rsf              F2_bsc_slopes        n= 33 CV=0.579+-0.096 HO=0.553
+  xgb_aft          F5_std_mri_slopes    n= 69 CV=0.660+-0.049 HO=0.695
+  rsf              F5_std_mri_slopes    n= 69 CV=0.676+-0.046 HO=0.686
+  xgb_aft          F6_cov_bsc           n= 41 CV=0.821+-0.044 HO=0.869
+  rsf              F6_cov_bsc           n= 41 CV=0.811+-0.056 HO=0.854
+  xgb_aft          F8_cov_stdmri        n= 77 CV=0.835+-0.044 HO=0.877
+  rsf              F8_cov_stdmri        n= 77 CV=0.818+-0.049 HO=0.863
+  xgb_aft          F9_cov_bsc_stdmri    n=110 CV=0.823+-0.043 HO=0.878
+  rsf              F9_cov_bsc_stdmri    n=110 CV=0.810+-0.041 HO=0.856
+  xgb_aft          F3_regional_slopes   n=124 CV=0.586+-0.057 HO=0.628
+  rsf              F3_regional_slopes   n=124 CV=0.584+-0.089 HO=0.642
+  xgb_aft          F7_cov_regional      n=132 CV=0.810+-0.053 HO=0.868
+  rsf              F7_cov_regional      n=132 CV=0.786+-0.056 HO=0.866
+  xgb_aft          F9b_cov_regional_stdmri n=201 CV=0.825+-0.041 HO=0.873
+  rsf              F9b_cov_regional_stdmri n=201 CV=0.799+-0.034 HO=0.850
+  xgb_aft          F4_adsig_slope       n=  2 CV=0.531+-0.055 HO=0.421
+  rsf              F4_adsig_slope       n=  2 CV=0.582+-0.015 HO=0.490
+  xgb_aft          F4b_cov_adsig        n= 10 CV=0.826+-0.048 HO=0.882
+  rsf              F4b_cov_adsig        n= 10 CV=0.835+-0.054 HO=0.879
+  xgb_aft          F9c_cov_adsig_stdmri n= 79 CV=0.835+-0.048 HO=0.874
+  rsf              F9c_cov_adsig_stdmri n= 79 CV=0.819+-0.048 HO=0.868
+
+wrote results/nireports/lm24/cv_results.csv
