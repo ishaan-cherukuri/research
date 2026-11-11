@@ -1,0 +1,9 @@
+measure,column,kind,n,beta_per_year,beta_per_decade,se_per_year,beta_std,beta_std_disattenuated,p,r2
+gBSC directional (cortex mean),bsc_dir_mean,measure,1601,-0.00020944,-0.002094,0.00036053,-0.0136,-0.0148,0.5613787161645845,0.2513
+gBSC magnitude (cortex mean),bsc_mag_mean,measure,1601,-6.896e-05,-0.00069,0.00047835,-0.0034,-0.0037,0.885391322466912,0.2345
+cosBSC (cortex mean),bsc_cos_mean,measure,1601,-0.00029912,-0.002991,7.764e-05,-0.0918,-0.1,0.00012153311116894684,0.2255
+gBSC AD-signature composite,bscdir_adsig,measure,839,-0.00050817,-0.005082,0.00059685,-0.0273,-0.0297,0.3948044648692387,0.3183
+cosBSC AD-signature composite,cos_adsig,measure,1600,-0.00072573,-0.007257,0.00019496,-0.0915,-0.0997,0.00020443678032743058,0.1764
+REFERENCE brain parenchymal fraction,seg_bpf,reference,1601,-0.00116712,-0.011671,0.00024447,-0.1048,,1.9783405825179024e-06,0.3424
+REFERENCE intracranial volume,seg_tiv_mm3,reference,1601,-9716.95411635,-97169.541164,1260.81986959,-0.134,,2.3060351479826212e-14,0.5876
+REFERENCE SNR,qc_snr,reference,1601,-0.00345093,-0.034509,0.00070412,-0.0949,,1.0547757886260167e-06,0.4883

@@ -1,0 +1,9 @@
+analysis,measure,n,beta,se,ci_lo,ci_hi,beta_std,p,r2,note
+primary_full,bsc_dir_mean,1038,-0.000817,0.003809,-0.008283,0.006648,-0.0064,0.830157239186089,0.3577,
+primary_3T_only,bsc_dir_mean,1038,-0.000817,0.003809,-0.008283,0.006648,-0.0064,0.830157239186089,0.3577,
+split_half,bsc_dir_mean,200,-0.001653,,-0.009415,0.006578,,,,"shrinkage=5.8017, same_sign=0.2, held_sig=0.01"
+secondary_not_run,bsc_cos_mean,,,,,,,,,primary not significant; pre-spec forbids running this
+secondary_not_run,bscdir_adsig,,,,,,,,,primary not significant; pre-spec forbids running this
+secondary_not_run,cos_adsig,,,,,,,,,primary not significant; pre-spec forbids running this
+secondary_not_run,bsc_mag_mean,,,,,,,,,primary not significant; pre-spec forbids running this
+reference,seg_bpf,1038,-0.013067,0.00274,-0.018437,-0.007697,-0.1316,2.1293718634281192e-06,0.4561,

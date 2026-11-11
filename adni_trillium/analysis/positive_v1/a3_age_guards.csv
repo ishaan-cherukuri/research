@@ -1,0 +1,13 @@
+measure,column,guard,n,beta_std,p,note
+cosBSC (cortex mean),bsc_cos_mean,3T only,1120,-0.0934,0.0004338999624439226,
+cosBSC (cortex mean),bsc_cos_mean,+ SNR adjusted,1601,-0.0679,0.003942964970666132,
+cosBSC (cortex mean),bsc_cos_mean,+ ICV adjusted,1601,-0.0608,0.011210105806061717,
+cosBSC (cortex mean),bsc_cos_mean,+ diagnosis adjusted,1601,-0.0831,0.0005147979539815484,
+cosBSC (cortex mean),bsc_cos_mean,"+ SNR, ICV, diagnosis",1601,-0.0448,0.05899516667037134,
+cosBSC (cortex mean),bsc_cos_mean,split_half_200,200,,,"held_beta=-0.00029483, same_sign=0.99, held_sig=0.81"
+cosBSC AD-signature composite,cos_adsig,3T only,1119,-0.1106,8.437569196908565e-05,
+cosBSC AD-signature composite,cos_adsig,+ SNR adjusted,1600,-0.0517,0.027502900309826286,
+cosBSC AD-signature composite,cos_adsig,+ ICV adjusted,1600,-0.0606,0.014322882972452551,
+cosBSC AD-signature composite,cos_adsig,+ diagnosis adjusted,1600,-0.0876,0.000405500311049475,
+cosBSC AD-signature composite,cos_adsig,"+ SNR, ICV, diagnosis",1600,-0.0383,0.10705797501604938,
+cosBSC AD-signature composite,cos_adsig,split_half_200,200,,,"held_beta=-0.00071823, same_sign=1.00, held_sig=0.82"
