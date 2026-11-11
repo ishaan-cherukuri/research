@@ -1,0 +1,7 @@
+endpoint,measure,n,events,base_c,full_c,delta,ci_lo,ci_hi,p,seed_deltas,sign_stable,verdict
+mortality,gBSC baseline,417,28,0.5874,0.565,-0.0224,-0.0304,-0.0104,,-0.0224;-0.0180;-0.0059;0.0047,0,artifact: sign flips across seeds
+mortality,cosBSC baseline,417,28,0.5874,0.6487,0.0304,-0.3571,0.4524,,0.0304;0.0861;0.0609;-0.0308,0,null
+decline_ADNI_MEM,gBSC baseline,126,,,,-0.1187,,,0.2395891677264243,,,null
+decline_ADNI_MEM,cosBSC baseline,126,,,,0.0068,,,0.9393851559146671,,,null
+decline_ADNI_EF,gBSC baseline,122,,,,-0.1445,,,0.1508951816491698,,,null
+decline_ADNI_EF,cosBSC baseline,122,,,,-0.0491,,,0.5815960460636702,,,null
