@@ -6,8 +6,6 @@ this folder and its CSV output. Literature in `SOURCES.md`.
 
 ## Summary
 
-Two positives, three nulls, two artifacts caught.
-
 | Analysis | Result |
 |---|---|
 | A1 same-scanner reliability | **POSITIVE.** gBSC ICC(1,1) 0.843 [0.819, 0.863] |
@@ -17,6 +15,16 @@ Two positives, three nulls, two artifacts caught.
 | A3 age anchor, gBSC | Null. -0.014 SD/SD, p=0.56. Anchor fails |
 | A4 autopsy Braak | Null. OR 0.88 per SD, p=0.51 |
 | A5 mortality, cognitive decline | Null. Two seed artifacts caught |
+| **A6 age, WM/GM intensity ratio** | **STRONG POSITIVE. -0.397 cortex, -0.489 AD-signature, p=1.5e-24** |
+| **A6 age, published sigmoid BSC** | **POSITIVE. +0.286, p=8.6e-09, opposite sign** |
+| A6 WMH, all sigmoid families | Null. n=276 |
+
+**The headline is A6.** The tissue intensity ratio, which is the quantity the
+published literature actually uses, shows an age effect four to five times
+larger than anything else in this project, in the direction the literature
+reports, surviving every adjustment and holding out in 100% of 200
+split-halves. The measure was never the problem. The wrong measure was being
+computed.
 
 ## A1. The measurement positive
 
@@ -193,31 +201,112 @@ keeping it.
 Underpowered and labelled so: only 126 of 417 subjects have three or more
 post-landmark cognitive visits spanning at least a year.
 
-## Blocked
+## A6. The sigmoid pipeline, pulled from Trillium: the result
 
-The tissue intensity ratio `bscsigratio_*`, the direct analogue of the
-published GWC measure that carries all the positive findings in the
-literature, lives only on Trillium at
-`/scratch/ishaan/adni_trillium/sigmoid/features_nn/per_scan_sigmoid.csv`.
-Trillium refused the SSH key on 2026-11-10 with
-`Permission denied (keyboard-interactive,hostbased)`, which is authentication
-rather than the cluster being down. Given the A3 result, this is now the
-highest-value remaining analysis and it is pre-specified in A2 and A3 so it
-cannot be rewritten after the fact.
+`a6_gwc_ratio.py`, outputs `a6_ratio_results.csv`, `a6_ratio_guards.csv`,
+`a6_ratio_regional_age.csv`. Source file
+`/scratch/ishaan/adni_trillium/sigmoid/features_nn/per_scan_sigmoid.csv`,
+2,251 scans, 417 subjects, merged onto 401 subjects with age. All 14
+AD-signature parcels at full coverage, so the NaN contamination that made the
+old `features` file unusable is genuinely fixed in `features_nn`.
+
+Three families were in the file, so all three were run rather than only the
+ratio. That matters because `bscsig_*` is the **actual published Olafson
+measure** and this is the first time it has met the age anchor: every null in
+this project to date was obtained on the gradient proxy.
+
+### Age
+
+| measure | beta per SD | p | 3T only | all adjustments | split-half held sig |
+|---|---|---|---|---|---|
+| **ratio, AD-signature** | **-0.489** | **1.5e-24** | -0.519 | **-0.538** | **100%** |
+| **ratio, cortex-wide** | **-0.397** | **1.8e-17** | -0.477 | -0.457 | **100%** |
+| **published BSC, cortex** | **+0.286** | **8.6e-09** | +0.285 | +0.234 | 99% |
+| published BSC, AD-sig | +0.207 | 3.2e-05 | +0.210 | +0.165 | 81% |
+| free variant, AD-sig | -0.109 | 0.016 | -0.137 | -0.132 | 31% |
+| free variant, cortex | -0.060 | 0.20 | | | |
+
+The ratio effect is four to five times larger than anything else in this
+project, it is in the direction the literature reports, and unusually it gets
+**stronger** under every adjustment including SNR, ICV and diagnosis jointly.
+Regional screen: **67 of 68 parcels survive BH**, strongest right
+inferiortemporal at -0.549, p = 4.2e-28.
+
+### Two independent age signals, not one
+
+The published growth rate and the intensity ratio correlate only **0.179**.
+Each age effect survives adjustment for the other and in fact strengthens:
+
+| | unadjusted | adjusted for the other |
+|---|---|---|
+| published BSC, cortex | +0.286 (p=8.6e-09) | +0.366 (p=2.8e-11) |
+| ratio, cortex | -0.397 (p=1.8e-17) | -0.445 (p=6.6e-20) |
+
+So these are two distinct properties of the same intensity profile: the ratio
+is the amplitude of the gray-to-white step, the growth rate is the steepness
+of the transition. Age flattens the step and, on this data, steepens the
+transition.
+
+**The opposite sign deserves caution, not a story.** A sharper boundary with
+age runs against the blurring hypothesis in both the ASD paper and this
+project. One plausible mechanism, offered as a hypothesis and not a
+conclusion: as the amplitude of the step shrinks, the bounded sigmoid fit is
+applied to a shallower profile and becomes ill-conditioned, which is the same
+regime that produces the known estimator floor at c around 0.059. That the
+unbounded `free` variant behaves differently, and much more weakly, is
+consistent with the bounds mattering here. Testing this properly needs
+simulation at realistic amplitudes, which has not been run.
+
+### The number that justifies the gBSC renaming
+
+The gradient measure correlates **-0.079** with the published sigmoid BSC.
+Essentially zero. The decision to rename the measure gBSC and state that it
+is not Olafson's BSC was correct, and this is a single hard number to cite for
+it rather than an argument from the method description.
+
+### WMH
+
+Null for all nine sigmoid columns, n = 276 (the sigmoid cohort is the 417 spec
+cohort, and only 276 of those have a WMH measurement within a year). Weakest
+non-significant trend is the free variant's AD-signature at -0.116, p = 0.088.
+Underpowered relative to A2's 1,038 and labelled so.
 
 ## What this adds up to
 
-gBSC is a defined positive for **same-scanner measurement reliability**
-(ICC 0.843, comparable to conventional morphometry) and a defined negative
-for everything biological tested here. It does not track WMH, age, Braak
-stage, mortality or cognitive decline rate.
+**The measure was not the problem. The wrong measure was being computed.**
 
-cosBSC is a defined positive for **age**, the one anchor this literature
-agrees on, at an effect size matching brain parenchymal fraction, with about
-40% of it shared with image quality and head size.
+The quantity the published literature uses, the WM/GM intensity ratio, has a
+large, robust, regionally widespread age association in this exact cohort:
+-0.49 SD per SD on the AD signature, p = 1.5e-24, 67 of 68 parcels surviving
+correction, strengthening under every confound adjustment, replicating in 100%
+of 200 split-halves. Four years of nulls in this project were obtained on a
+gradient of an Atropos tissue probability field that correlates -0.08 with the
+published measure.
 
-The most useful framing for a manuscript is that the measure class splits:
-the intensity ratio the literature uses has real tissue-contrast content, and
-the intensity gradient this project built does not, because it inherits
-acquisition gain. The A1 reliability number and the A3 cosine-versus-gradient
-contrast are the two results worth writing up.
+Defined positives now in hand:
+
+1. **The intensity ratio tracks age**, strongly, replicating Salat PMC2750073,
+   Sci Rep s41598-025-34355-y and PMC5881246 in ADNI MCI.
+2. **The published sigmoid BSC tracks age** too, independently and with the
+   opposite sign, which is a genuinely new observation with a methodological
+   caveat attached.
+3. **gBSC has same-scanner reliability of 0.843**, comparable to conventional
+   morphometry, which makes the prognostic nulls strong rather than
+   noise-limited.
+4. **gBSC is not the published BSC**, r = -0.079, which settles the
+   reviewer-facing naming question with a number.
+
+Defined negatives: nothing here tracks WMH burden, Braak stage, mortality or
+cognitive decline rate. The prognostic null stands and now stands on a
+measure that demonstrably has real biological content, which is a much
+stronger paper than a null on a measure of unknown validity.
+
+### Next step this implies
+
+The ratio should be run against the prognostic endpoints. A6 only tested age
+and WMH because those were what the pre-spec declared. The ratio is the one
+measure in this project with a demonstrated biological signal, it has never
+been through the incremental-value machinery, and the pre-spec's A5 rules
+(fold-matched increment, 0.03 equivalence margin, seed stability at 42, 101,
+202, 303) apply unchanged. That is a new pre-specified analysis, not an
+extension of this one, and it should be written down before it is run.

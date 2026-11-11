@@ -1,0 +1,49 @@
+analysis,guard,measure,n,beta_std,p,note
+age,3T only,bscsig_cortex,281,0.2851,4.3892734202128765e-07,
+age,+ SNR adjusted,bscsig_cortex,401,0.2464,4.386932475056498e-07,
+age,+ ICV adjusted,bscsig_cortex,401,0.2548,5.054761093020207e-07,
+age,+ diagnosis adjusted,bscsig_cortex,401,0.2816,1.6743984360907056e-08,
+age,"+ SNR, ICV, diagnosis",bscsig_cortex,401,0.2337,2.7985717556514585e-06,
+age,split_half_200,bscsig_cortex,200,,,"held_beta=0.00050517, same_sign=1.00, held_sig=0.99"
+age,3T only,bscsig_adsig,281,0.2096,0.00037229486240659406,
+age,+ SNR adjusted,bscsig_adsig,401,0.1697,0.0005677013740487053,
+age,+ ICV adjusted,bscsig_adsig,401,0.1872,0.00026385052116993034,
+age,+ diagnosis adjusted,bscsig_adsig,401,0.2024,5.286008251087172e-05,
+age,"+ SNR, ICV, diagnosis",bscsig_adsig,401,0.1652,0.001064670840350208,
+age,split_half_200,bscsig_adsig,200,,,"held_beta=0.00039792, same_sign=1.00, held_sig=0.81"
+age,3T only,bscsig_adsig_recomputed,281,0.2059,0.0005431161789883976,
+age,+ SNR adjusted,bscsig_adsig_recomputed,401,0.165,0.0008443842938377048,
+age,+ ICV adjusted,bscsig_adsig_recomputed,401,0.1851,0.0003309610457063873,
+age,+ diagnosis adjusted,bscsig_adsig_recomputed,401,0.1974,8.551912967814784e-05,
+age,"+ SNR, ICV, diagnosis",bscsig_adsig_recomputed,401,0.1629,0.0013204497787636478,
+age,split_half_200,bscsig_adsig_recomputed,200,,,"held_beta=0.00043233, same_sign=1.00, held_sig=0.79"
+age,3T only,bscsigfree_adsig,281,-0.1373,0.017092072913340722,
+age,+ SNR adjusted,bscsigfree_adsig,401,-0.1396,0.0021333546117232364,
+age,+ ICV adjusted,bscsigfree_adsig,401,-0.1134,0.016007983424858815,
+age,+ diagnosis adjusted,bscsigfree_adsig,401,-0.1119,0.014390622497588273,
+age,"+ SNR, ICV, diagnosis",bscsigfree_adsig,401,-0.1319,0.004634116335829597,
+age,split_half_200,bscsigfree_adsig,200,,,"held_beta=-0.00051794, same_sign=0.97, held_sig=0.31"
+age,3T only,bscsigfree_adsig_recomputed,281,-0.1363,0.018852677282994623,
+age,+ SNR adjusted,bscsigfree_adsig_recomputed,401,-0.1434,0.0016905081113026278,
+age,+ ICV adjusted,bscsigfree_adsig_recomputed,401,-0.1181,0.012411466329270628,
+age,+ diagnosis adjusted,bscsigfree_adsig_recomputed,401,-0.117,0.010748077646911922,
+age,"+ SNR, ICV, diagnosis",bscsigfree_adsig_recomputed,401,-0.1363,0.0035837235201721437,
+age,split_half_200,bscsigfree_adsig_recomputed,200,,,"held_beta=-0.00054799, same_sign=0.98, held_sig=0.35"
+age,3T only,bscsigratio_cortex,281,-0.4774,1.0556673041175776e-19,
+age,+ SNR adjusted,bscsigratio_cortex,401,-0.4328,1.483921300044693e-20,
+age,+ ICV adjusted,bscsigratio_cortex,401,-0.4439,1.2228075998701357e-20,
+age,+ diagnosis adjusted,bscsigratio_cortex,401,-0.3969,2.6679609478108002e-17,
+age,"+ SNR, ICV, diagnosis",bscsigratio_cortex,401,-0.4569,7.28695139097903e-22,
+age,split_half_200,bscsigratio_cortex,200,,,"held_beta=-0.0014788, same_sign=1.00, held_sig=1.00"
+age,3T only,bscsigratio_adsig,281,-0.5076,1.545133141717198e-21,
+age,+ SNR adjusted,bscsigratio_adsig,401,-0.4832,4.2538638425193055e-24,
+age,+ ICV adjusted,bscsigratio_adsig,401,-0.4937,4.025638512998502e-24,
+age,+ diagnosis adjusted,bscsigratio_adsig,401,-0.4519,3.1766731447894436e-21,
+age,"+ SNR, ICV, diagnosis",bscsigratio_adsig,401,-0.5052,4.11711079588588e-25,
+age,split_half_200,bscsigratio_adsig,200,,,"held_beta=-0.0018718, same_sign=1.00, held_sig=1.00"
+age,3T only,bscsigratio_adsig_recomputed,281,-0.5192,1.5297096065427352e-22,
+age,+ SNR adjusted,bscsigratio_adsig_recomputed,401,-0.5174,6.917438788605566e-27,
+age,+ ICV adjusted,bscsigratio_adsig_recomputed,401,-0.528,6.099865254723391e-27,
+age,+ diagnosis adjusted,bscsigratio_adsig_recomputed,401,-0.489,2.699849845997849e-24,
+age,"+ SNR, ICV, diagnosis",bscsigratio_adsig_recomputed,401,-0.5377,1.0683244036453398e-27,
+age,split_half_200,bscsigratio_adsig_recomputed,200,,,"held_beta=-0.0020323, same_sign=1.00, held_sig=1.00"
