@@ -59,8 +59,6 @@ def main() -> None:
     scans = pd.read_csv(args.scans)
     fs_home = Path(os.environ["FREESURFER_HOME"])
     subjects_dir = work / "freesurfer"
-
-    # ---- panel A: per-scan coverage on each scan's own surface -------------
     rows = []
     for iid in scans["image_id"]:
         vals, ok = [], True
@@ -79,8 +77,6 @@ def main() -> None:
     print(f"coverage for {len(cov)} scans -> {out/'band_coverage.csv'}")
     print(cov["coverage"].describe(percentiles=[.25, .5, .75]).round(4).to_string())
     print(f"scans sampling nothing at all: {int((cov['coverage'] <= 0.005).sum())}")
-
-    # ---- panel B: one representative scan, band footprint vs dense field ---
     example = args.example
     if example is None:
         good = cov[cov["coverage"] > 0.005]

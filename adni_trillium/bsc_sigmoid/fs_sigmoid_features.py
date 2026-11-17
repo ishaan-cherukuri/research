@@ -19,6 +19,16 @@ binds for most of the cortex, compressing the measure against a floor near
 afterthought. Which of the two is the better instrument is an empirical
 question this pipeline exists to answer.
 
+Resampling is a normalized convolution, not a plain smooth, and it has to be.
+The native fits are about 93 per cent finite: a sigmoid does not converge
+everywhere, and the failures are scattered. mri_surf2surf propagates NaN
+through its kernel, so smoothing those maps at 20 mm FWHM turned 7 per cent
+missing into 66 per cent missing, and every ROI mean was then an average over
+whichever third of the parcel sat furthest from a failed fit. That is a
+systematic subsample, not a random one. So the valid data and a validity mask
+are smoothed with the same kernel and divided, which is the standard fix and
+keeps the kernel identical to what the rest of the pipeline uses.
+
 The prefix is bscsigratio_ rather than the companion pipeline's bscratio_,
 because bscratio_ is already used in this project for the scale-invariant
 cos(theta) gradient variant and the two must not collide in one cohort table.
@@ -55,19 +65,50 @@ AD_SIGNATURE = ("entorhinal", "parahippocampal", "inferiortemporal",
                 "middletemporal", "precuneus", "posteriorcingulate", "fusiform")
 
 
-def resample(native: Path, image_id: str, hemi: str, meas: str, out: Path,
-             fwhm: float, env) -> Path:
-    """native surface -> fsaverage6, smoothing on the target surface."""
-    dst = out / f"{hemi}.{meas}.{TRG}.mgh"
-    if dst.exists():
-        return dst
+MIN_KERNEL_WEIGHT = 0.5    # a target vertex needs this much valid support to keep
+
+
+def _surf2surf(src: Path, dst: Path, image_id: str, hemi: str, fwhm: float, env) -> None:
     cmd = ["mri_surf2surf", "--srcsubject", image_id, "--trgsubject", TRG,
-           "--hemi", hemi, "--sval", str(native / f"{hemi}.{meas}.mgh"),
-           "--tval", str(dst)]
+           "--hemi", hemi, "--sval", str(src), "--tval", str(dst)]
     if fwhm > 0:
         cmd += ["--fwhm-trg", str(fwhm)]
     subprocess.run(cmd, check=True, env=env,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def _save_like(ref: nib.freesurfer.mghformat.MGHImage, vals: np.ndarray, dst: Path) -> None:
+    nib.save(nib.MGHImage(vals.astype(np.float32).reshape(-1, 1, 1), ref.affine), str(dst))
+
+
+def resample(native: Path, image_id: str, hemi: str, meas: str, out: Path,
+             fwhm: float, env) -> Path:
+    """native surface -> fsaverage6 by normalized convolution.
+
+    The valid values and an indicator of where they are get the same kernel;
+    their ratio is the smoothed estimate, kept only where enough of the kernel
+    landed on real data. Plain smoothing would spread every NaN instead.
+    """
+    dst = out / f"{hemi}.{meas}.{TRG}.mgh"
+    if dst.exists():
+        return dst
+    img = nib.load(str(native / f"{hemi}.{meas}.mgh"))
+    v = np.asarray(img.dataobj, dtype=np.float64).reshape(-1)
+    valid = np.isfinite(v)
+    num_n, den_n = out / f"_num.{hemi}.mgh", out / f"_den.{hemi}.mgh"
+    _save_like(img, np.where(valid, v, 0.0), num_n)
+    _save_like(img, valid.astype(np.float64), den_n)
+    num_t, den_t = out / f"_numt.{hemi}.mgh", out / f"_dent.{hemi}.mgh"
+    _surf2surf(num_n, num_t, image_id, hemi, fwhm, env)
+    _surf2surf(den_n, den_t, image_id, hemi, fwhm, env)
+    num = np.asarray(nib.load(str(num_t)).dataobj, dtype=np.float64).reshape(-1)
+    den = np.asarray(nib.load(str(den_t)).dataobj, dtype=np.float64).reshape(-1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        outv = np.where(den >= MIN_KERNEL_WEIGHT, num / den, np.nan)
+    ref = nib.load(str(num_t))
+    nib.save(nib.MGHImage(outv.astype(np.float32).reshape(-1, 1, 1), ref.affine), str(dst))
+    for f in (num_n, den_n, num_t, den_t):
+        f.unlink(missing_ok=True)
     return dst
 
 

@@ -1,14 +1,11 @@
 """Recompute the dense gBSC field for one scan, unmasked by the boundary band.
 
-The stored bsc_dir_map.nii.gz is |dI/dn| (image gradient projected on the
-tissue-probability normal) zeroed outside the atropos boundary band, which is
-the thin set of voxels with GM probability within eps of 0.5. That band is
-sparse, covers a few percent of the gray-white interface, and is empty in a
-quarter of scans, so it cannot be sampled onto a surface. The field itself is
-defined everywhere. This recomputes it with the same smoothing (sigma 1 mm)
-from the preprocessed T1 and GM probability that the volumetric pipeline
-stored, restricted to the brain mask, so that the surface stage can evaluate
-it at the FreeSurfer white surface, which is where the boundary sits.
+The stored bsc_dir_map.nii.gz is zeroed outside the atropos boundary band.
+That band reaches a median of 8 per cent of cortex vertices when projected onto
+the white surface and none at all on 22 per cent of scans, so it cannot be
+sampled on a surface. The underlying field is defined everywhere, so it is
+recomputed here with the same 1 mm smoothing from the stored preprocessed T1
+and GM probability.
 
 Two measures are available. "dir" is the gradient projection |grad I . n|,
 which is what the volumetric pipeline stores and which scales linearly with

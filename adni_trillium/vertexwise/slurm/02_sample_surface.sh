@@ -18,7 +18,14 @@
 # --export=NONE --get-user-env, so exported variables do not reach the job.
 # "cos" keeps its outputs in surf_cos/ and field_cos/ beside the gradient run.
 #
-# Usage: sbatch 02_sample_surface.sh <VW_DIR> <WORK> [FWHM] [MEASURE]
+# FS_VARIANT picks which recon the surfaces come from. "long" reads
+# <image_id>.long.base_<subject>, the output of 04_recon_long.sh, and writes to
+# surf_long/. The gBSC field itself is unchanged, since it comes from the
+# atropos segmentation and knows nothing about FreeSurfer; only the surface the
+# field is sampled on, and the thickness and curvature carried alongside it,
+# differ between the two variants. That is what makes them comparable.
+#
+# Usage: sbatch 02_sample_surface.sh <VW_DIR> <WORK> [FWHM] [MEASURE] [FS_VARIANT]
 #   reads WORK/freesurfer, writes WORK/surf/<image_id>/; FWHM in mm (default 10)
 
 set -euo pipefail
@@ -27,13 +34,18 @@ VW_DIR="${1:?Usage: sbatch 02_sample_surface.sh VW_DIR WORK [FWHM]}"
 WORK="${2:?}"
 export FWHM="${3:-10}"
 export MEASURE="${4:-dir}"            # dir = |grad I . n|; cos = that over |grad I|
+export FS_VARIANT="${5:-cross}"       # cross = per-scan recon; long = longitudinal stream
 SUFFIX=""; [[ "$MEASURE" == "cos" ]] && SUFFIX="_cos"
+# the field is a property of the scan, not of the recon, so the longitudinal
+# variant reuses whatever field/ already holds and only forks the surface output
+SURF_SUFFIX="$SUFFIX"
+[[ "$FS_VARIANT" == "long" ]] && SURF_SUFFIX="${SUFFIX}_long"
 export PROJ="${PROJ:---projdist-avg 0 1.5 0.5}"
 export PY="${PY:-/project/rrg-mchakrav-ab/ishaan/adni_trillium/.venv/bin/python}"
 export VW_DIR
 SCANS_CSV="$VW_DIR/cohort/vertex_scans.csv"
 SUBJECTS_DIR_WANT="$WORK/freesurfer"
-export SURF_OUT="$WORK/surf${SUFFIX}"
+export SURF_OUT="$WORK/surf${SURF_SUFFIX}"
 export FIELD_OUT="$WORK/field${SUFFIX}"
 export TRG=fsaverage6
 
@@ -49,10 +61,14 @@ export LOG_DIR="$WORK/logs/sample"
 mkdir -p "$SURF_OUT" "$FIELD_OUT" "$LOG_DIR"
 
 sample_one() {
-    local id="$1" bsc_dir="$2"
+    local id="$1" bsc_dir="$2" subj="$3"
+    # the FreeSurfer subject the surfaces are taken from, which is not the
+    # image_id in the longitudinal variant
+    local fs="$id"
+    [[ "$FS_VARIANT" == "long" ]] && fs="${id}.long.base_${subj}"
     local out="$SURF_OUT/$id" log="$LOG_DIR/${id}.log"
-    if [[ ! -f "$SUBJECTS_DIR/$id/scripts/recon-all.done" ]]; then
-        echo "[NO-RECON] $id"; return 0
+    if [[ ! -f "$SUBJECTS_DIR/$fs/scripts/recon-all.done" ]]; then
+        echo "[NO-RECON] $id ($fs)"; return 0
     fi
     if [[ ! -f "$bsc_dir/gm_prob.nii.gz" ]]; then echo "[NO-BSC] $id"; return 0; fi
     mkdir -p "$out"
@@ -65,7 +81,7 @@ sample_one() {
     for hemi in lh rh; do
         if [[ -f "$out/${hemi}.curv.${TRG}.mgh" ]]; then continue; fi
         # gBSC field -> native white surface, averaged 0..1.5 mm outward, unsmoothed
-        mri_vol2surf --mov "$mov" --regheader "$id" --hemi "$hemi" \
+        mri_vol2surf --mov "$mov" --regheader "$fs" --hemi "$hemi" \
             --surf white $PROJ --interp trilinear \
             --o "$out/${hemi}.gbsc.native.mgh" >> "$log" 2>&1 || { echo "[FAIL-vol2surf] $id $hemi"; return 0; }
         # all three measures: native -> fsaverage6 with the same target-surface smoothing
@@ -73,9 +89,9 @@ sample_one() {
             if [[ "$meas" == gbsc ]]; then
                 sval="$out/${hemi}.gbsc.native.mgh"; fmt=""
             else
-                sval="$SUBJECTS_DIR/$id/surf/${hemi}.${meas}"; fmt="--sfmt curv"
+                sval="$SUBJECTS_DIR/$fs/surf/${hemi}.${meas}"; fmt="--sfmt curv"
             fi
-            mri_surf2surf --srcsubject "$id" --trgsubject "$TRG" --hemi "$hemi" \
+            mri_surf2surf --srcsubject "$fs" --trgsubject "$TRG" --hemi "$hemi" \
                 --sval "$sval" $fmt --fwhm-trg "$FWHM" \
                 --tval "$out/${hemi}.${meas}.${TRG}.mgh" >> "$log" 2>&1 \
                 || { echo "[FAIL-surf2surf] $id $hemi $meas"; return 0; }
@@ -85,7 +101,7 @@ sample_one() {
 }
 export -f sample_one
 
-tail -n +2 "$SCANS_CSV" | awk -F, '{print $1"\t"$4}' \
-    | parallel -j "${SLURM_CPUS_ON_NODE:-192}" --colsep '\t' sample_one {1} {2}
+tail -n +2 "$SCANS_CSV" | awk -F, '{print $1"\t"$4"\t"$2}' \
+    | parallel -j "${SLURM_CPUS_ON_NODE:-192}" --colsep '\t' sample_one {1} {2} {3}
 
 echo "[DONE] sampling"
